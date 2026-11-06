@@ -6,12 +6,13 @@ import json
 import os
 from pathlib import Path
 import threading
+import time
 from uuid import UUID, uuid4
 
 from alembic import command
 from alembic.config import Config
 import pytest
-from sqlalchemy import func, select
+from sqlalchemy import event, func, select, text
 from sqlalchemy.exc import IntegrityError
 
 from security_platform.auth.principals import OperatorPrincipal
@@ -379,3 +380,74 @@ def test_rotation_audit_failure_rolls_back_revocation_and_new_credential(service
         assert enrollment.authenticate_device(session, device["credential_secret"], now=NOW).device_id == UUID(device["device_id"])
     with owner.session() as session:
         assert session.scalar(select(func.count()).select_from(DeviceCredential).where(DeviceCredential.tenant_id == a)) == 1
+
+
+def test_device_detail_and_products_remain_coherent_during_concurrent_snapshot(service_tenants):
+    owner, runtime, tenant, _, admin, viewer = service_tenants
+    device = enrolled(runtime, admin, tenant)
+    send(runtime, device["credential_secret"], snapshot(1))
+    reader_has_device = threading.Event()
+    release_reader = threading.Event()
+    writer_ready = threading.Event()
+    writer_done = threading.Event()
+    reader_identity, writer_backend = {}, {}
+
+    def pause_after_device_select(connection, cursor, statement, parameters, context, executemany):
+        if (threading.get_ident() == reader_identity.get("thread")
+                and statement.lstrip().startswith("SELECT devices.") and not reader_has_device.is_set()):
+            # SQL has executed and any row lock is held; pause before products.
+            reader_has_device.set()
+            assert release_reader.wait(timeout=5), "Reader barrier timed out"
+
+    def read_detail():
+        reader_identity["thread"] = threading.get_ident()
+        with runtime.session() as session:
+            return inventory.get_device(session, viewer, tenant, UUID(device["device_id"]))
+
+    def publish_next():
+        try:
+            with runtime.session() as session:
+                writer_backend["pid"] = session.scalar(text("SELECT pg_backend_pid()"))
+                principal = enrollment.authenticate_device(session, device["credential_secret"])
+                writer_ready.set()
+                return snapshots.ingest_snapshot(session, principal, snapshot(2))
+        finally:
+            writer_done.set()
+
+    event.listen(runtime.engine, "after_cursor_execute", pause_after_device_select)
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            reader = pool.submit(read_detail)
+            try:
+                assert reader_has_device.wait(timeout=5), "Reader did not reach the device/product barrier"
+                writer = pool.submit(publish_next)
+                assert writer_ready.wait(timeout=5), "Writer did not reach its row lock"
+                # Observe PostgreSQL's actual lock wait instead of relying on a
+                # scheduling sleep. The writer's lock timeout remains unchanged.
+                blocked = False
+                deadline = time.monotonic() + 1.5
+                while time.monotonic() < deadline and not writer_done.is_set():
+                    # PostgreSQL exposes wait details to sessions of the same
+                    # role; the non-superuser migration owner cannot inspect
+                    # another role's pg_stat_activity details.
+                    with runtime.session() as session:
+                        blocked = session.scalar(text("SELECT wait_event_type = 'Lock' FROM pg_stat_activity WHERE pid=:pid"),
+                                                 {"pid": writer_backend["pid"]}) is True
+                    if blocked:
+                        break
+                    writer_done.wait(timeout=0.01)
+            finally:
+                release_reader.set()
+            detail = reader.result(timeout=5)
+            assert writer.result(timeout=5)["sequence"] == 2
+            assert detail["last_sequence"] == 1
+            assert all(product["snapshot_sequence"] == detail["last_sequence"] for product in detail["products"])
+            assert all(product["received_at"] == detail["last_received_at"] for product in detail["products"])
+            assert blocked, "Snapshot writer bypassed the detail reader's row lock"
+    finally:
+        release_reader.set()
+        event.remove(runtime.engine, "after_cursor_execute", pause_after_device_select)
+    with runtime.session() as session:
+        current = inventory.get_device(session, viewer, tenant, UUID(device["device_id"]))
+        assert current["last_sequence"] == 2
+        assert all(product["snapshot_sequence"] == 2 for product in current["products"])

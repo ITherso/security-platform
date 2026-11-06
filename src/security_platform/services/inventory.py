@@ -55,10 +55,14 @@ def list_devices(session, operator, tenant_id, *, limit=50, offset=0, limits=DEF
 
 def get_device(session, operator, tenant_id, device_id, *, limits=DEFAULT_LIMITS, now=None):
     require_membership(session, operator, tenant_id)
-    now = utc_now(now)
-    row = session.scalar(select(Device).where(Device.tenant_id == tenant_id, Device.id == device_id))
+    # Snapshot writers hold FOR UPDATE on this device before replacing products.
+    # Keep its metadata and the following product SELECT on one coherent state
+    # even under PostgreSQL READ COMMITTED's per-statement snapshots.
+    row = session.scalar(select(Device).where(Device.tenant_id == tenant_id, Device.id == device_id)
+        .with_for_update(read=True).execution_options(populate_existing=True))
     if row is None:
         raise NotFound("Resource not found")
+    now = utc_now(now)
     products = session.scalars(select(ProductState).where(ProductState.tenant_id == tenant_id,
         ProductState.device_id == device_id).order_by(ProductState.product_id)).all()
     product_views = []
