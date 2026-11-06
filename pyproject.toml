@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools==84.2.1"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "security-platform"
+version = "0.1.0"
+description = "Tenant-scoped device identity and security product inventory"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.141,<0.142",
+  "uvicorn>=0.52,<0.53",
+  "pydantic>=2.13,<2.14",
+  "sqlalchemy>=2.1,<2.2",
+  "alembic>=1.17,<2",
+  "psycopg[binary]>=3.2,<4",
+  "PyJWT[crypto]>=2.10,<3",
+  "httpx>=0.28,<0.29",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=9,<10"]
+
+[project.scripts]
+security-platform = "security_platform.cli:main"
+security-snapshot = "security_platform.connectors.hostbased_firewall.client:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.data-files]
+"share/security-platform" = ["alembic.ini"]
+"share/security-platform/migrations" = ["migrations/env.py", "migrations/script.py.mako"]
+"share/security-platform/migrations/versions" = ["migrations/versions/*.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+markers = ["integration: requires a real PostgreSQL test database", "e2e: starts a local HTTP server and fixture clients"]
