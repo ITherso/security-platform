@@ -24,3 +24,5 @@ Kayıt/iptal, credential/snapshot, policy push/apply, scan, uzaktan komut veya e
 - [Teslim, build ve elle önizleme kaydı](docs/DELIVERY.tr.md)
 
 Kullanıcı yönlendirmesiyle bu tur test yazılmaz veya çalıştırılmaz. Eski **506 passed / 2 skipped** yalnız tarihsel temeldir; yeni UI sonucu değildir. Windows vakaları, IdP/canlı API ve gerçek policy revision otoritesi beklemede kalır.
+
+Runtime dependency notices are retained in THIRD_PARTY_NOTICES.txt and in the built JavaScript license comment.

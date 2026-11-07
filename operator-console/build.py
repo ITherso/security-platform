@@ -85,6 +85,12 @@ def build():
     """Capture every fixed Vite output before writing its integrity manifest."""
     _dist_layout()
     assets = {name: _read(DIST / name) for name in ASSETS}
+    notice = _read(ROOT / "THIRD_PARTY_NOTICES.txt", 16384).decode("utf-8")
+    _require("*/" not in notice and "Permission is hereby granted" in notice)
+    header = ("/*!\n" + notice.rstrip() + "\n*/\n").encode("utf-8")
+    if not assets["assets/console.js"].startswith(header):
+        assets["assets/console.js"] = header + assets["assets/console.js"]
+        _write(DIST / "assets/console.js", assets["assets/console.js"])
     _require(sum(map(len, assets.values())) <= MAX_TOTAL_BYTES)
     for raw in assets.values():
         raw.decode("utf-8")

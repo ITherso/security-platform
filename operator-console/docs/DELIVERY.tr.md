@@ -14,7 +14,7 @@ Yeni commit, kaynak ZIP boyutu/SHA256 ve tam dosya farkı dış `delivery-manife
 
 Üretim build'i üç dosyadır: `index.html`, `assets/console.js`, `assets/console.css`. `dist/build-manifest.json`, gerçek boyut/SHA256 değerlerini ve varlık kümesi özetini taşır. Son varlık kümesi SHA256:
 
-`ec564e510ca0003c2dc500686ddeeb840fb4726d773d5057a54da5ff5c867029`
+`0f2bc69b2a9c2cab014ddd28b53f9330e5e6bfac071395d4d6a3bdad68978f66`
 
 Bu özet bütünlük kaydıdır; imza veya güvenlik kabulü değildir. Python önizlemesi doğrulanmış varlıkları belleğe alarak yalnız `127.0.0.1:8787` üzerinde sundu; HTTP 200 gözlendi. İş bitiminde önizleme durduruldu. Hazır `dist/` ile yeniden açmak için yalnız `python serve.py --port 8787` yeterlidir.
 
@@ -36,3 +36,5 @@ Gerçek ekran görüntüleri teslimde `evidence/operator-console/operator-consol
 - Public deploy, GitHub push/release, EXE ve production wheel yeniden üretimi yapılmadı.
 
 [Kurulum](SETUP.tr.md), [API–UI eşlemesi](API_UI_MAPPING.tr.md), [ürün durumları](PRODUCT_STATES.tr.md).
+
+Dağıtılan React, react-dom ve scheduler MIT metinleri THIRD_PARTY_NOTICES.txt içinde ve derlenmiş JavaScript yorumunda korunur. Son build bu lisans yorumunu ekler; uygulama davranışı ve görünümü değişmez.
