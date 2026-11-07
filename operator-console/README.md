@@ -21,8 +21,11 @@ Kayıt/iptal, credential/snapshot, policy push/apply, scan, uzaktan komut veya e
 - [Kurulum ve bağlantı](docs/SETUP.tr.md)
 - [Gerçek API–UI eşlemesi](docs/API_UI_MAPPING.tr.md)
 - [Ürün durumlarının anlamı](docs/PRODUCT_STATES.tr.md)
+- [Seçili cihazlar — ürün bildirim özeti](docs/REPORTS.tr.md)
 - [Teslim, build ve elle önizleme kaydı](docs/DELIVERY.tr.md)
 
 Kullanıcı yönlendirmesiyle bu tur test yazılmaz veya çalıştırılmaz. Eski **506 passed / 2 skipped** yalnız tarihsel temeldir; yeni UI sonucu değildir. Windows vakaları, IdP/canlı API ve gerçek policy revision otoritesi beklemede kalır.
 
 Runtime dependency notices are retained in THIRD_PARTY_NOTICES.txt and in the built JavaScript license comment.
+
+Durum raporu, yalnız açılıp görüntülenen ayrıntılardan en fazla 20 cihaz/256 KiB UTF-8 bellek taslağı hazırlar. Aynı cihazın güncellenmesi açık eylemdir; bağlam değişince taslak temizlenir. Ad/kimlik gösterme varsayılan kapalıdır. Çıktı tarayıcı yazdır/PDF akışıdır; yeni fetch/export servisi, otomatik kayıt veya PDF tamamlanma iddiası yoktur. Bu rapor tüm kurum envanteri veya doğrulanmış güvenlik durumu değildir.

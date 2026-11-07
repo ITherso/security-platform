@@ -20,3 +20,5 @@
 @media(max-width:650px){.sidebar:not(.open){box-shadow:none}}
 .sidebar-close{position:absolute;right:8px;top:8px;color:#d8c4f3}
 @media(max-width:650px){.sidebar:not(.open){visibility:hidden}.sidebar.open{visibility:visible}}
+
+.report-capture{padding:14px 22px;border-top:1px solid #e7ddf0;border-bottom:1px solid #e7ddf0;background:#faf7ff}.report-capture>p{font-size:12px;line-height:1.7;color:#766283;margin:0 0 12px}.report-capture .detail-actions{padding:0;display:flex;gap:10px;flex-wrap:wrap}.report-capture>p[role=status]{color:#466c5c;margin-top:12px}.report-capture .btn{white-space:normal;text-align:left}

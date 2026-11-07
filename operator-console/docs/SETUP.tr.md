@@ -56,3 +56,7 @@ Tenant/görünüm değişiminde eski istekler iptal edilir; bağlam/istek kimli�
 Build çıktısı mevcut HTTPS reverse proxy üzerinden aynı origin'de sunulabilir. `/api/v1/…` yönlendirmesi mevcut API'de kalır; yeni backend endpoint/static route veya CORS gevşetmesi gerekmez. Mevcut Host/TLS/Origin ve rol doğrulamaları korunur. Statik host'ta self script/style/connect, `frame-ancestors 'none'`, `object-src 'none'`, `form-action 'none'`, no-store, nosniff ve no-referrer sınırları uygulanmalıdır. Bu belge dağıtım yapıldığı iddiası değildir.
 
 Ürün anlamları için [PRODUCT_STATES](PRODUCT_STATES.tr.md), gerçekleşen çalışma ve bekleyen kanıtlar için [DELIVERY](DELIVERY.tr.md) dosyalarını okuyun.
+
+## Seçili cihazların durum raporu
+
+Ek runtime bağımlılığı veya backend kurulumu gerekmez. Görüntülenen cihaz ayrıntısından **Durum raporuna ekle** ile en fazla 20 cihaz/256 KiB UTF-8 bellek taslağı oluşturulur. [Rapor kullanımı](REPORTS.tr.md) ad/kimlik tercihini, bağlam değişiminde temizlenmeyi ve sabit önizlemeyi açıklar. Tek çıktı yolu kullanıcı eylemiyle tarayıcının yazdır/PDF akışıdır; HTML/JSON/CSV indirme, otomatik dosya kaydı veya yeni API isteği yoktur. Dosyanın gerçekten kaydedilmesi tarayıcıda kullanıcının seçimine bağlıdır; build veya ekran görüntüsü PDF kaydı kanıtı değildir.

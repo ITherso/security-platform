@@ -189,9 +189,9 @@ export function ProductCards({ detail = null }: ProductCardsProps) {
   </section>;
 }
 
-export interface DeviceDetailProps { detail: DeviceDetailDto | null; onClose?: () => void }
+export interface DeviceDetailProps { detail: DeviceDetailDto | null; onClose?: () => void; actions?: ReactNode }
 
-export function DeviceDetail({ detail, onClose }: DeviceDetailProps) {
+export function DeviceDetail({ detail, onClose, actions }: DeviceDetailProps) {
   if (!detail) return <EmptyState title="Cihaz seçilmedi" description="Ayrıntıları görmek için cihaz listesinden bir kayıt seçin."/>;
   const connection: Readonly<Record<string, readonly [string, Tone]>> = {
     recent: ["Yakın zamanda bildirim alındı", "success"], stale: ["Bildirim güncel değil", "warning"],
@@ -208,6 +208,7 @@ export function DeviceDetail({ detail, onClose }: DeviceDetailProps) {
         ? "Cihaz kaydı iptal edildi" : detail.identity_status === "active" ? "Cihaz kaydı etkin" : "Kayıt durumu bilinmiyor"}</Badge>
       <Badge tone={connectionTone}>{connectionLabel}</Badge>
     </div>
+    {actions}
     <KeyValues values={[
       ["Kayıt tarihi", formatDate(detail.created_at)], ["Son merkeze ulaşma", formatDate(detail.last_received_at)],
       ["Kaynak gözlem zamanı", formatDate(detail.source_observed_at)], ["Kaynak gözlem yaşı", formatAge(detail.source_observation)],

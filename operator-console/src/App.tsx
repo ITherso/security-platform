@@ -3,13 +3,17 @@ import { consoleStore as store, type Scenario, type View } from './consoleStore'
 import { ProductCards, DeviceDetail, AuditView } from './components/ProductViews';
 import { formatDate } from './components/display';
 import { toDeviceListViewModel, receivedSortKey } from './data/viewModels';
+import { ReportPage } from './features/reports/ReportPage';
+import { ReportPreview } from './features/reports/ReportPreview';
+import './features/reports/print.css';
 export { consoleStore } from './consoleStore';
 
 const TITLES: Record<View, [string, string, string]> = {
   overview: ['Güvenlik görünümü', 'Cihazların bildirdiği durumu, veri güncelliğinden ayrı takip edin.', 'Genel bakış'],
   devices: ['Cihaz envanteri', 'Şirket kapsamındaki cihazları ve son merkez kabulünü inceleyin.', 'Cihazlar'],
   products: ['Ürün görünürlüğü', 'Kurulum, çalışma beyanı ve rapor varlığı ayrı değerlendirilir.', 'Ürünler'],
-  audit: ['İşlem geçmişi', 'Seçili şirket için API tarafından sunulan işlem kayıtları.', 'İşlem geçmişi']
+  audit: ['İşlem geçmişi', 'Seçili şirket için API tarafından sunulan işlem kayıtları.', 'İşlem geçmişi'],
+  reports: ['Durum raporu', 'İncelediğiniz cihazların ürün bildirimlerinden bir özet hazırlayın.', 'Durum raporu']
 };
 const CONNECTION: Record<string, [string, string]> = {
   recent: ['Yakın zamanda bildirdi', 'success'], stale: ['Bildirim eski', 'warning'], never_seen: ['Henüz bildirmedi', 'neutral']
@@ -17,7 +21,7 @@ const CONNECTION: Record<string, [string, string]> = {
 function Icon({ name = 'device' }: { name?: string }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true">{name === 'overview' ? <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>
     : name === 'products' ? <><path d="M12 3 3 7.5 12 12l9-4.5ZM3 12l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5" /></>
-    : name === 'audit' ? <path d="M9 4h10v17H5V4h2M9 3h6v4H9zM8 12h8M8 16h5" />
+    : name === 'audit' || name === 'reports' ? <path d="M9 4h10v17H5V4h2M9 3h6v4H9zM8 12h8M8 16h5" />
     : name === 'refresh' ? <path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1" />
     : name === 'recent' ? <><circle cx="12" cy="12" r="9" /><path d="m7 12 3 3 7-7" /></>
     : name === 'stale' ? <><circle cx="12" cy="12" r="9" /><path d="M12 7v6l4 2" /></>
@@ -97,16 +101,23 @@ function ConnectionPanel() {
       <div className="connection-actions"><button className="btn btn-ghost" type="button" onClick={() => { store.disconnect(); close(); }}>Bağlantıyı kapat</button><button className="btn btn-primary" type="submit" disabled={location.protocol !== 'https:'}>Salt okunur bağlan</button></div>
     </form></Modal>;
 }
+function CaptureReportActions() {
+  const s = useSyncExternalStore(store.subscribe, store.snapshot);
+  if (!s.detail || s.detailBusy || s.detailError || !s.detailOpen) return null;
+  const selected = s.reportDraft?.records.some((record) => record.deviceId === s.detail?.id) ?? false;
+  return <section className="report-capture"><p>Yalnız burada görüntülenen bilgiler rapora kopyalanır. Sonraki bildirimler bu kopyayı kendiliğinden değiştirmez.</p><div className="detail-actions"><button className="btn btn-primary" onClick={() => store.addDetailToReport(selected)}>{selected ? 'Rapordaki kaydı bu görüntülenen bilgilerle güncelle' : 'Durum raporuna ekle'}</button><button className="btn btn-ghost" onClick={() => store.navigate('reports')}>Raporu aç ({s.reportDraft?.records.length || 0})</button></div>{s.reportNotice && <p role="status">{s.reportNotice}</p>}{s.reportError && <p className="inline-error" role="alert">{s.reportError}</p>}</section>;
+}
 export function App() {
   const s = useSyncExternalStore(store.subscribe, store.snapshot), demo = s.mode === 'demo';
   useEffect(() => { window.addEventListener('pagehide', store.pagehide); return () => window.removeEventListener('pagehide', store.pagehide); }, []);
-  useEffect(() => { window.scrollTo({ top: 0 }); }, [s.view, s.tenant?.id]);
+  useEffect(() => { window.scrollTo({ top: 0 }); }, [s.view, s.tenant?.id, s.reportPreview]);
   const [title, subtitle, breadcrumb] = TITLES[s.view], admin = s.tenant?.role === 'tenant_admin';
+  if (s.reportPreview) return <div id="print-root">{s.reportError && <p className="report-controls page-message" role="alert">{s.reportError}</p>}<ReportPreview report={s.reportPreview} onBack={store.closeReportPreview} onPrint={store.printReport} /></div>;
   return <><a className="skip-link" href="#main">İçeriğe geç</a><div className="app-shell"><aside className={`sidebar ${s.mobile ? 'open' : ''}`} aria-label="Ana gezinme">
     <button className="icon-button mobile-only sidebar-close" aria-label="Menüyü kapat" onClick={store.toggleMobile}>×</button><a href="#" className="brand" onClick={(e) => { e.preventDefault(); store.navigate('overview'); }}><span className="brand-mark"><svg viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 36 8v13c0 10-16 20-16 20S4 31 4 21V8Z" /><path d="m12 21 5 5 11-12" /></svg></span><span>Güvenlik<span className="brand-second">KONSOLU</span></span></a>
     <div className="workspace-picker"><label htmlFor="tenant-select">ÇALIŞMA ALANI</label><div className="select-wrap"><span className="workspace-symbol">◈</span><select id="tenant-select" aria-label="Şirket seç" disabled={!s.tenants.length || s.loading} value={s.tenant?.id || ''} onChange={(e) => void store.selectTenant(e.target.value)}>{!s.tenant && <option value="">{s.loading ? 'Yükleniyor…' : 'Şirket seçilmedi'}</option>}{s.tenants.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>
       {s.nextTenant !== null && <button className="sidebar-link" disabled={s.loading || s.nextTenant > 10000} onClick={() => void store.moreTenants()}>Diğer şirketleri yükle</button>}</div>
-    <p className="nav-caption">GENEL</p><nav className="nav-list">{(Object.keys(TITLES) as View[]).map((view) => <button key={view} className={`nav-item ${view === s.view ? 'active' : ''}`} aria-current={view === s.view ? 'page' : undefined} onClick={() => store.navigate(view)}><Icon name={view} />{TITLES[view][2]}{view === 'audit' && !admin && <span className="nav-lock" aria-label="Yönetici rolü gerekir">⌑</span>}</button>)}</nav>
+    <p className="nav-caption">GENEL</p><nav className="nav-list">{(Object.keys(TITLES) as View[]).map((view) => <button key={view} className={`nav-item ${view === s.view ? 'active' : ''}`} aria-current={view === s.view ? 'page' : undefined} disabled={s.loading} onClick={() => store.navigate(view)}><Icon name={view} />{view === 'reports' ? `Durum raporu (${s.reportDraft?.records.length || 0})` : TITLES[view][2]}{view === 'audit' && !admin && <span className="nav-lock" aria-label="Yönetici rolü gerekir">⌑</span>}</button>)}</nav>
     <div className="sidebar-spacer" /><div className="sidebar-note"><span className="note-icon">↗</span><strong>Tek yerden görünürlük</strong><p>Cihaz kaydı, veri güncelliği ve ürün beyanlarını ayrı izleyin.</p><span className="sidebar-tag">Salt okunur konsol</span></div><div className="operator"><span className="avatar">O</span><div><strong>Operatör görünümü</strong><span>{s.tenant ? `${demo ? 'Örnek · ' : ''}${admin ? 'Şirket yöneticisi' : 'Görüntüleyici'}` : 'Şirket seçilmedi'}</span></div></div>
   </aside><div className="workspace"><header className="topbar"><button className="icon-button mobile-only" aria-label="Menüyü aç" aria-expanded={s.mobile} onClick={store.toggleMobile}>☰</button><div className="breadcrumb">Ürün merkezi <span>/</span><strong>{breadcrumb}</strong></div><div className="topbar-actions"><Badge tone={demo ? 'purple' : s.mode === 'api' ? 'success' : 'neutral'}>{demo ? 'Örnek veri' : s.mode === 'api' ? 'Canlı API' : 'Bağlantı kapalı'}</Badge><button className="icon-button" aria-label="Veri kaynağı" onClick={store.openConnection}>⚙</button></div></header>
     <main id="main" tabIndex={-1}><div className="mode-banner" data-mode={demo ? 'demo' : 'api'} role="status"><span className="banner-symbol">{demo ? '◉' : '◎'}</span><div><strong>{demo ? 'Örnek veri — gerçek cihazlara bağlı değil' : s.mode === 'api' ? 'Mevcut platform · salt okunur' : 'Veri kaynağı seçilmedi'}</strong><span>{demo ? s.scenario === 'normal' ? 'Şirketler, cihazlar ve işlem kayıtları kurgusaldır.' : s.scenario === 'empty' ? 'Boş envanter örnek senaryosu.' : 'Bağlantı hatası örnek senaryosu; gerçek bağlantı denenmedi.' : 'Ürün beyanları bağımsız doğrulanmış koruma göstermez.'}</span></div><button className="text-button" onClick={store.openConnection}>Veri kaynağı ↗</button></div>
@@ -114,9 +125,9 @@ export function App() {
       {s.error && <div className="page-message" role="alert">{s.error}</div>}
       {(s.view === 'overview' || s.view === 'devices') && <Metrics />}
       {s.view === 'overview' ? <div className="overview-grid"><DeviceList /><div className="side-stack"><Attention /><Catalog /></div></div> : s.view === 'devices' ? <DeviceList /> : s.view === 'products' ? <><ProductCards /><div className="panel product-page-note"><p>Ürün beyanlarını görmek için bir cihazın ayrıntısını açın. Bu görünüm, cihazlarda kurulum veya aktif koruma kanıtı değildir.</p><button className="btn btn-ghost" onClick={() => store.navigate('devices')}>Cihazlara git ↗</button></div></>
-        : !admin ? <section className="panel empty-state"><h2>İşlem geçmişi yönetici rolü gerektirir</h2><p>{s.tenant ? 'Bu şirket için görüntüleyici rolündesiniz. Rol, API’nin şirket yanıtından gelir.' : 'Önce erişilebilen bir şirket seçin.'}</p></section> : <AuditView page={s.audit} tenantName={s.tenant?.name} status={s.auditStatus} errorMessage={s.auditError} onNext={(offset) => void store.loadAudit(offset)} onPrev={s.auditOffset > 0 ? () => void store.loadAudit(Math.max(0, s.auditOffset - (demo ? 5 : 50))) : undefined} />}
+        : s.view === 'reports' ? s.reportDraft ? <><ReportPage draft={s.reportDraft} showIdentifiers={s.showIdentifiers} onShowIdentifiersChange={store.setReportIdentifiers} onRemove={store.removeReportRecord} onClear={store.clearReport} onPreview={store.createReportPreview} onBrowseDevices={() => store.navigate('devices')} />{s.reportError && <p className="page-message" role="alert">{s.reportError}</p>}</> : <section className="panel empty-state"><h2>Önce bir şirket seçin</h2><p>Cihaz ayrıntılarından seçtiğiniz kayıtlarla rapor taslağı oluşturabilirsiniz.</p></section> : !admin ? <section className="panel empty-state"><h2>İşlem geçmişi yönetici rolü gerektirir</h2><p>{s.tenant ? 'Bu şirket için görüntüleyici rolündesiniz. Rol, API’nin şirket yanıtından gelir.' : 'Önce erişilebilen bir şirket seçin.'}</p></section> : <AuditView page={s.audit} tenantName={s.tenant?.name} status={s.auditStatus} errorMessage={s.auditError} onNext={(offset) => void store.loadAudit(offset)} onPrev={s.auditOffset > 0 ? () => void store.loadAudit(Math.max(0, s.auditOffset - (demo ? 5 : 50))) : undefined} />}
       <footer className="page-footer"><span><span className="footer-dot" />Salt okunur görünürlük</span><span>Güncel bildirim, doğrulanmış koruma anlamına gelmez.</span></footer>
     </main></div></div>
-    <Modal open={s.detailOpen} onClose={store.closeDevice} className="detail-dialog" label="Cihaz ayrıntıları">{s.detailBusy ? <div className="empty-state" role="status">Cihaz ayrıntıları yükleniyor…</div> : s.detailError ? <div className="empty-state"><p role="alert">{s.detailError}</p><button className="btn btn-ghost" onClick={store.closeDevice}>Kapat</button></div> : <DeviceDetail detail={s.detail} onClose={store.closeDevice} />}</Modal>
+    <Modal open={s.detailOpen} onClose={store.closeDevice} className="detail-dialog" label="Cihaz ayrıntıları">{s.detailBusy ? <div className="empty-state" role="status">Cihaz ayrıntıları yükleniyor…</div> : s.detailError ? <div className="empty-state"><p role="alert">{s.detailError}</p><button className="btn btn-ghost" onClick={store.closeDevice}>Kapat</button></div> : <DeviceDetail detail={s.detail} onClose={store.closeDevice} actions={<CaptureReportActions />} />}</Modal>
     <ConnectionPanel /></>;
 }

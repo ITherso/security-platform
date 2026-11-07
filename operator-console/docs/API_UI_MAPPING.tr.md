@@ -67,3 +67,17 @@ Audit yeni → eski sırasıyla, bounded retention ile gelir. UI “yüklenen ka
 | Ağ, abort, 12 saniye veya 512 KiB sınırı | Sabit güvenli hata; yanıt/token konsola dökülmez. Ağ hatası kesin CORS/401 teşhisi değildir. |
 
 API hedefi sayfanın aynı HTTPS origin'indeki sabit `/api/v1` tabanıdır. Dört sabit route fonksiyonu UUID ve limit/offset'i kodlar. `Authorization: Bearer …`, `credentials:omit`, `cache:no-store`, `redirect:error`; en fazla 512 KiB yanıt ve fetch+gövde boyunca 12 saniye. Token'dan rol çözümleme, mutation veya genel URL çalıştırıcısı yoktur. Adapter uygulanması gerçek token/IdP/API bağlantısı kabulü değildir.
+
+## Rapor görünümü: yeni route yok
+
+[Seçili cihaz raporu](REPORTS.tr.md) yalnız mevcut `GET /api/v1/tenants/{tenant_id}/devices/{device_id}` sonucunun runtime denetiminden geçmiş ve görüntülenmiş ayrıntısını kullanır. Rapor eylemleri GET dahil yeni istek yapmaz; listeden toplu ayrıntı okuma veya N+1 yoktur.
+
+| Mevcut kaynak | Rapor kullanımı |
+|---|---|
+| Seçili tenant `id/name`, Device `id/label` | Dahili kapsam bağı; ad/kimlik gösterme seçeneği varsayılan kapalıdır. |
+| `identity_status`, `connection_status`, nullable zamanlar | Seçilme anındaki kayıt/bildirim bilgisi ve eksik veri açıklaması; yeni eşik yoktur. |
+| Ayrıntı `products[].state` / `missing_products` | Ürün bildirim durumu, sağlanan sürüm ve izin verilen sınırlı özetler; eski state taşınmaz. |
+| Termivar `latest_report` içindeki mevcut sayısal toplamlar | Yalnız sınırlı ürün özeti; ham rapor/target/kanıt/HTML veya doğrulanmış tarama sonucu değildir. |
+| `source_observed_at`, `received_at`, source/verification | Ayrı kaynak/alım zamanı ve cihaz beyanı/doğrulanmadı açıklaması. Konsol okuma/rapor oluşturma zamanı frontend metadata'sıdır. |
+
+Tüm DTO/view model/session nesnesi rapora aktarılmaz. API adresi, token/credential/JWT, audit/aktör, hata body'si ve policy içeriği kapsam dışıdır. Taslak yalnız bellekte aynı tenant+kip+oturum bağında, en fazla 20 cihaz/256 KiB UTF-8 veridir. Yeni backend DTO, snapshot/revision/receipt veya kanıt protokolü değildir.

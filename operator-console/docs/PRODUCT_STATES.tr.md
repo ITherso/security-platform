@@ -49,3 +49,7 @@ Ekranı yenilemek yalnız konsolun okuma bilgisini değiştirir. API'nin `connec
 Runtime doğrulama gerekli alanları/türleri ve ilişkileri kontrol eder. Bilinmeyen güven/koruma enum'u olumluya çevrilmez; eksik/uygunsuz yanıt açık hatadır. JavaScript'in kesin temsil sınırını aşan BIGINT/sayaç değerleri yuvarlanmaz: fail closed sözleşme hatası gösterilir. 401 bağlantıyı temizler, 403 erişimi reddeder; ikisi “kayıt yok” değildir. Canlı API hatasında sentetik kayda geçilmez.
 
 Örnek veri kipinde bu senaryolar yalnız ürün görünümünü anlatır. Gerçek Windows kabulü, IdP, üretim API, policy revision otoritesi veya enforcement kanıtı oluşturmaz.
+
+## Seçili cihaz raporu
+
+[Durum raporu](REPORTS.tr.md), açılıp görüntülenmiş ayrıntıların açık alan listeli kopyasıdır; yeni tarama, ölçüm veya merkezî snapshot değildir. Her kaydın kaynak/alım/okuma zamanı korunur; sabit rapor oluşturma zamanı veriyi tazelemez. Eksik sayılar sıfıra, self_reported/not_verified olumlu güven sonucuna çevrilmez. Örnek veri etiketi baskıda da kalır. Ad/kimlik gizleme anonimleştirme, tarayıcı yazdırma/PDF akışı da policy/enforcement veya dosyanın kaydedildiğine ilişkin kabul kanıtı değildir.
