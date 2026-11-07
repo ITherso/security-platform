@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "evidence_origin": "synthetic",
+  "cases": [
+    {
+      "case_id": "SYNTHETIC-FORMAT-ONLY",
+      "source_commit": "0000000000000000000000000000000000000000",
+      "artifact_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "windows_build": "SYNTHETIC-NOT-A-WINDOWS-BUILD",
+      "architecture": "x64",
+      "environment": "vm",
+      "accounts": [
+        {
+          "account_name": "synthetic-account-not-a-real-person",
+          "sid": "S-1-5-21-0-0-0-1000",
+          "context": "standard_user"
+        }
+      ],
+      "preconditions": [
+        "Synthetic format fixture; no Windows operation has run."
+      ],
+      "action": "Synthetic reported action, not an executed operation.",
+      "expected": "Only field consistency is checked.",
+      "observed": "Synthetic claimed observation; no live Windows evidence.",
+      "evidence_refs": [
+        {
+          "reference": "synthetic/nonexistent-artifact.bin",
+          "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "kind": "artifact"
+        },
+        {
+          "reference": "synthetic/nonexistent-signature.json",
+          "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "kind": "signature_report"
+        },
+        {
+          "reference": "synthetic/nonexistent-self-report.json",
+          "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "kind": "self_report"
+        }
+      ],
+      "status": "PASS",
+      "reviewer": "synthetic-reviewer-not-a-real-person",
+      "review_status": "reported_reviewed"
+    }
+  ]
+}

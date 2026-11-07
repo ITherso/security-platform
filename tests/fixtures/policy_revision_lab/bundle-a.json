@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "ordered_zones": [
+    {
+      "name": "OFFICE",
+      "cidrs": [
+        "10.0.0.0/8"
+      ]
+    },
+    {
+      "name": "DMZ",
+      "cidrs": [
+        "172.16.0.0/12"
+      ]
+    }
+  ],
+  "objects": {},
+  "policies": {
+    "default_action": "ALLOW",
+    "policies": []
+  }
+}

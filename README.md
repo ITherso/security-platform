@@ -122,6 +122,23 @@ CLI çıkış kodu 0 yalnız belirtilen çıktı dosyasının yazıldığını b
 
 Gerçek DB testleri hazır fixture gerektirir; atlanan DB testini başarı saymayın. Windows'ta native owner/DACL testleri çalışır; POSIX chmod kontrolü ayrı atlanır. Fiziksel cihaz, üretim IdP, canlı Windows sürücüsü/servis/reboot ve yayıncı imzası bu merkezî hizmetin fixture kabulünden çıkarılamaz.
 
-Bu deneysel kaynak sürümünün son birleşik koşusu **344 passed, 1 POSIX-only skipped, 1 mevcut bağımlılık uyarısı** ile 23,07 saniyede geçti. Bunun içindeki **160 politika sözleşmesi testi** ayrıca 2,16 saniyede geçti. Aynı kaynaklar taze dışa aktarılıp ZIP'teki `HostBasedFirewall` klasör adıyla da 160 passed / 0 skipped olarak doğrulandı. Gerçek PostgreSQL, migration kaynaklarının seçimi ve ayrı süreç TLS E2E birleşik koşuya dahildir; üretim release kabulü değildir.
+Üçüncü turun tarihsel birleşik koşusu **344 passed, 1 POSIX-only skipped, 1 mevcut bağımlılık uyarısı** ile 23,07 saniyede geçti. Bunun içindeki **160 politika sözleşmesi testi** ayrıca 2,16 saniyede geçti. Aynı kaynaklar taze dışa aktarılıp ZIP'teki `HostBasedFirewall` klasör adıyla da 160 passed / 0 skipped olarak doğrulandı. Gerçek PostgreSQL, migration kaynaklarının seçimi ve ayrı süreç TLS E2E birleşik koşuya dahildir; üretim release kabulü değildir.
 
-Sonraki ayrı karar kapısı: **kalıcı controller/endpoint policy revision ve lineage kaynağı, gerçek Windows kabulü ve yetkilendirilmiş yürütücünün tasarımı**. Bu kaynak teslimatı bunları uygulamaz; dağıtım planı yürütülemez.
+## Kalıcı revizyon laboratuvarı
+
+`tools/policy_revision_lab/` üretim wheel'ine ve sunucu başlangıcına bağlanmayan ayrı yerel test aracıdır. PostgreSQL'de atanmamış `controller_draft/draft_revision`, özel SQLite dizininde sentetik `endpoint_staged/staged_revision` tutar. Bu kayıtlar gerçek controller desired veya cihaz policy revision kaynağı değildir; `authority=unbound`, `operational_binding=absent`, gerçek revision alanları `null` ve yürütme yetkisi `false` kalır.
+
+CLI yalnız açık `init`, `append`, `read`, `check`, `report` ve Windows biçim kontrolü sunar:
+
+```powershell
+./.venv/Scripts/python.exe -m tools.policy_revision_lab.cli --help
+./.venv/Scripts/python.exe -m tools.policy_revision_lab.cli windows-report --input tests/fixtures/policy_revision_lab/windows-not-run.json --output windows-format-result.json
+```
+
+Sentetik binding ve A/B bundle örnekleri `tests/fixtures/policy_revision_lab/` altındadır. Endpoint init için henüz var olmayan, owner/DACL denetimini geçen özel bir lab dizini seçilir; controller yalnız ayrı test helper'ının hazırladığı işaretli lab DB/config dosyasını kabul eder. Uygulama DSN'sine fallback veya uygulama hesabına yeni hak yoktur. Depolar commit öncesi/sonrası kesinti, exact retry, yarış ve bozulma retlerini sınamak içindir. Tutarlı eski kopya, dış güvenilir referans olmadan saptanamayabilir; anti-rollback/attestation garantisi yoktur.
+
+[Lab kabulü ve CLI örnekleri](docs/POLICY_REVISION_LAB_ACCEPTANCE.tr.md), [gerçek yazıcı/otorite matrisi](docs/POLICY_REVISION_SOURCES.tr.md) ve [Windows kabul planı](docs/WINDOWS_ACCEPTANCE_PLAN.tr.md) ayrı kapsamları açıklar. Windows şeması yalnız bildirilen biçim/tutarlılığı kontrol eder; 12 gerçek vaka `NOT_RUN` kalır.
+
+Dördüncü turun güncel birleşik koşusu **506 passed, 2 skipped, 1 mevcut bağımlılık uyarısı** ile 94,21 saniyede geçti. Yeni lab testlerinden **162 passed / 1 symlink SKIP**; kalan 344 passed / 1 POSIX skip korunan platform temelidir. PostgreSQL, ayrı lab DB/rol, gerçek sunucu restart ve işlem/cevap kaybı yarışlarıyla test edildi. SQLite native DACL kontrolleri geçti; symlink yaratımı WinError1314 nedeniyle sınanamadı. Bu atlama başarıya çevrilmedi; gerçek Windows kabulü veya fiziksel güç kaybı denenmedi.
+
+Sonraki ayrı karar kapısı: **gerçek controller/endpoint policy revision ve lineage kaynağı, kullanıcı tarafından sağlanacak Windows kabul ortamı ve yetkilendirilmiş yürütücünün tasarımı**. Bu kaynak teslimatı bunları uygulamaz; dağıtım planı yürütülemez.

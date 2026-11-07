@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "evidence_origin": "real",
+  "cases": [
+    {
+      "case_id": "WIN-01-ARTIFACT",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Select an isolated target, exact artifact and publisher authorization."
+      ],
+      "action": "Later, verify the selected application and Setup artifact signatures and application-control decision.",
+      "expected": "Record publisher, trust and OS permission separately; do not bypass a denial.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-02-IDENTITY-ACL",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Provide two actual accounts, SYSTEM execution context and a recovery console."
+      ],
+      "action": "Later, test user/system installation identity, Program Files/ProgramData DACLs and low-privilege write attempts.",
+      "expected": "Only the intended identities can mutate executable and system data paths; record actual SID/context.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-03-UAC",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Provide an owned signed installation and a standard-user plus administrator account."
+      ],
+      "action": "Later, test consent cancellation, elevated launch and mismatched or replaced binary identity.",
+      "expected": "Cancellation leaves no privileged action; only validated owned executable is elevated.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-04-PROCESS-RACE",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Approve only owned disposable processes and preserve a VM snapshot."
+      ],
+      "action": "Later, test readiness ownership, stale PID/creation data and independent process races.",
+      "expected": "Unrelated or stale processes are not trusted or stopped; readiness binds the owned process.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-05-SCM-REBOOT",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Approve an owned service installation, manual reboot and console recovery path."
+      ],
+      "action": "Later, test service start/stop/restart, unexpected child failure, reboot and single-engine identity.",
+      "expected": "Normal stop stays stopped; documented recovery and reboot behavior have independent evidence.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-06-POLICY-ACTIVATION",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Name the policy owner and every writer; keep a backup and owned traffic target."
+      ],
+      "action": "Later, compare disk commit, runtime evaluator activation and controlled enforcement as separate observations.",
+      "expected": "Saved content alone is not reported as active or independently enforced.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-07-TRIAL-RECOVERY",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Approve a disposable trial policy, two cooperative processes and isolated recovery."
+      ],
+      "action": "Later, test trial confirm/cancel/expiry and interrupted history or restoration markers.",
+      "expected": "Recovery preserves coherent configuration without promoting content hashes to durable lineage.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-08-BACKUP-RESTORE",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Provide disposable backup inputs, VM snapshot and authority for restore/reimage identity decisions."
+      ],
+      "action": "Later, test multi-file restore, compensating rollback and independent native recovery failure.",
+      "expected": "Partial restore is barred from activation; unrelated changes survive; old clone requires explicit rebinding policy.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-09-NATIVE-PROFILES",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Provide an owned executable, owned remote test service and controlled network/profile changes."
+      ],
+      "action": "Later, test native application rules and real HOME/PUBLIC transitions with new connections.",
+      "expected": "Direction/profile scope and unrelated applications are observed separately; ALLOW does not override other DENY rules.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-10-DRIVER-TRAFFIC",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Approve the exact driver-opening and narrow controlled traffic experiment."
+      ],
+      "action": "Later, separately record sniff observation, drop/reinject enforcement, temporary denial and NAT behavior.",
+      "expected": "Sniff/loopback observation is not enforcement evidence; each claimed effect has its own controlled target.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-11-INTERRUPTION-RESTORE",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Select a disposable VM and separately authorize process crash, reboot and any physical power-loss experiment."
+      ],
+      "action": "Later, test installation/configuration recovery and old consistent restore or clone with explicit identity rebinding review.",
+      "expected": "Process termination or server restart is not power-loss acceptance; no anti-rollback guarantee is inferred.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    },
+    {
+      "case_id": "WIN-12-SOAK-PHYSICAL",
+      "source_commit": "74a88ed336cb8a0a2fab16e20389c9410590c292",
+      "artifact_sha256": null,
+      "windows_build": null,
+      "architecture": null,
+      "environment": null,
+      "accounts": [],
+      "preconditions": [
+        "Choose VM versus physical targets, duration, workload thresholds and sleep/VPN/NAT cases before execution."
+      ],
+      "action": "Later, observe the already running engine for the approved 24-72 hour workload and physical-target matrix.",
+      "expected": "Incomplete observation is not PASS; VM results do not establish physical fleet, performance or enforcement acceptance.",
+      "observed": null,
+      "evidence_refs": [],
+      "status": "NOT_RUN",
+      "reviewer": null,
+      "review_status": "not_reviewed"
+    }
+  ]
+}
