@@ -1,11 +1,9 @@
 /** Frontend presentation copies only; not a snapshot/revision/receipt protocol. */
 import type { AgeObservation, Device, ProductId } from "../../data/contracts";
+import type { Locale } from "../../i18n/types";
 
 export const MAX_REPORT_RECORDS = 20;
 export const MAX_REPORT_BYTES = 256 * 1024;
-export const REPORT_TITLE = "Seçili cihazlar — ürün bildirim özeti" as const;
-export const REPORT_SCOPE_NOTE = "Yalnız seçili cihazları kapsar; tüm kurum envanteri değildir. Kayıtlar farklı okuma zamanlarına ait olabilir." as const;
-export const EXAMPLE_REPORT_NOTICE = "ÖRNEK VERİ — GERÇEK CİHAZ RAPORU DEĞİLDİR" as const;
 export type ReportMode = "example" | "api";
 export type ReportErrorCode = "invalid_report" | "context_mismatch" | "duplicate_record" | "record_not_found"
   | "record_limit" | "size_limit" | "empty_report";
@@ -19,18 +17,11 @@ export interface ReportContext {
   /** Local UI session stamp; never a principal, revision or authority. */
   readonly generation: number;
 }
-export const METRIC_LABELS = {
-  installed: "Kurulu bildirimi", reported_running: "Çalışıyor bildirimi", reported_stale: "Kaynağın eski veri bildirimi",
-  firewall_mode: "Motor kipi", scanner_installed: "Tarayıcı kurulu bildirimi", execution_available: "Yürütme kullanılabilirliği",
-  report_presence: "Rapor özeti durumu", subject_count: "Konu sayısı", item_count: "Özet kayıt sayısı",
-  informational: "Bilgilendirme", needs_review: "İnceleme gerekiyor", confirmed: "Üreticinin confirmed bildirimi",
-  unassigned: "Önem derecesi atanmamış", info: "Info", low: "Low", medium: "Medium", high: "High", critical: "Critical",
-  availability: "Ürün kullanılabilirliği",
-} as const;
-export type ReportMetricKey = keyof typeof METRIC_LABELS;
+export type ReportMetricKey = "installed" | "reported_running" | "reported_stale" | "firewall_mode" | "scanner_installed"
+  | "execution_available" | "report_presence" | "subject_count" | "item_count" | "informational" | "needs_review"
+  | "confirmed" | "unassigned" | "info" | "low" | "medium" | "high" | "critical" | "availability";
 export interface ReportMetric {
   readonly key: ReportMetricKey;
-  readonly label: string;
   readonly value: string | number | boolean | null;
 }
 export interface ReportProduct {
@@ -80,14 +71,15 @@ export interface ReportDeviceSection extends ReportCommonFields {
 }
 /** The only model the preview/print component may receive. */
 export interface ReportModel {
-  readonly title: typeof REPORT_TITLE;
+  readonly title: string;
+  readonly locale: Locale;
   readonly mode: ReportMode;
   readonly generatedAt: string;
   readonly includeIdentifiers: boolean;
   readonly tenant: { readonly label: string; readonly identifier?: string };
   readonly selectedCount: number;
-  readonly scopeNote: typeof REPORT_SCOPE_NOTE;
-  readonly exampleNotice: typeof EXAMPLE_REPORT_NOTICE | null;
+  readonly scopeNote: string;
+  readonly exampleNotice: string | null;
   readonly records: readonly ReportDeviceSection[];
 }
 

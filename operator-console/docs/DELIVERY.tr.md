@@ -60,3 +60,22 @@ Phase5 dosyaları yeni paket yazılmadan ayrı kopyalarla korunmuştur:
 - Yeni kaynak/konsol/birleşik paket boyutu ve SHA256 değerleri dış `delivery-manifest.json` içinde gerçek arşivlerden ölçülür. Kaynağa kendi arşiv hash’i gömülmez. `operator-console-report-*.png` dosyaları bu ürün turunun ekranlarıdır; önceki konsol ekranları Phase5 gözlemidir.
 
 Bu tur da test dosyası/runner eklenmez ve test çalıştırılmaz. 506/2 tarihsel; gerçek API/token/IdP/PG/Windows işlemleri yapılmaz. Windows 12 NOT_RUN, symlink SKIP ve gerçek revision otoritesi kapıları değişmez. Rapor akışı ürün sunumudur; merkezi snapshot/revision/receipt, bağımsız doğrulama veya execution yetkisi oluşturmaz. `window.print()`/`afterprint` dosyanın kaydedildiği veya baskının tamamlandığına kanıt değildir. [Rapor sınırları](REPORTS.tr.md).
+
+## Ürün Phase7 — Türkçe/İngilizce
+
+Başlangıç `2825072f2e8bc78154586537da476a09b7dce691`, yerel git ve teslim manifestinden okunmuştur. Önceki rapor tesliminin dosyaları yeniden paketlemeden önce boyut/SHA256 doğrulamasıyla ayrı korunmuştur:
+
+| Korunan dosya | Bayt | SHA256 |
+|---|---:|---|
+| `Security-Ecosystem-phase6-2026-11-07.zip` | 6.693.357 | `f68f69ab21650a86a9ba64f0c43eb183991c9e414c287e1c1f3458c11d264dea` |
+| `Security-Operator-Console-phase6-2026-11-07.zip` | 5.128.139 | `1c59ab9120f3234d10a7cb5613a656e00eb659b73643f2bab51e4db5b52a5d9e` |
+| `Security-Platform-phase6-0.1.0-source.zip` | 347.754 | `233492097980134634fe8f101bee74b29a19a6d987d55d9b14569d7c5c33d79e` |
+
+`phase6-delivery-manifest.json` ve `phase6-console-delivery-status.json` önceki çalışma kaydını korur. Bu eski hash'ler yeni TR/EN build veya kaynak paketinin kimliği değildir.
+
+- Frozen lockfile/ignore-scripts kurulumu, strict typecheck ve production build tamamlandı. Yeni varlık kümesi SHA256 `659174d7813eed58c347fc1ff9db94d49e2531a7b7b2d6db8c3009ef4e9d18a2`; test çalıştırılmadı. Sözlük anahtar ve parametre biçimleri mevcut TypeScript denetiminde kontrol edilir; ayrı test/script eklenmedi.
+- Gerçek yerel tarayıcıda örnek verilerle TR→EN→TR; genel görünüm, cihaz ayrıntısı, ürünler, audit, bağlantı paneli, boş/hata görünümleri ve İngilizce HTML rapor önizlemesi incelendi. Kaynak cihaz/kurum adları değişmedi; UTC tarihleri farklı locale ile aynı anı gösterdi. Son tarih biçimleyici ayrıca geçersiz takvim tarihini normalize edip göstermeden reddeder; İngilizce genel görünüm son build ile tekrar açıldı.
+- Dil değişirken seçili kurum, İzmir araması, stale filtresi, son kabul sıralaması ve ikinci sayfa korundu. Ayrıntı penceresinde dil seçimi aynı cihazı korudu. Rapor taslağı ve ad/kimlik tercihi kaldı; hazır İngilizce önizlemede Türkçe seçilince taslağa dönüldü, eski önizleme yazdırılabilir bırakılmadı. 390×844 İngilizce hata görünümü okundu; sayfa yatay taşması gözlenmedi ve geçici ölçü geri alındı. Seçim odağı korundu, document.lang en olarak görüldü. Sayfa yenilenince Türkçe başlangıç gözlendi. Bunlar sınırlı elle ürün gözlemleridir; kapsamlı erişilebilirlik/cihaz kabulü değildir.
+- Altı gerçek TR/EN ekran görüntüsü `operator-console-locale-*.png` adıyla teslim edilir. İngilizce genel görünüm son build, diğer ekranlar yalnız son tarih doğrulama sıkılaştırması öncesindeki aynı UI görünümüdür. Yeni kaynak/konsol/birleşik paket boyutları ve SHA256 değerleri dış manifestte gerçek arşivlerden ölçülür; önceki hash yeni teslimata taşınmaz.
+
+Bu tur native yazdırma önizlemesi veya PDF üretimi denenmez; önceki “native printpreview görülmedi / PDF kaydedilmedi” bilgisi korunur. Yeni test/runner/koşusu, canlı API/token/PG/IdP/Windows işlemi veya revision kabulü yoktur. 506/2 yalnız tarihsel temel; Windows 12 NOT_RUN ve symlink SKIP değişmez. Backend/HBF/wheel, kilitli runtime sürümleri, tarih sıralaması düzeltmesi ve MIT bildirimleri korunur. [Yerelleştirme](LOCALIZATION.tr.md), [English quick start](QUICKSTART.en.md).

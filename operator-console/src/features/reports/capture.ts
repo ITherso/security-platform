@@ -2,7 +2,7 @@
 import { PRODUCT_IDS } from "../../data/contracts";
 import type { AgeObservation, DeviceDetail, ProductId, ProductRecord } from "../../data/contracts";
 import { normalizeDeviceDetail } from "../../data/normalize";
-import { copyContext, freezeReport, METRIC_LABELS, ReportError, reportObject, reportRequire,
+import { copyContext, freezeReport, ReportError, reportObject, reportRequire,
   reportText, reportTimestamp } from "./reportModel";
 import type { ReportCommonFields, ReportContext, ReportMetric, ReportMetricKey, ReportProduct, ReportRecord } from "./reportModel";
 
@@ -20,7 +20,7 @@ const STATUSES: Readonly<Record<ProductId, readonly string[]>> = {
 const COMMON_KEYS = ["identityStatus", "connectionStatus", "revokedAt", "sourceObservedAt", "receivedAt", "readAt",
   "sourceObservation", "source", "producerVerification", "products"];
 function metric(key: ReportMetricKey, value: ReportMetric["value"]): ReportMetric {
-  return { key, label: METRIC_LABELS[key], value };
+  return { key, value };
 }
 function copyAge(value: AgeObservation): AgeObservation {
   const age = reportObject(value, ["age_seconds", "clock_state"]);
@@ -66,9 +66,9 @@ function copyProduct(input: ReportProduct, expected: ProductId): ReportProduct {
     && /^[A-Za-z0-9][A-Za-z0-9._+\-]*$/.test(input.version)));
   reportRequire(Array.isArray(input.metrics) && input.metrics.length === KEYS[expected].length);
   const metrics = input.metrics.map((row, index): ReportMetric => {
-    reportObject(row, ["key", "label", "value"]);
+    reportObject(row, ["key", "value"]);
     const key = KEYS[expected][index];
-    reportRequire(key !== undefined && row.key === key && row.label === METRIC_LABELS[key]);
+    reportRequire(key !== undefined && row.key === key);
     const value = row.value;
     if (["installed", "reported_running", "reported_stale", "scanner_installed"].includes(key))
       reportRequire(value === null || typeof value === "boolean");

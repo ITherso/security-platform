@@ -1,8 +1,10 @@
 /** Pure bounded draft operations. No fetch, persistent state, timers or clocks. */
 import { copyCommonFields, copyReportRecord } from "./capture";
-import { copyContext, EXAMPLE_REPORT_NOTICE, freezeReport, MAX_REPORT_BYTES, MAX_REPORT_RECORDS, REPORT_SCOPE_NOTE,
-  REPORT_TITLE, reportBytes, reportObject, reportRequire, reportTimestamp, sameContext } from "./reportModel";
+import { copyContext, freezeReport, MAX_REPORT_BYTES, MAX_REPORT_RECORDS,
+  reportBytes, reportObject, reportRequire, reportTimestamp, sameContext } from "./reportModel";
 import type { ReportContext, ReportDeviceSection, ReportDraft, ReportModel, ReportRecord } from "./reportModel";
+import { translate } from "../../i18n";
+import type { Locale } from "../../i18n/types";
 
 function finish(contextValue: ReportContext, source: readonly ReportRecord[], revision: number): ReportDraft {
   const context = copyContext(contextValue);
@@ -54,13 +56,15 @@ export function removeRecord(input: ReportDraft, deviceId: string): ReportDraft 
 export function clearDraft(input: ReportDraft): ReportDraft {
   const draft = checked(input); return finish(draft.context, [], next(draft));
 }
-export interface PreviewOptions { readonly includeIdentifiers: boolean; readonly createdAt: string }
+export interface PreviewOptions { readonly includeIdentifiers: boolean; readonly createdAt: string; readonly locale: Locale }
 
 /** Construct a separate safe render model. Hidden identifiers do not exist in it. */
 export function buildPreview(input: ReportDraft, options: PreviewOptions): ReportModel {
   const draft = checked(input);
-  reportObject(options, ["includeIdentifiers", "createdAt"]);
+  reportObject(options, ["includeIdentifiers", "createdAt", "locale"]);
   reportRequire(typeof options.includeIdentifiers === "boolean");
+  reportRequire(options.locale === "tr" || options.locale === "en");
+  const locale = options.locale;
   reportRequire(draft.records.length > 0, "empty_report");
   const generatedAt = reportTimestamp(options.createdAt);
   const first = draft.records[0]; reportRequire(first !== undefined);
@@ -69,13 +73,14 @@ export function buildPreview(input: ReportDraft, options: PreviewOptions): Repor
     // No context, tenantName, deviceName, deviceId, generation, or original DTO.
     return options.includeIdentifiers
       ? { label: record.deviceName, identifier: record.deviceId, ...common }
-      : { label: `Cihaz ${String(index + 1).padStart(2, "0")}`, ...common };
+      : { label: translate(locale, "report.genericDevice", String(index + 1).padStart(2, "0")), ...common };
   });
-  const result: ReportModel = { title: REPORT_TITLE, mode: draft.context.mode, generatedAt,
+  const result: ReportModel = { title: translate(locale, "report.title"), locale, mode: draft.context.mode, generatedAt,
     includeIdentifiers: options.includeIdentifiers,
-    tenant: options.includeIdentifiers ? { label: first.tenantName, identifier: draft.context.tenantId } : { label: "Seçili kurum" },
-    selectedCount: records.length, scopeNote: REPORT_SCOPE_NOTE,
-    exampleNotice: draft.context.mode === "example" ? EXAMPLE_REPORT_NOTICE : null, records };
+    tenant: options.includeIdentifiers ? { label: first.tenantName, identifier: draft.context.tenantId }
+      : { label: translate(locale, "report.genericOrganization") },
+    selectedCount: records.length, scopeNote: translate(locale, "report.scopeNote"),
+    exampleNotice: draft.context.mode === "example" ? translate(locale, "report.exampleNotice") : null, records };
   reportRequire(reportBytes(result) <= MAX_REPORT_BYTES, "size_limit");
   return freezeReport(result);
 }

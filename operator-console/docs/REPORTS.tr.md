@@ -51,3 +51,9 @@ Yalnız ayrı rapor kökü basılır; gezinme, bağlantı/token paneli ve düzen
 Üyelik geri çekildiğinde mevcut API 404 de döndürebilir. Bu nedenle kapsamlı cihaz/liste okumasında 404 geldiğinde taslak ve önizleme ihtiyatla temizlenir; bu yanıt tek başına nesnenin silindiği veya yetkinin kaldırıldığı sonucuna dönüştürülmez.
 
 Bu teslimde HTML rapor önizlemesi ve dar ekranı gerçekten incelendi. Uygulama içi tarayıcının yerleşik yazdırma iletişim kutusuna erişilemedi; örnek PDF kaydedilmedi ve kağıt sayfaları doğrulanmadı. Standart tarayıcıda Yazdır düğmesiyle hedef seçimi kullanıcıya aittir.
+
+## Türkçe/İngilizce sunum
+
+Dil değişimi taslağın cihazlarını ve ad/kimlik tercihini korur; yalnız hazır önizlemeyi geçersizleştirir. Kullanıcı aynı taslaktan yeni dilde açıkça yeni önizleme oluşturur. Her önizlemenin locale'i ve oluşturma zamanı sabittir; kaynak/alım/okuma zamanları değişmez. Gizli adlar İngilizce görünümde **Selected organization / Device 01**, örnek etiketi **SAMPLE DATA — NOT A REPORT FROM REAL DEVICES** olur. Bu sunum değişikliği modele ID/context/token/generation geri eklemez. [Yerelleştirme ayrıntıları](LOCALIZATION.tr.md).
+
+Önceki native printpreview erişim eksikliği ve PDF kaydedilmemesi geçerlidir. Bu dil turunda yazdırma düğmesi/native iletişim kutusu veya PDF üretimi denenmez; HTML önizleme gözlemi bu kabulün yerine geçmez.

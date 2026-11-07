@@ -1,155 +1,137 @@
 import type { ReactNode } from "react";
 import type { ReportModel } from "./reportModel";
-import { booleanLabel, displayText, formatCount, formatDate } from "../../components/display";
+import { translate } from "../../i18n";
+import type { Locale } from "../../i18n/types";
+import { LanguageSelect } from "../../i18n/LocaleProvider";
+import { booleanLabel, formatCount, formatDate } from "../../i18n/formatters";
 import "./print.css";
 
 type PrintableDevice = ReportModel["records"][number];
 type PrintableProduct = PrintableDevice["products"][number];
 type PrintableMetric = PrintableProduct["metrics"][number];
-type ProductId = PrintableProduct["product"];
 type ReportRow = readonly [label: string, value: ReactNode];
 
-const EXAMPLE_NOTICE = "ÖRNEK VERİ — GERÇEK CİHAZ RAPORU DEĞİLDİR";
-const PRODUCT_LABELS: Record<ProductId, string> = {
-  hostbasedfirewall: "HostBasedFirewall", termivar: "Termivar", antivirus: "Antivirüs",
-};
-const HBF_STATUS: Readonly<Record<string, string>> = {
-  running: "Çalışıyor bildirimi", observing: "Yalnız izleme bildirimi", degraded: "Kontrol gerekli",
-  stopped: "Durduruldu bildirimi", unavailable: "Kullanılamıyor", unknown: "Bilinmiyor",
-};
-const CONNECTION_STATUS: Readonly<Record<string, string>> = {
-  recent: "Yakın zamanda bildirim alındı", stale: "Bildirim güncel değil", never_seen: "Henüz bildirim alınmadı",
-};
-const METRIC_LABELS: Readonly<Record<string, string>> = {
-  installed: "Kurulum beyanı", reported_running: "Çalışma beyanı", reported_stale: "Kaynağın eski veri bildirimi",
-  firewall_mode: "Çalışma modu", scanner_installed: "Tarayıcı kurulum beyanı", execution_available: "Yürütme kullanılabilirliği",
-  report_presence: "Rapor özeti", subject_count: "Konu sayısı", item_count: "Kayıt sayısı",
-  informational: "Bilgi", needs_review: "İnceleme gerekli", confirmed: "Raporda doğrulandı",
-  unassigned: "Önem derecesi atanmamış", info: "Önem derecesi: bilgi", low: "Önem derecesi: düşük",
-  medium: "Önem derecesi: orta", high: "Önem derecesi: yüksek", critical: "Önem derecesi: kritik",
-  availability: "Ürün kullanılabilirliği",
-};
-
-function mapped(values: Readonly<Record<string, string>>, key: string | null, fallback: string): string {
-  return key !== null && Object.hasOwn(values, key) ? values[key] ?? fallback : fallback;
-}
-
-function metric(item: PrintableMetric): string {
+function metric(item: PrintableMetric, locale: Locale): string {
   const value = item.value;
-  if (item.key === "firewall_mode") return mapped({ enforce: "Filtreleme bildiriyor", sniff: "Yalnız izleme", unknown: "Bilinmiyor" }, typeof value === "string" ? value : null, "Bilinmiyor");
-  if (item.key === "report_presence") return mapped({ present: "Özet mevcut", none: "Özet yok", unknown: "Bilinmiyor" }, typeof value === "string" ? value : null, "Bilinmiyor");
-  if (item.key === "availability") return value === "unavailable" ? "Henüz kullanılamıyor" : "Bilinmiyor";
-  if (item.key === "execution_available") return value === false ? "Kullanılamıyor" : "Bilinmiyor";
-  if (typeof value === "number") return formatCount(value);
-  if (typeof value === "boolean") return booleanLabel(value);
-  return displayText(value, "Bilinmiyor / sağlanmıyor");
+  if (item.key === "firewall_mode") return value === "enforce" ? translate(locale, "report.value.enforce")
+    : value === "sniff" ? translate(locale, "report.value.sniff") : translate(locale, "report.unknown");
+  if (item.key === "report_presence") return value === "present" ? translate(locale, "report.value.present")
+    : value === "none" ? translate(locale, "report.value.none") : translate(locale, "report.unknown");
+  if (item.key === "availability" || item.key === "execution_available") return value === "unavailable" || value === false
+    ? translate(locale, "report.value.unavailable") : translate(locale, "report.unknown");
+  if (typeof value === "number") return formatCount(value, locale);
+  if (typeof value === "boolean") return booleanLabel(value, locale);
+  return value ?? translate(locale, "report.notSupplied");
 }
-
-function clockState(observation: PrintableDevice["sourceObservation"] | null): string {
-  if (!observation || observation.clock_state === "unknown") return "Bilinmiyor / sağlanmıyor";
-  if (observation.clock_state === "future") return "Okuma anında kaynak saati ileride olarak bildirildi";
-  return "Kaynak saati bağımsız doğrulanmadı";
+function clockState(observation: PrintableDevice["sourceObservation"] | null, locale: Locale): string {
+  if (!observation || observation.clock_state === "unknown") return translate(locale, "report.notSupplied");
+  return observation.clock_state === "future" ? translate(locale, "report.clockFuture") : translate(locale, "report.clockNotVerified");
 }
-
 function ReportTable({ rows }: { rows: readonly ReportRow[] }) {
   return <table className="report-product-table"><tbody>{rows.map(([label, value], index) =>
     <tr key={index}><th scope="row">{label}</th><td>{value}</td></tr>
   )}</tbody></table>;
 }
-
-function productStatus(product: PrintableProduct): string {
-  if (product.presence === "missing") return "Ürün bildirimi yok";
-  if (product.product === "hostbasedfirewall") return mapped(HBF_STATUS, product.status, "Bilinmiyor");
-  if (product.product === "termivar") return product.status === "experimental" ? "Deneysel rapor özeti" : "Bilinmiyor";
-  return product.status === "planned" ? "Planlanan ürün — kullanıma hazır değil" : "Durum bilinmiyor; aktif antivirüs koruması sunulmuyor";
+function productStatus(product: PrintableProduct, locale: Locale): string {
+  if (product.presence === "missing") return translate(locale, "report.missingProduct");
+  if (product.product === "hostbasedfirewall") {
+    switch (product.status) {
+      case "running": return translate(locale, "report.status.running");
+      case "observing": return translate(locale, "report.status.observing");
+      case "degraded": return translate(locale, "report.status.degraded");
+      case "stopped": return translate(locale, "report.status.stopped");
+      case "unavailable": return translate(locale, "report.status.unavailable");
+      default: return translate(locale, "report.unknown");
+    }
+  }
+  if (product.product === "termivar") return product.status === "experimental"
+    ? translate(locale, "report.status.experimental") : translate(locale, "report.unknown");
+  return product.status === "planned" ? translate(locale, "report.status.planned") : translate(locale, "report.antivirusUnknown");
 }
-
-function ProductSection({ product }: { product: PrintableProduct }) {
+function ProductSection({ product, locale }: { product: PrintableProduct; locale: Locale }) {
   const present = product.presence === "reported";
   const rows: ReportRow[] = [
-    ["Bildirim durumu", productStatus(product)],
-    ["Sürüm", displayText(product.version, "Bilinmiyor / sağlanmıyor")],
+    [translate(locale, "report.reportStatus"), productStatus(product, locale)],
+    [translate(locale, "report.version"), product.version ?? translate(locale, "report.notSupplied")],
   ];
   if (present) {
-    rows.push(["Kaynak bildirim zamanı", formatDate(product.sourceObservedAt)],
-      ["Sunucunun alım zamanı", formatDate(product.receivedAt)],
-      ["Kaynak saat bilgisi (okuma anı)", clockState(product.observation)],
-      ["Kaynak", "Cihazın bildirdiği"], ["Doğrulama", "Bağımsız doğrulanmadı"]);
-    if (product.product === "termivar") rows.push(["Rapor içe aktarma zamanı", formatDate(product.reportImportedAt)],
-      ["İçe aktarma saat bilgisi (okuma anı)", clockState(product.reportImportAge)]);
-    for (const item of product.metrics) rows.push([mapped(METRIC_LABELS, item.key, item.label), metric(item)]);
+    rows.push([translate(locale, "report.sourceObservedAt"), formatDate(product.sourceObservedAt, locale)],
+      [translate(locale, "report.receivedAt"), formatDate(product.receivedAt, locale)],
+      [translate(locale, "report.sourceClockAtRead"), clockState(product.observation, locale)],
+      [translate(locale, "report.source"), translate(locale, "report.deviceReported")],
+      [translate(locale, "report.verification"), translate(locale, "report.notVerified")]);
+    if (product.product === "termivar") rows.push([translate(locale, "report.importedAt"), formatDate(product.reportImportedAt, locale)],
+      [translate(locale, "report.importClockAtRead"), clockState(product.reportImportAge, locale)]);
+    for (const item of product.metrics) rows.push([translate(locale, `report.metric.${item.key}`), metric(item, locale)]);
   }
   return <section className="report-product-section">
-    <h3>{PRODUCT_LABELS[product.product]}</h3>
-    <ReportTable rows={rows}/>
-    {!present && <p className="report-trust-note">Bu ürünün bilgisi seçilen cihaz bildiriminde bulunmuyor. Eksik veri, ürünün kurulu olmadığı veya koruma sağladığı anlamına gelmez.</p>}
-    {product.product === "termivar" && <p className="report-trust-note">Sayısal rapor özeti tarayıcının kurulu veya çalışır olduğunu, merkezden tarama yapıldığını ya da bulguların bağımsız doğrulandığını kanıtlamaz. “Raporda doğrulandı” yalnız raporun kendi işaretidir.</p>}
-    {product.product === "antivirus" && <p className="report-trust-note">Planlanan ürün — kullanıma hazır değil. Aktif antivirüs motoru, koruma veya tarama sonucu bildirilmez.</p>}
+    <h3>{translate(locale, `report.product.${product.product}`)}</h3><ReportTable rows={rows}/>
+    {!present && <p className="report-trust-note">{translate(locale, "report.missingProductNote")}</p>}
+    {product.product === "termivar" && <p className="report-trust-note">{translate(locale, "report.termivarNote")}</p>}
+    {product.product === "antivirus" && <p className="report-trust-note">{translate(locale, "report.antivirusNote")}</p>}
   </section>;
 }
-
-function DeviceSection({ device, ordinal, example, includeIdentifiers }: {
-  device: PrintableDevice; ordinal: number; example: boolean; includeIdentifiers: boolean;
+function DeviceSection({ device, ordinal, locale, exampleNotice, includeIdentifiers }: {
+  device: PrintableDevice; ordinal: number; locale: Locale; exampleNotice: string | null; includeIdentifiers: boolean;
 }) {
   return <section className="report-device">
     <header className="report-device-heading">
-      {example && <p className="report-source-label">{EXAMPLE_NOTICE}</p>}
-      <p>Seçili cihaz {formatCount(ordinal)}</p><h2>{device.label}</h2>
-      {includeIdentifiers && device.identifier && <p>Cihaz kimliği: {device.identifier}</p>}
+      {exampleNotice && <p className="report-source-label">{exampleNotice}</p>}
+      <p>{translate(locale, "report.selectedDevice", formatCount(ordinal, locale))}</p><h2>{device.label}</h2>
+      {includeIdentifiers && device.identifier && <p>{translate(locale, "report.deviceIdentifier", device.identifier)}</p>}
     </header>
     <ReportTable rows={[
-      ["Seçildiği andaki cihaz kaydı", device.identityStatus === "revoked" ? "Cihaz kaydı iptal edildi"
-        : device.identityStatus === "active" ? "Cihaz kaydı etkin" : "Bilinmiyor"],
-      ["Bildirim güncelliği", mapped(CONNECTION_STATUS, device.connectionStatus, "Bilinmiyor")],
-      ["Kayıt iptal zamanı", device.revokedAt ? formatDate(device.revokedAt) : "İptal zamanı sağlanmıyor"],
-      ["Cihazın bildirim zamanı", formatDate(device.sourceObservedAt)],
-      ["Kaynak saat bilgisi (okuma anı)", clockState(device.sourceObservation)],
-      ["Sunucunun alım zamanı", formatDate(device.receivedAt)],
-      ["Konsol okuma zamanı", formatDate(device.readAt)],
-      ["Kaynak", "Cihazın bildirdiği"], ["Doğrulama", "Bağımsız doğrulanmadı"],
+      [translate(locale, "report.registrationAtSelection"), device.identityStatus === "revoked"
+        ? translate(locale, "report.registrationRevoked") : device.identityStatus === "active"
+          ? translate(locale, "report.registrationActive") : translate(locale, "report.unknown")],
+      [translate(locale, "report.connectionFreshness"), translate(locale, `report.connection.${device.connectionStatus}`)],
+      [translate(locale, "report.revokedAt"), device.revokedAt ? formatDate(device.revokedAt, locale) : translate(locale, "report.revocationNotSupplied")],
+      [translate(locale, "report.deviceObservedAt"), formatDate(device.sourceObservedAt, locale)],
+      [translate(locale, "report.sourceClockAtRead"), clockState(device.sourceObservation, locale)],
+      [translate(locale, "report.receivedAt"), formatDate(device.receivedAt, locale)],
+      [translate(locale, "report.consoleReadAt"), formatDate(device.readAt, locale)],
+      [translate(locale, "report.source"), translate(locale, "report.deviceReported")],
+      [translate(locale, "report.verification"), translate(locale, "report.notVerified")],
     ]}/>
-    <p className="report-trust-note">Cihaz kaydının iptali firewall’ın durduğu veya kaldırıldığı anlamına gelmez. Güncel bildirim, doğrulanmış koruma değildir.</p>
-    {device.products.map((product, index) => <ProductSection key={index} product={product}/>)}
+    <p className="report-trust-note">{translate(locale, "report.revocationNote")}</p>
+    {device.products.map((product, index) => <ProductSection key={index} product={product} locale={locale}/>)}
   </section>;
 }
+export interface ReportPreviewProps { report: ReportModel; onBack?: () => void; onPrint?: () => void }
 
-export interface ReportPreviewProps {
-  report: ReportModel;
-  onBack?: () => void;
-  onPrint?: () => void;
-}
-
-/** Only a sanitized, fixed ReportModel is accepted; no raw DTO or session props. */
+/** Every printable string uses the model's fixed locale, never current context. */
 export function ReportPreview({ report, onBack, onPrint }: ReportPreviewProps) {
+  const locale = report.locale;
   const example = report.mode === "example";
-  if (!report.records.length) return <section className="report-preview"><div className="report-empty">
-    <h2>Önizlenecek cihaz yok</h2><p>Yazdırılabilir bir rapor için taslağa cihaz ekleyin.</p>
-    {onBack && <button type="button" className="btn btn-ghost report-controls" onClick={onBack}>Düzenlemeye dön</button>}
+  if (!report.records.length) return <section className="report-preview" lang={locale}><div className="report-empty">
+    <h2>{translate(locale, "report.noPreviewTitle")}</h2><p>{translate(locale, "report.noPreviewDescription")}</p>
+    {onBack && <button type="button" className="btn btn-ghost report-controls" onClick={onBack}>{translate(locale, "report.back")}</button>}
   </div></section>;
-  return <section className="report-preview">
+  return <section className="report-preview" lang={locale}>
     <div className="report-controls">
-      <div>{onBack && <button type="button" className="btn btn-ghost" onClick={onBack}>Düzenlemeye dön</button>}
-        <button type="button" className="btn btn-primary" disabled={!onPrint} onClick={onPrint}>Yazdır / PDF olarak kaydet</button></div>
-      <p>Tarayıcıda yazıcıyı veya PDF hedefini seçebilirsiniz. Yazdırma penceresinin açılması dosyanın kaydedildiğini göstermez. Üstbilgi ve altbilgi seçenekleri tarayıcıya aittir.</p>
+      <div>{onBack && <button type="button" className="btn btn-ghost" onClick={onBack}>{translate(locale, "report.back")}</button>}
+        <button type="button" className="btn btn-primary" disabled={!onPrint} onClick={onPrint}>{translate(locale, "report.print")}</button>
+        <LanguageSelect/></div>
+      <p>{translate(locale, "report.printHelp")}</p>
     </div>
-    <article className="report-document" aria-label="Seçili cihazlar ürün bildirim özeti">
-      <p className="report-print-source">{example ? EXAMPLE_NOTICE : "API’den okunmuş cihaz beyanı — bağımsız doğrulanmadı"}</p>
+    <article className="report-document" aria-label={translate(locale, "report.documentAria")}>
+      <p className="report-print-source">{example ? report.exampleNotice : translate(locale, "report.apiSourceNotice")}</p>
       <header className="report-header">
         <h1>{report.title}</h1>
-        {example && <p className="report-source-label">{EXAMPLE_NOTICE}</p>}
+        {example && <p className="report-source-label">{report.exampleNotice}</p>}
         <dl className="report-meta">
-          <div><dt>Kurum</dt><dd>{report.tenant.label}</dd></div>
-          {report.includeIdentifiers && report.tenant.identifier && <div><dt>Kurum kimliği</dt><dd>{report.tenant.identifier}</dd></div>}
-          <div><dt>Veri kipi</dt><dd>{example ? "Örnek veri" : "Mevcut API’den okunmuş veri"}</dd></div>
-          <div><dt>Seçilmiş cihaz sayısı</dt><dd>{formatCount(report.selectedCount)}</dd></div>
-          <div><dt>Rapor oluşturulma zamanı</dt><dd>{formatDate(report.generatedAt)}</dd></div>
+          <div><dt>{translate(locale, "report.organization")}</dt><dd>{report.tenant.label}</dd></div>
+          {report.includeIdentifiers && report.tenant.identifier && <div><dt>{translate(locale, "report.organizationIdentifier")}</dt><dd>{report.tenant.identifier}</dd></div>}
+          <div><dt>{translate(locale, "report.dataMode")}</dt><dd>{example ? translate(locale, "report.modeExampleShort") : translate(locale, "report.modeApiShort")}</dd></div>
+          <div><dt>{translate(locale, "report.selectedCount")}</dt><dd>{formatCount(report.selectedCount, locale)}</dd></div>
+          <div><dt>{translate(locale, "report.generatedAt")}</dt><dd>{formatDate(report.generatedAt, locale)}</dd></div>
         </dl>
         <p className="report-scope-note">{report.scopeNote}</p>
-        <p className="report-scope-note">Rapor oluşturma zamanı tarayıcı metadata’sıdır. Cihaz bildirim, sunucu alım ve konsol okuma zamanları ayrıdır; kayıtlar aynı anda alınmış merkezi snapshot değildir. Yazdırma kaynak veriyi yenilemez.</p>
+        <p className="report-scope-note">{translate(locale, "report.timestampNote")}</p>
       </header>
-      {report.records.map((device, index) => <DeviceSection key={index} device={device} ordinal={index + 1}
-        example={example} includeIdentifiers={report.includeIdentifiers}/>)}
-      <footer className="report-footer">Bu rapor yalnız seçili cihazların bildirim özetidir; tüm kurum envanteri, güvenlik skoru, politika uygulama kanıtı veya uyumluluk sertifikası değildir. Kaydedilen ya da yazdırılan kopyalar bağlantı kapatılınca geri alınamaz.</footer>
+      {report.records.map((device, index) => <DeviceSection key={index} device={device} ordinal={index + 1} locale={locale}
+        exampleNotice={report.exampleNotice} includeIdentifiers={report.includeIdentifiers}/>)}
+      <footer className="report-footer">{translate(locale, "report.footer")}</footer>
     </article>
   </section>;
 }

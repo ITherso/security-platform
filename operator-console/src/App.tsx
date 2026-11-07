@@ -1,22 +1,24 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { consoleStore as store, type Scenario, type View } from './consoleStore';
 import { ProductCards, DeviceDetail, AuditView } from './components/ProductViews';
-import { formatDate } from './components/display';
+import { formatDate, formatCount } from './i18n/formatters';
+import { renderMessage, type MessageKey } from './i18n';
+import { LocaleProvider, LanguageSelect, useLocale } from './i18n/LocaleProvider';
 import { toDeviceListViewModel, receivedSortKey } from './data/viewModels';
 import { ReportPage } from './features/reports/ReportPage';
 import { ReportPreview } from './features/reports/ReportPreview';
 import './features/reports/print.css';
 export { consoleStore } from './consoleStore';
 
-const TITLES: Record<View, [string, string, string]> = {
-  overview: ['Güvenlik görünümü', 'Cihazların bildirdiği durumu, veri güncelliğinden ayrı takip edin.', 'Genel bakış'],
-  devices: ['Cihaz envanteri', 'Şirket kapsamındaki cihazları ve son merkez kabulünü inceleyin.', 'Cihazlar'],
-  products: ['Ürün görünürlüğü', 'Kurulum, çalışma beyanı ve rapor varlığı ayrı değerlendirilir.', 'Ürünler'],
-  audit: ['İşlem geçmişi', 'Seçili şirket için API tarafından sunulan işlem kayıtları.', 'İşlem geçmişi'],
-  reports: ['Durum raporu', 'İncelediğiniz cihazların ürün bildirimlerinden bir özet hazırlayın.', 'Durum raporu']
+const TITLES: Record<View, [MessageKey, MessageKey, MessageKey]> = {
+  overview: ['app.view.overview.title', 'app.view.overview.subtitle', 'app.nav.overview'],
+  devices: ['app.view.devices.title', 'app.view.devices.subtitle', 'app.nav.devices'],
+  products: ['app.view.products.title', 'app.view.products.subtitle', 'app.nav.products'],
+  audit: ['app.view.audit.title', 'app.view.audit.subtitle', 'app.view.audit.title'],
+  reports: ['app.view.reports.title', 'app.view.reports.subtitle', 'app.view.reports.title']
 };
-const CONNECTION: Record<string, [string, string]> = {
-  recent: ['Yakın zamanda bildirdi', 'success'], stale: ['Bildirim eski', 'warning'], never_seen: ['Henüz bildirmedi', 'neutral']
+const CONNECTION: Record<string, [MessageKey, string]> = {
+  recent: ['app.connection.recent', 'success'], stale: ['app.connection.stale', 'warning'], never_seen: ['app.connection.never', 'neutral']
 };
 function Icon({ name = 'device' }: { name?: string }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true">{name === 'overview' ? <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>
@@ -32,102 +34,113 @@ function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: str
 function Modal({ open, onClose, children, className, label }: { open: boolean; onClose: () => void; children: ReactNode; className: string; label: string }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => { const el = ref.current; if (!el) return; if (open && !el.open) el.showModal(); else if (!open && el.open) el.close(); }, [open]);
-  return <dialog ref={ref} className={className} aria-label={label} onCancel={(event) => { event.preventDefault(); onClose(); }} onClose={onClose}>{open && children}</dialog>;
+  return <dialog ref={ref} className={className} aria-label={label} onCancel={(event) => { event.preventDefault(); onClose(); }} onClose={onClose}>{open && <><div className="modal-locale"><LanguageSelect /></div>{children}</>}</dialog>;
 }
 function Metrics() {
+  const { locale, t } = useLocale();
   const s = useSyncExternalStore(store.subscribe, store.snapshot); const items = s.devices?.items || [];
   const rows: [string, number, string, string, string, string][] = [
-    ['Yüklenen cihazlar', items.length, 'Bu sayfada görüntülenen kayıt', 'device', 'purple', 'all'],
-    ['Yakın zamanda bildiren', items.filter((d) => d.connection_status === 'recent').length, 'Koruma doğrulaması değildir', 'recent', 'success', 'recent'],
-    ['Bildirimi eski', items.filter((d) => d.connection_status === 'stale').length, 'Son kabul zamanına göre', 'stale', 'warning', 'stale'],
-    ['Henüz bildirmeyen', items.filter((d) => d.connection_status === 'never_seen').length, 'İlk ürün bildirimi bekleniyor', 'waiting', 'neutral', 'never_seen']
+    [t('app.metrics.loaded'), items.length, t('app.metrics.loadedNote'), 'device', 'purple', 'all'],
+    [t('app.metrics.recent'), items.filter((d) => d.connection_status === 'recent').length, t('app.metrics.recentNote'), 'recent', 'success', 'recent'],
+    [t('app.metrics.stale'), items.filter((d) => d.connection_status === 'stale').length, t('app.metrics.staleNote'), 'stale', 'warning', 'stale'],
+    [t('app.metrics.never'), items.filter((d) => d.connection_status === 'never_seen').length, t('app.metrics.neverNote'), 'waiting', 'neutral', 'never_seen']
   ];
-  return <section className="metrics" aria-label="Bu sayfadaki cihaz özeti">{rows.map(([label, value, note, icon, tone, filter]) =>
-    <button key={filter} className="metric" data-tone={tone} onClick={() => store.navigate('devices', filter)}><span className="metric-top"><span className="metric-label">{label}</span><span className="metric-icon"><Icon name={icon} /></span></span><span className="metric-value">{s.devices ? value : '—'}</span><span className="metric-note">{note}</span></button>)}</section>;
+  return <section className="metrics" aria-label={t('app.metrics.label')}>{rows.map(([label, value, note, icon, tone, filter]) =>
+    <button key={filter} className="metric" data-tone={tone} onClick={() => store.navigate('devices', filter)}><span className="metric-top"><span className="metric-label">{label}</span><span className="metric-icon"><Icon name={icon} /></span></span><span className="metric-value">{s.devices ? formatCount(value, locale) : '—'}</span><span className="metric-note">{note}</span></button>)}</section>;
 }
 function DeviceList() {
+  const { locale, t } = useLocale();
   const s = useSyncExternalStore(store.subscribe, store.snapshot), items = s.devices?.items || [];
   const model = s.devices ? toDeviceListViewModel(s.devices) : null;
   const query = s.query.trim().toLocaleLowerCase('tr-TR');
   const rows = items.filter((d) => (!query || `${d.label} ${d.id}`.toLocaleLowerCase('tr-TR').includes(query)) &&
     (s.filter === 'all' || (s.filter === 'revoked' ? d.identity_status === 'revoked' : d.connection_status === s.filter)))
     .sort((a, b) => s.sort === 'received' ? receivedSortKey(b.last_received_at).localeCompare(receivedSortKey(a.last_received_at)) : a.label.localeCompare(b.label, 'tr'));
-  return <section className="panel"><div className="panel-heading"><div><h2>Cihazlar</h2><p>Kayıt ve bildirim durumlarını ayrı inceleyin.</p></div><Badge>Bu sayfa</Badge></div>
-    <div className="list-toolbar"><div className="search-wrap"><input type="search" value={s.query} onChange={(e) => store.setQuery(e.target.value)} placeholder="Yüklü cihazlarda ara…" aria-label="Bu sayfadaki cihazlarda ara" /></div>
-      <select className="filter-select" aria-label="Cihazları duruma göre filtrele" value={s.filter} onChange={(e) => store.setFilter(e.target.value)}>
-        <option value="all">Tüm durumlar</option><option value="recent">Yakın bildirim</option><option value="stale">Bildirim eski</option><option value="never_seen">Henüz bildirmedi</option><option value="revoked">Cihaz kaydı iptal</option></select>
-      <select className="filter-select" aria-label="Yüklenen cihazları sırala" value={s.sort} onChange={(e) => store.setSort(e.target.value)}><option value="name">Ada göre</option><option value="received">Son kabul önce</option></select></div>
-    {s.busy || s.loading ? <div className="empty-state" role="status">Cihazlar yükleniyor…</div> : !s.devices ? <div className="empty-state">{s.error ? 'Güncel cihaz verisi alınamadı.' : 'Şirket seçildiğinde cihaz kayıtları burada görünür.'}</div>
-      : !rows.length ? <div className="empty-state">{items.length ? 'Yüklenen sayfada bu filtreye uyan cihaz yok.' : 'Bu şirket için henüz cihaz kaydı yok.'}</div>
-        : <div className="table-scroll"><table className="data-table"><thead><tr><th scope="col">CİHAZ</th><th scope="col">KAYIT / BİLDİRİM</th><th scope="col">SON MERKEZ KABULÜ</th><th scope="col">KAYNAK</th><th scope="col"><span className="sr-only">Ayrıntı</span></th></tr></thead><tbody>{rows.map((d) => <tr key={d.id}>
+  return <section className="panel"><div className="panel-heading"><div><h2>{t('app.nav.devices')}</h2><p>{t('app.devices.subtitle')}</p></div><Badge>{t('app.thisPage')}</Badge></div>
+    <div className="list-toolbar"><div className="search-wrap"><input type="search" value={s.query} onChange={(e) => store.setQuery(e.target.value)} placeholder={t('app.search.placeholder')} aria-label={t('app.search.label')} /></div>
+      <select className="filter-select" aria-label={t('app.filter.label')} value={s.filter} onChange={(e) => store.setFilter(e.target.value)}>
+        <option value="all">{t('app.filter.all')}</option><option value="recent">{t('app.filter.recent')}</option><option value="stale">{t('app.connection.stale')}</option><option value="never_seen">{t('app.connection.never')}</option><option value="revoked">{t('app.filter.revoked')}</option></select>
+      <select className="filter-select" aria-label={t('app.sort.label')} value={s.sort} onChange={(e) => store.setSort(e.target.value)}><option value="name">{t('app.sort.name')}</option><option value="received">{t('app.sort.received')}</option></select></div>
+    {s.busy || s.loading ? <div className="empty-state" role="status">{t('app.devices.loading')}</div> : !s.devices ? <div className="empty-state">{s.error ? t('app.devices.failed') : t('app.devices.select')}</div>
+      : !rows.length ? <div className="empty-state">{items.length ? t('app.devices.noMatch') : t('app.devices.empty')}</div>
+        : <div className="table-scroll"><table className="data-table"><thead><tr><th scope="col">{t('app.column.device')}</th><th scope="col">{t('app.column.status')}</th><th scope="col">{t('app.column.received')}</th><th scope="col">{t('app.column.source')}</th><th scope="col"><span className="sr-only">{t('app.detail')}</span></th></tr></thead><tbody>{rows.map((d) => <tr key={d.id}>
           <td><div className="device-cell"><span className="device-symbol"><Icon /></span><div><button className="device-link" onClick={() => void store.openDevice(d.id)}>{d.label}</button><div className="device-sub">{d.id.slice(0, 8).toUpperCase()}</div></div></div></td>
-          <td><div className="status-stack"><Badge tone={CONNECTION[d.connection_status]?.[1]}>{CONNECTION[d.connection_status]?.[0] || 'Bilinmiyor'}</Badge>{d.identity_status === 'revoked' && <Badge tone="danger">Cihaz kaydı iptal</Badge>}</div></td>
-          <td>{d.last_received_at ? formatDate(d.last_received_at) : 'Henüz yok'}{d.last_sequence !== null && <span className="cell-sub">Bildirilen sıra {d.last_sequence}</span>}</td>
-          <td>Cihazın bildirdiği<span className="cell-sub">Bağımsız doğrulanmadı</span></td><td><button className="inspect-button" onClick={() => void store.openDevice(d.id)} aria-label={`${d.label} ayrıntılarını aç`}>↗</button></td></tr>)}</tbody></table></div>}
-    <p className="scope-note">Arama, sıralama, filtre ve sayaçlar yalnız yüklenen sayfayı kapsar. Ürün özetleri cihaz ayrıntısında bulunur.</p>
-    <div className="list-footer"><span>{s.devices ? `${s.offset + (items.length ? 1 : 0)}–${s.offset + items.length} · ${model?.loadedCount ?? items.length} yüklenen kayıt` : 'Veri bekleniyor'}</span><div className="pagination">
-      <button className="btn btn-ghost" disabled={s.busy || s.offset === 0} onClick={() => void store.loadDevices(Math.max(0, s.offset - (s.mode === 'demo' ? 5 : 50)))}>‹ Önceki</button>
-      <button className="btn btn-ghost" disabled={s.busy || s.devices?.next_offset == null || s.devices.next_offset > 10000} onClick={() => void store.loadDevices(s.devices?.next_offset ?? 0)}>Sonraki ›</button></div></div>
+          <td><div className="status-stack"><Badge tone={CONNECTION[d.connection_status]?.[1]}>{t(CONNECTION[d.connection_status]?.[0] || 'display.unknown')}</Badge>{d.identity_status === 'revoked' && <Badge tone="danger">{t('app.filter.revoked')}</Badge>}</div></td>
+          <td>{d.last_received_at ? formatDate(d.last_received_at, locale) : t('app.notYet')}{d.last_sequence !== null && <span className="cell-sub">{t('app.sequence', d.last_sequence)}</span>}</td>
+          <td>{t('app.claim.device')}<span className="cell-sub">{t('app.claim.notVerified')}</span></td><td><button className="inspect-button" onClick={() => void store.openDevice(d.id)} aria-label={t('app.inspect', d.label)}>↗</button></td></tr>)}</tbody></table></div>}
+    <p className="scope-note">{t('app.devices.scope')}</p>
+    <div className="list-footer"><span>{s.devices ? t('app.loadedRange', formatCount(s.offset + (items.length ? 1 : 0), locale), formatCount(s.offset + items.length, locale), formatCount(model?.loadedCount ?? items.length, locale), items.length) : t('app.waitingData')}</span><div className="pagination">
+      <button className="btn btn-ghost" disabled={s.busy || s.offset === 0} onClick={() => void store.loadDevices(Math.max(0, s.offset - (s.mode === 'demo' ? 5 : 50)))}>{t('app.previous')}</button>
+      <button className="btn btn-ghost" disabled={s.busy || s.devices?.next_offset == null || s.devices.next_offset > 10000} onClick={() => void store.loadDevices(s.devices?.next_offset ?? 0)}>{t('app.next')}</button></div></div>
   </section>;
 }
 function Attention() {
+  const { locale, t } = useLocale();
   const s = useSyncExternalStore(store.subscribe, store.snapshot), items = s.devices?.items || [];
-  return <section className="panel side-card"><h2>Gözden geçirilecekler</h2><p>Yalnız yüklenen sayfadaki kayıtlar.</p><div className="attention-list">{[
-    { label: 'Bildirimi eski', note: 'Yeni bildirim bekleyen cihazlar', filter: 'stale', tone: 'warning', symbol: '◷', count: items.filter((d) => d.connection_status === 'stale').length },
-    { label: 'Cihaz kaydı iptal', note: 'Firewall çalışma durumu değildir', filter: 'revoked', tone: 'danger', symbol: '⊘', count: items.filter((d) => d.identity_status === 'revoked').length },
-    { label: 'İlk bildirim bekleniyor', note: 'Ürün durumu henüz bilinmiyor', filter: 'never_seen', tone: 'neutral', symbol: '⋯', count: items.filter((d) => d.connection_status === 'never_seen').length }
-  ].map((item) => <div className="attention-row" data-tone={item.tone} key={item.filter}><span className="attention-dot">{item.symbol}</span><div><strong>{item.label}</strong><p>{item.note}</p></div><button onClick={() => store.navigate('devices', item.filter)} aria-label={`${item.label} cihazları göster`}>{s.devices ? item.count : '—'} ›</button></div>)}</div>
-    <div className="trust-note"><strong>Bildirim, koruma kanıtı değildir</strong><p>Yeni bir rapor, firewall engellemesinin veya bulguların merkez tarafından doğrulandığını göstermez.</p></div></section>;
+  return <section className="panel side-card"><h2>{t('app.attention.title')}</h2><p>{t('app.loadedOnly')}</p><div className="attention-list">{[
+    { label: t('app.metrics.stale'), note: t('app.attention.staleNote'), filter: 'stale', tone: 'warning', symbol: '◷', count: items.filter((d) => d.connection_status === 'stale').length },
+    { label: t('app.filter.revoked'), note: t('app.attention.revokedNote'), filter: 'revoked', tone: 'danger', symbol: '⊘', count: items.filter((d) => d.identity_status === 'revoked').length },
+    { label: t('app.attention.never'), note: t('app.attention.neverNote'), filter: 'never_seen', tone: 'neutral', symbol: '⋯', count: items.filter((d) => d.connection_status === 'never_seen').length }
+  ].map((item) => <div className="attention-row" data-tone={item.tone} key={item.filter}><span className="attention-dot">{item.symbol}</span><div><strong>{item.label}</strong><p>{item.note}</p></div><button onClick={() => store.navigate('devices', item.filter)} aria-label={t('app.attention.show', item.label)}>{s.devices ? formatCount(item.count, locale) : '—'} ›</button></div>)}</div>
+    <div className="trust-note"><strong>{t('app.trust.title')}</strong><p>{t('app.trust.note')}</p></div></section>;
 }
 function Catalog() {
-  return <section className="panel side-card"><h2>Ürünler</h2><p>Cihaz ayrıntılarında ayrı değerlendirilir.</p><div className="catalog-list">{[['◈', 'HostBasedFirewall', 'Motor ve çalışma beyanı', 'Beyan'], ['⌁', 'Termivar', 'Sayısal rapor özeti', 'Deneysel'], ['◇', 'Antivirüs', 'Kullanıma hazır değil', 'Planlanan']].map(([symbol, name, description, status]) =>
+  const { locale, t } = useLocale();
+  return <section className="panel side-card"><h2>{t('app.nav.products')}</h2><p>{t('app.catalog.subtitle')}</p><div className="catalog-list">{[['◈', 'HostBasedFirewall', t('app.catalog.hbf'), t('app.catalog.reported')], ['⌁', 'Termivar', t('app.catalog.termivar'), t('app.catalog.experimental')], ['◇', t('app.catalog.av'), t('app.catalog.unavailable'), t('app.catalog.planned')]].map(([symbol, name, description, status]) =>
     <div className="catalog-item" key={name}><span className="product-symbol">{symbol}</span><div><strong>{name}</strong><p>{description}</p></div><span className="product-state">{status}</span></div>)}</div></section>;
 }
 function ConnectionPanel() {
+  const { locale, t } = useLocale();
   const s = useSyncExternalStore(store.subscribe, store.snapshot);
   const token = useRef<HTMLInputElement>(null), base = useRef<HTMLInputElement>(null);
   const [scenario, setScenario] = useState<Scenario>('normal');
   const close = () => { if (token.current) token.current.value = ''; store.closeConnection(); };
-  return <Modal open={s.connectionOpen} onClose={close} className="connection-dialog" label="Veri kaynağı">
-    <div className="connection-heading"><div><p className="eyebrow">VERİ KAYNAĞI</p><h2>Görünümü bağla</h2></div><button className="icon-button" onClick={close} aria-label="Pencereyi kapat">×</button></div>
-    <p className="muted">Örnek görünümü keşfedin veya aynı adreste sunulan mevcut platform API’sini okuyun. Bu panel bir giriş veya SSO hizmeti değildir.</p>
-    <div className="source-option"><span className="source-option-icon">◈</span><div><strong>Örnek şirket ve cihazlar</strong><p>Gerçek cihazlara bağlı değildir.</p><label className="sr-only" htmlFor="demo-scenario">Örnek senaryo</label><select id="demo-scenario" value={scenario} onChange={(e) => setScenario(e.target.value as Scenario)}><option value="normal">Cihaz ve ürün örnekleri</option><option value="empty">Boş envanter örneği</option><option value="error">Bağlantı hatası örneği</option></select></div><button className="btn btn-ghost" onClick={() => store.useDemo(scenario)}>Örneği aç</button></div>
+  return <Modal open={s.connectionOpen} onClose={close} className="connection-dialog" label={t('app.source')}>
+    <div className="connection-heading"><div><p className="eyebrow">{t('app.source.heading')}</p><h2>{t('app.source.open')}</h2></div><button className="icon-button" onClick={close} aria-label={t('app.closeWindow')}>×</button></div>
+    <p className="muted">{t('app.source.description')}</p>
+    <div className="source-option"><span className="source-option-icon">◈</span><div><strong>{t('app.demo.title')}</strong><p>{t('app.demo.notReal')}</p><label className="sr-only" htmlFor="demo-scenario">{t('app.demo.scenario')}</label><select id="demo-scenario" value={scenario} onChange={(e) => setScenario(e.target.value as Scenario)}><option value="normal">{t('app.demo.normal')}</option><option value="empty">{t('app.demo.empty')}</option><option value="error">{t('app.demo.error')}</option></select></div><button className="btn btn-ghost" onClick={() => store.useDemo(scenario)}>{t('app.demo.open')}</button></div>
     <form autoComplete="off" onSubmit={(event) => { event.preventDefault(); const value = token.current?.value || ''; if (token.current) token.current.value = ''; store.connect(base.current?.value || '', value); }}>
-      <h3>Mevcut platform bağlantısı</h3><p className="small muted">{location.protocol === 'https:' ? 'API aynı HTTPS adresinde /api/v1 altında sunulmalıdır.' : 'Yerel HTTP önizlemesi örnek veri içindir. Canlı okuma aynı HTTPS adresini gerektirir.'}</p>
-      <label htmlFor="api-base">API adresi</label><input ref={base} id="api-base" type="url" defaultValue={`${location.origin}/api/v1`} spellCheck={false} onInput={() => { if (store.snapshot().mode === 'api') store.disconnect(); }} />
-      <label htmlFor="access-token">Mevcut operatör erişim token’ı</label><input ref={token} id="access-token" type="password" autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder="Yetkili sağlayıcınızdan alınan erişim token’ı" onInput={() => { if (store.snapshot().mode === 'api') store.disconnect(); }} />
-      <p className="field-help">Yalnız açık sayfanın belleğinde tutulur; bağlanınca alan temizlenir. Bağlantı kapanınca veya sayfadan ayrılınca oturum verileri temizlenir. Token’ın sunucudaki yetkileri değişmez.</p>
-      {s.connectionError && <p className="inline-error" role="alert">{s.connectionError}</p>}
-      <div className="connection-actions"><button className="btn btn-ghost" type="button" onClick={() => { store.disconnect(); close(); }}>Bağlantıyı kapat</button><button className="btn btn-primary" type="submit" disabled={location.protocol !== 'https:'}>Salt okunur bağlan</button></div>
+      <h3>{t('app.api.heading')}</h3><p className="small muted">{location.protocol === 'https:' ? t('app.api.https') : t('app.api.local')}</p>
+      <label htmlFor="api-base">{t('app.api.address')}</label><input ref={base} id="api-base" type="url" defaultValue={`${location.origin}/api/v1`} spellCheck={false} onInput={() => { if (store.snapshot().mode === 'api') store.disconnect(); }} />
+      <label htmlFor="access-token">{t('app.api.token')}</label><input ref={token} id="access-token" type="password" autoComplete="off" autoCapitalize="off" spellCheck={false} placeholder={t('app.api.tokenHint')} onInput={() => { if (store.snapshot().mode === 'api') store.disconnect(); }} />
+      <p className="field-help">{t('app.api.tokenLifetime')}</p>
+      {s.connectionError && <p className="inline-error" role="alert">{renderMessage(locale, s.connectionError)}</p>}
+      <div className="connection-actions"><button className="btn btn-ghost" type="button" onClick={() => { store.disconnect(); close(); }}>{t('app.disconnect')}</button><button className="btn btn-primary" type="submit" disabled={location.protocol !== 'https:'}>{t('app.connect')}</button></div>
     </form></Modal>;
 }
 function CaptureReportActions() {
+  const { locale, t } = useLocale();
   const s = useSyncExternalStore(store.subscribe, store.snapshot);
   if (!s.detail || s.detailBusy || s.detailError || !s.detailOpen) return null;
   const selected = s.reportDraft?.records.some((record) => record.deviceId === s.detail?.id) ?? false;
-  return <section className="report-capture"><p>Yalnız burada görüntülenen bilgiler rapora kopyalanır. Sonraki bildirimler bu kopyayı kendiliğinden değiştirmez.</p><div className="detail-actions"><button className="btn btn-primary" onClick={() => store.addDetailToReport(selected)}>{selected ? 'Rapordaki kaydı bu görüntülenen bilgilerle güncelle' : 'Durum raporuna ekle'}</button><button className="btn btn-ghost" onClick={() => store.navigate('reports')}>Raporu aç ({s.reportDraft?.records.length || 0})</button></div>{s.reportNotice && <p role="status">{s.reportNotice}</p>}{s.reportError && <p className="inline-error" role="alert">{s.reportError}</p>}</section>;
+  return <section className="report-capture"><p>{t('app.capture.description')}</p><div className="detail-actions"><button className="btn btn-primary" onClick={() => store.addDetailToReport(selected)}>{selected ? t('app.capture.update') : t('app.capture.add')}</button><button className="btn btn-ghost" onClick={() => store.navigate('reports')}>{t('app.capture.open', formatCount(s.reportDraft?.records.length || 0, locale))}</button></div>{s.reportNotice && <p role="status">{renderMessage(locale, s.reportNotice)}</p>}{s.reportError && <p className="inline-error" role="alert">{renderMessage(locale, s.reportError)}</p>}</section>;
 }
 export function App() {
+  const s = useSyncExternalStore(store.subscribe, store.snapshot);
+  return <LocaleProvider locale={s.locale} setLocale={store.setLocale}><AppContent /></LocaleProvider>;
+}
+function AppContent() {
+  const { locale, t } = useLocale();
   const s = useSyncExternalStore(store.subscribe, store.snapshot), demo = s.mode === 'demo';
   useEffect(() => { window.addEventListener('pagehide', store.pagehide); return () => window.removeEventListener('pagehide', store.pagehide); }, []);
   useEffect(() => { window.scrollTo({ top: 0 }); }, [s.view, s.tenant?.id, s.reportPreview]);
-  const [title, subtitle, breadcrumb] = TITLES[s.view], admin = s.tenant?.role === 'tenant_admin';
-  if (s.reportPreview) return <div id="print-root">{s.reportError && <p className="report-controls page-message" role="alert">{s.reportError}</p>}<ReportPreview report={s.reportPreview} onBack={store.closeReportPreview} onPrint={store.printReport} /></div>;
-  return <><a className="skip-link" href="#main">İçeriğe geç</a><div className="app-shell"><aside className={`sidebar ${s.mobile ? 'open' : ''}`} aria-label="Ana gezinme">
-    <button className="icon-button mobile-only sidebar-close" aria-label="Menüyü kapat" onClick={store.toggleMobile}>×</button><a href="#" className="brand" onClick={(e) => { e.preventDefault(); store.navigate('overview'); }}><span className="brand-mark"><svg viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 36 8v13c0 10-16 20-16 20S4 31 4 21V8Z" /><path d="m12 21 5 5 11-12" /></svg></span><span>Güvenlik<span className="brand-second">KONSOLU</span></span></a>
-    <div className="workspace-picker"><label htmlFor="tenant-select">ÇALIŞMA ALANI</label><div className="select-wrap"><span className="workspace-symbol">◈</span><select id="tenant-select" aria-label="Şirket seç" disabled={!s.tenants.length || s.loading} value={s.tenant?.id || ''} onChange={(e) => void store.selectTenant(e.target.value)}>{!s.tenant && <option value="">{s.loading ? 'Yükleniyor…' : 'Şirket seçilmedi'}</option>}{s.tenants.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>
-      {s.nextTenant !== null && <button className="sidebar-link" disabled={s.loading || s.nextTenant > 10000} onClick={() => void store.moreTenants()}>Diğer şirketleri yükle</button>}</div>
-    <p className="nav-caption">GENEL</p><nav className="nav-list">{(Object.keys(TITLES) as View[]).map((view) => <button key={view} className={`nav-item ${view === s.view ? 'active' : ''}`} aria-current={view === s.view ? 'page' : undefined} disabled={s.loading} onClick={() => store.navigate(view)}><Icon name={view} />{view === 'reports' ? `Durum raporu (${s.reportDraft?.records.length || 0})` : TITLES[view][2]}{view === 'audit' && !admin && <span className="nav-lock" aria-label="Yönetici rolü gerekir">⌑</span>}</button>)}</nav>
-    <div className="sidebar-spacer" /><div className="sidebar-note"><span className="note-icon">↗</span><strong>Tek yerden görünürlük</strong><p>Cihaz kaydı, veri güncelliği ve ürün beyanlarını ayrı izleyin.</p><span className="sidebar-tag">Salt okunur konsol</span></div><div className="operator"><span className="avatar">O</span><div><strong>Operatör görünümü</strong><span>{s.tenant ? `${demo ? 'Örnek · ' : ''}${admin ? 'Şirket yöneticisi' : 'Görüntüleyici'}` : 'Şirket seçilmedi'}</span></div></div>
-  </aside><div className="workspace"><header className="topbar"><button className="icon-button mobile-only" aria-label="Menüyü aç" aria-expanded={s.mobile} onClick={store.toggleMobile}>☰</button><div className="breadcrumb">Ürün merkezi <span>/</span><strong>{breadcrumb}</strong></div><div className="topbar-actions"><Badge tone={demo ? 'purple' : s.mode === 'api' ? 'success' : 'neutral'}>{demo ? 'Örnek veri' : s.mode === 'api' ? 'Canlı API' : 'Bağlantı kapalı'}</Badge><button className="icon-button" aria-label="Veri kaynağı" onClick={store.openConnection}>⚙</button></div></header>
-    <main id="main" tabIndex={-1}><div className="mode-banner" data-mode={demo ? 'demo' : 'api'} role="status"><span className="banner-symbol">{demo ? '◉' : '◎'}</span><div><strong>{demo ? 'Örnek veri — gerçek cihazlara bağlı değil' : s.mode === 'api' ? 'Mevcut platform · salt okunur' : 'Veri kaynağı seçilmedi'}</strong><span>{demo ? s.scenario === 'normal' ? 'Şirketler, cihazlar ve işlem kayıtları kurgusaldır.' : s.scenario === 'empty' ? 'Boş envanter örnek senaryosu.' : 'Bağlantı hatası örnek senaryosu; gerçek bağlantı denenmedi.' : 'Ürün beyanları bağımsız doğrulanmış koruma göstermez.'}</span></div><button className="text-button" onClick={store.openConnection}>Veri kaynağı ↗</button></div>
-      <section className="page-heading"><div><p className="eyebrow">{s.tenant?.name || 'OPERASYON GÖRÜNÜMÜ'}</p><h1>{title}</h1><p>{subtitle}</p></div><div className="heading-actions"><span className="refresh-caption">{s.lastRead && `Konsol okuması ${formatDate(s.lastRead)}`}</span><button className="btn btn-primary" disabled={s.loading || s.busy || s.auditStatus === 'loading'} onClick={() => void store.reload()}><Icon name="refresh" />Yenile</button></div></section>
-      {s.error && <div className="page-message" role="alert">{s.error}</div>}
+  const [titleKey, subtitleKey, breadcrumbKey] = TITLES[s.view], admin = s.tenant?.role === 'tenant_admin';
+  if (s.reportPreview) return <div id="print-root">{s.reportError && <p className="report-controls page-message" role="alert">{renderMessage(locale, s.reportError)}</p>}<ReportPreview report={s.reportPreview} onBack={store.closeReportPreview} onPrint={store.printReport} /></div>;
+  return <><a className="skip-link" href="#main">{t('app.skip')}</a><div className="app-shell"><aside className={`sidebar ${s.mobile ? 'open' : ''}`} aria-label={t('app.navigation')}>
+    <button className="icon-button mobile-only sidebar-close" aria-label={t('app.menu.close')} onClick={store.toggleMobile}>×</button><a href="#" className="brand" onClick={(e) => { e.preventDefault(); store.navigate('overview'); }}><span className="brand-mark"><svg viewBox="0 0 40 44" aria-hidden="true"><path d="M20 2 36 8v13c0 10-16 20-16 20S4 31 4 21V8Z" /><path d="m12 21 5 5 11-12" /></svg></span><span>{t('app.brand.first')}<span className="brand-second">{t('app.brand.second')}</span></span></a>
+    <div className="workspace-picker"><label htmlFor="tenant-select">{t('app.workspace')}</label><div className="select-wrap"><span className="workspace-symbol">◈</span><select id="tenant-select" aria-label={t('app.selectTenant')} disabled={!s.tenants.length || s.loading} value={s.tenant?.id || ''} onChange={(e) => void store.selectTenant(e.target.value)}>{!s.tenant && <option value="">{s.loading ? t('app.loading') : t('app.noTenant')}</option>}{s.tenants.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></div>
+      {s.nextTenant !== null && <button className="sidebar-link" disabled={s.loading || s.nextTenant > 10000} onClick={() => void store.moreTenants()}>{t('app.moreTenants')}</button>}</div>
+    <p className="nav-caption">{t('app.general')}</p><nav className="nav-list">{(Object.keys(TITLES) as View[]).map((view) => <button key={view} className={`nav-item ${view === s.view ? 'active' : ''}`} aria-current={view === s.view ? 'page' : undefined} disabled={s.loading} onClick={() => store.navigate(view)}><Icon name={view} />{view === 'reports' ? t('app.nav.reportCount', formatCount(s.reportDraft?.records.length || 0, locale)) : t(TITLES[view][2])}{view === 'audit' && !admin && <span className="nav-lock" aria-label={t('app.adminRequired')}>⌑</span>}</button>)}</nav>
+    <div className="sidebar-spacer" /><div className="sidebar-note"><span className="note-icon">↗</span><strong>{t('app.sidebar.title')}</strong><p>{t('app.sidebar.note')}</p><span className="sidebar-tag">{t('app.readOnlyConsole')}</span></div><div className="operator"><span className="avatar">O</span><div><strong>{t('app.operator')}</strong><span>{s.tenant ? t(demo ? admin ? 'app.role.sampleAdmin' : 'app.role.sampleViewer' : admin ? 'app.role.admin' : 'app.role.viewer') : t('app.noTenant')}</span></div></div>
+  </aside><div className="workspace"><header className="topbar"><button className="icon-button mobile-only" aria-label={t('app.menu.open')} aria-expanded={s.mobile} onClick={store.toggleMobile}>☰</button><div className="breadcrumb">{t('app.productCenter')} <span>/</span><strong>{t(breadcrumbKey)}</strong></div><div className="topbar-actions"><LanguageSelect /><Badge tone={demo ? 'purple' : s.mode === 'api' ? 'success' : 'neutral'}>{demo ? t('app.mode.demo') : s.mode === 'api' ? t('app.mode.api') : t('app.mode.closed')}</Badge><button className="icon-button" aria-label={t('app.source')} onClick={store.openConnection}>⚙</button></div></header>
+    <main id="main" tabIndex={-1}><div className="mode-banner" data-mode={demo ? 'demo' : 'api'} role="status"><span className="banner-symbol">{demo ? '◉' : '◎'}</span><div><strong>{demo ? t('app.banner.demo') : s.mode === 'api' ? t('app.banner.api') : t('app.banner.none')}</strong><span>{demo ? s.scenario === 'normal' ? t('app.banner.normal') : s.scenario === 'empty' ? t('app.banner.empty') : t('app.banner.error') : t('app.banner.trust')}</span></div><button className="text-button" onClick={store.openConnection}>{t('app.source.link')}</button></div>
+      <section className="page-heading"><div><p className="eyebrow">{s.tenant?.name || t('app.workspaceFallback')}</p><h1>{t(titleKey)}</h1><p>{t(subtitleKey)}</p></div><div className="heading-actions"><span className="refresh-caption">{s.lastRead && t('app.readAt', formatDate(s.lastRead, locale))}</span><button className="btn btn-primary" disabled={s.loading || s.busy || s.auditStatus === 'loading'} onClick={() => void store.reload()}><Icon name="refresh" />{t('app.refresh')}</button></div></section>
+      {s.error && <div className="page-message" role="alert">{renderMessage(locale, s.error)}</div>}
       {(s.view === 'overview' || s.view === 'devices') && <Metrics />}
-      {s.view === 'overview' ? <div className="overview-grid"><DeviceList /><div className="side-stack"><Attention /><Catalog /></div></div> : s.view === 'devices' ? <DeviceList /> : s.view === 'products' ? <><ProductCards /><div className="panel product-page-note"><p>Ürün beyanlarını görmek için bir cihazın ayrıntısını açın. Bu görünüm, cihazlarda kurulum veya aktif koruma kanıtı değildir.</p><button className="btn btn-ghost" onClick={() => store.navigate('devices')}>Cihazlara git ↗</button></div></>
-        : s.view === 'reports' ? s.reportDraft ? <><ReportPage draft={s.reportDraft} showIdentifiers={s.showIdentifiers} onShowIdentifiersChange={store.setReportIdentifiers} onRemove={store.removeReportRecord} onClear={store.clearReport} onPreview={store.createReportPreview} onBrowseDevices={() => store.navigate('devices')} />{s.reportError && <p className="page-message" role="alert">{s.reportError}</p>}</> : <section className="panel empty-state"><h2>Önce bir şirket seçin</h2><p>Cihaz ayrıntılarından seçtiğiniz kayıtlarla rapor taslağı oluşturabilirsiniz.</p></section> : !admin ? <section className="panel empty-state"><h2>İşlem geçmişi yönetici rolü gerektirir</h2><p>{s.tenant ? 'Bu şirket için görüntüleyici rolündesiniz. Rol, API’nin şirket yanıtından gelir.' : 'Önce erişilebilen bir şirket seçin.'}</p></section> : <AuditView page={s.audit} tenantName={s.tenant?.name} status={s.auditStatus} errorMessage={s.auditError} onNext={(offset) => void store.loadAudit(offset)} onPrev={s.auditOffset > 0 ? () => void store.loadAudit(Math.max(0, s.auditOffset - (demo ? 5 : 50))) : undefined} />}
-      <footer className="page-footer"><span><span className="footer-dot" />Salt okunur görünürlük</span><span>Güncel bildirim, doğrulanmış koruma anlamına gelmez.</span></footer>
+      {s.view === 'overview' ? <div className="overview-grid"><DeviceList /><div className="side-stack"><Attention /><Catalog /></div></div> : s.view === 'devices' ? <DeviceList /> : s.view === 'products' ? <><ProductCards /><div className="panel product-page-note"><p>{t('app.productNote')}</p><button className="btn btn-ghost" onClick={() => store.navigate('devices')}>{t('app.goDevices')}</button></div></>
+        : s.view === 'reports' ? s.reportDraft ? <><ReportPage draft={s.reportDraft} showIdentifiers={s.showIdentifiers} onShowIdentifiersChange={store.setReportIdentifiers} onRemove={store.removeReportRecord} onClear={store.clearReport} onPreview={store.createReportPreview} onBrowseDevices={() => store.navigate('devices')} />{s.reportError && <p className="page-message" role="alert">{renderMessage(locale, s.reportError)}</p>}</> : <section className="panel empty-state"><h2>{t('app.report.selectTenant')}</h2><p>{t('app.report.emptyTenant')}</p></section> : !admin ? <section className="panel empty-state"><h2>{t('app.audit.adminTitle')}</h2><p>{s.tenant ? t('app.audit.viewerNote') : t('app.audit.selectTenant')}</p></section> : <AuditView page={s.audit} tenantName={s.tenant?.name} status={s.auditStatus} errorMessage={renderMessage(locale, s.auditError)} onNext={(offset) => void store.loadAudit(offset)} onPrev={s.auditOffset > 0 ? () => void store.loadAudit(Math.max(0, s.auditOffset - (demo ? 5 : 50))) : undefined} />}
+      <footer className="page-footer"><span><span className="footer-dot" />{t('app.footer.readOnly')}</span><span>{t('app.footer.trust')}</span></footer>
     </main></div></div>
-    <Modal open={s.detailOpen} onClose={store.closeDevice} className="detail-dialog" label="Cihaz ayrıntıları">{s.detailBusy ? <div className="empty-state" role="status">Cihaz ayrıntıları yükleniyor…</div> : s.detailError ? <div className="empty-state"><p role="alert">{s.detailError}</p><button className="btn btn-ghost" onClick={store.closeDevice}>Kapat</button></div> : <DeviceDetail detail={s.detail} onClose={store.closeDevice} actions={<CaptureReportActions />} />}</Modal>
+    <Modal open={s.detailOpen} onClose={store.closeDevice} className="detail-dialog" label={t('app.detail.title')}>{s.detailBusy ? <div className="empty-state" role="status">{t('app.detail.loading')}</div> : s.detailError ? <div className="empty-state"><p role="alert">{renderMessage(locale, s.detailError)}</p><button className="btn btn-ghost" onClick={store.closeDevice}>{t('app.close')}</button></div> : <DeviceDetail detail={s.detail} onClose={store.closeDevice} actions={<CaptureReportActions />} />}</Modal>
     <ConnectionPanel /></>;
 }

@@ -53,3 +53,7 @@ Runtime doğrulama gerekli alanları/türleri ve ilişkileri kontrol eder. Bilin
 ## Seçili cihaz raporu
 
 [Durum raporu](REPORTS.tr.md), açılıp görüntülenmiş ayrıntıların açık alan listeli kopyasıdır; yeni tarama, ölçüm veya merkezî snapshot değildir. Her kaydın kaynak/alım/okuma zamanı korunur; sabit rapor oluşturma zamanı veriyi tazelemez. Eksik sayılar sıfıra, self_reported/not_verified olumlu güven sonucuna çevrilmez. Örnek veri etiketi baskıda da kalır. Ad/kimlik gizleme anonimleştirme, tarayıcı yazdırma/PDF akışı da policy/enforcement veya dosyanın kaydedildiğine ilişkin kabul kanıtı değildir.
+
+## İki dilde aynı anlam
+
+[TR/EN yerelleştirme](LOCALIZATION.tr.md) yalnız sunumdur. **Cihazın bildirdiği / Reported by the device**, **Bağımsız doğrulanmadı / Not independently verified**, **Bilinmiyor / Unknown**, **Veri yok / No data**, **Güncel değil / Stale** ayrımları korunur. **Device registration revoked**, firewall disabled değildir; **Planned product — unavailable** etkin AV değildir. Dil, 404 nedenini kesinleştirmez veya doğrulama/güncellik düzeyini yükseltmez. Timestamp ve sayısal veriler değişmez; tr-TR/en-GB sunumu aynı UTC anını gösterir.

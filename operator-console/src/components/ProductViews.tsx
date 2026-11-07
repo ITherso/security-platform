@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 import type { AuditPage, DeviceDetail as DeviceDetailDto, ProductRecord, TermivarSummary } from "../data/contracts";
 import { booleanLabel, displayText, formatAge, formatCount, formatDate, shortIdentifier } from "./display";
+import { useLocale } from "../i18n/LocaleProvider";
+import type { ProductTextKey } from "../i18n/catalogs/products";
 
 type Tone = "success" | "warning" | "danger" | "neutral" | "purple";
 type ProductId = ProductRecord["product_id"];
@@ -9,33 +11,33 @@ type TermivarRecord = Extract<ProductRecord, { product_id: "termivar" }>;
 type AntivirusRecord = Extract<ProductRecord, { product_id: "antivirus" }>;
 type DisplayPair = readonly [label: string, value: ReactNode];
 
-const PRODUCT_LABELS: Readonly<Record<ProductId, string>> = {
-  hostbasedfirewall: "HostBasedFirewall", termivar: "Termivar", antivirus: "Antivirüs",
+const PRODUCT_LABELS: Readonly<Record<ProductId, ProductTextKey>> = {
+  hostbasedfirewall: "product.name.hostbasedfirewall", termivar: "product.name.termivar", antivirus: "product.name.antivirus",
 };
-const ERROR_LABELS: Readonly<Record<string, string>> = {
-  config_error: "Yapılandırma", policy_error: "Politika", temp_error: "Geçici engeller",
-  runtime_error: "Motor", telemetry_error: "Telemetri", history_error: "Geçmiş",
-  network_profile_error: "Ağ profili", recovery_error: "Yapılandırma kurtarma",
-  application_rule_recovery_error: "Uygulama kuralı kurtarma", liveness_error: "Süreç canlılığı",
-  application_usage_error: "Uygulama kullanımı", maintenance: "Bakım",
-  health_unavailable: "Sağlık bilgisi yok", unknown_error: "Tanımsız bildirim",
+const ERROR_LABELS: Readonly<Record<string, ProductTextKey>> = {
+  config_error: "product.error.config_error", policy_error: "product.error.policy_error", temp_error: "product.error.temp_error",
+  runtime_error: "product.error.runtime_error", telemetry_error: "product.error.telemetry_error", history_error: "product.error.history_error",
+  network_profile_error: "product.error.network_profile_error", recovery_error: "product.error.recovery_error",
+  application_rule_recovery_error: "product.error.application_rule_recovery_error", liveness_error: "product.error.liveness_error",
+  application_usage_error: "product.error.application_usage_error", maintenance: "product.error.maintenance",
+  health_unavailable: "product.error.health_unavailable", unknown_error: "product.error.unknown_error",
 };
-const AUDIT_ACTIONS: Readonly<Record<string, string>> = {
-  tenant_created: "Organizasyon oluşturuldu", membership_set: "Üyelik güncellendi",
-  membership_revoked: "Üyelik iptal edildi", enrollment_grant_created: "Kayıt hakkı oluşturuldu",
-  enrollment_grant_revoked: "Kayıt hakkı iptal edildi", device_enrolled: "Cihaz kaydedildi",
-  device_revoked: "Cihaz kaydı iptal edildi", device_credential_rotated: "Cihaz kimliği yenilendi",
+const AUDIT_ACTIONS: Readonly<Record<string, ProductTextKey>> = {
+  tenant_created: "product.audit.action.tenant_created", membership_set: "product.audit.action.membership_set",
+  membership_revoked: "product.audit.action.membership_revoked", enrollment_grant_created: "product.audit.action.enrollment_grant_created",
+  enrollment_grant_revoked: "product.audit.action.enrollment_grant_revoked", device_enrolled: "product.audit.action.device_enrolled",
+  device_revoked: "product.audit.action.device_revoked", device_credential_rotated: "product.audit.action.device_credential_rotated",
 };
-const ACTOR_LABELS: Readonly<Record<string, string>> = {
-  operator: "Operatör", device: "Cihaz", local_admin: "Yerel yönetici",
+const ACTOR_LABELS: Readonly<Record<string, ProductTextKey>> = {
+  operator: "product.audit.actor.operator", device: "product.audit.actor.device", local_admin: "product.audit.actor.local_admin",
 };
-const OBJECT_LABELS: Readonly<Record<string, string>> = {
-  tenant: "Organizasyon", membership: "Üyelik", enrollment_grant: "Kayıt hakkı",
-  device: "Cihaz", device_credential: "Cihaz kimliği",
+const OBJECT_LABELS: Readonly<Record<string, ProductTextKey>> = {
+  tenant: "product.audit.object.tenant", membership: "product.audit.object.membership", enrollment_grant: "product.audit.object.enrollment_grant",
+  device: "product.audit.object.device", device_credential: "product.audit.object.device_credential",
 };
 const SEVERITIES = [
-  ["critical", "Kritik"], ["high", "Yüksek"], ["medium", "Orta"],
-  ["low", "Düşük"], ["info", "Bilgi"], ["unassigned", "Atanmamış"],
+  ["critical", "product.severity.critical"], ["high", "product.severity.high"], ["medium", "product.severity.medium"],
+  ["low", "product.severity.low"], ["info", "product.severity.info"], ["unassigned", "product.severity.unassigned"],
 ] as const;
 
 function mapped<T>(values: Readonly<Record<string, T>>, key: string, fallback: T): T {
@@ -69,100 +71,113 @@ function EmptyState({ title, description, role }: {
 }
 
 function ProductHeading({ id, label, tone }: { id: ProductId; label: string; tone: Tone }) {
-  return <div className="panel-heading"><h3>{PRODUCT_LABELS[id]}</h3><Badge tone={tone}>{label}</Badge></div>;
+  const { t } = useLocale();
+  return <div className="panel-heading"><h3>{t(PRODUCT_LABELS[id])}</h3><Badge tone={tone}>{label}</Badge></div>;
 }
 
 function MissingProduct({ id, selected }: { id: ProductId; selected: boolean }) {
-  const catalog: Record<ProductId, { label: string; tone: Tone; description: string }> = {
-    hostbasedfirewall: { label: "Yerel firewall", tone: "neutral", description: "Yerel firewall motorunun bildirilen durumu ve çalışma modu." },
-    termivar: { label: "Deneysel", tone: "purple", description: "İçe aktarılmış web değerlendirmelerinin sayısal rapor özeti." },
-    antivirus: { label: "Planlanan", tone: "neutral", description: "Antivirüs motoru ve aktif koruma henüz sunulmuyor." },
+  const { t } = useLocale();
+  const catalog: Record<ProductId, { label: ProductTextKey; tone: Tone; description: ProductTextKey }> = {
+    hostbasedfirewall: { label: "product.catalog.localFirewall", tone: "neutral", description: "product.catalog.firewallDescription" },
+    termivar: { label: "product.catalog.experimental", tone: "purple", description: "product.catalog.termivarDescription" },
+    antivirus: { label: "product.catalog.planned", tone: "neutral", description: "product.catalog.antivirusDescription" },
   };
   const item = catalog[id];
   return <article className="product-card">
-    <ProductHeading id={id} label={selected ? "Bildirim yok" : item.label} tone={selected ? "neutral" : item.tone}/>
-    <p className="product-description">{item.description}</p>
-    <p className="muted">{selected
-      ? "Bu cihazın son bildiriminde ürün durumu bulunmuyor. Kurulu olmadığı varsayılmaz."
-      : "Bildirilen durumu görmek için bir cihaz seçin."}</p>
+    <ProductHeading id={id} label={t(selected ? "product.missing.badge" : item.label)} tone={selected ? "neutral" : item.tone}/>
+    <p className="product-description">{t(item.description)}</p>
+    <p className="muted">{t(selected ? "product.missing.explanation" : "product.missing.selectDevice")}</p>
   </article>;
 }
 
 function FirewallCard({ record }: { record: FirewallRecord }) {
+  const { locale, t } = useLocale();
   const state = record.state;
-  const statuses: Readonly<Record<string, readonly [string, Tone]>> = {
-    running: ["Çalışıyor bildirimi", "success"], observing: ["Yalnız izleme", "purple"],
-    degraded: ["Kontrol gerekli", "warning"], stopped: ["Durduruldu bildirimi", "danger"],
-    unavailable: ["Kullanılamıyor", "neutral"], unknown: ["Bilinmiyor", "neutral"],
+  const statuses: Readonly<Record<string, readonly [ProductTextKey, Tone]>> = {
+    running: ["product.hbf.running", "success"], observing: ["product.hbf.observing", "purple"],
+    degraded: ["product.hbf.degraded", "warning"], stopped: ["product.hbf.stopped", "danger"],
+    unavailable: ["product.hbf.unavailable", "neutral"], unknown: ["display.unknown", "neutral"],
   };
-  const [label, tone] = mapped(statuses, state.status, ["Bilinmiyor", "neutral"] as const);
-  const mode = mapped({ enforce: "Filtreleme bildiriyor", sniff: "Yalnız izleme", unknown: "Bilinmiyor" }, state.firewall_mode, "Bilinmiyor");
+  const [label, tone] = mapped(statuses, state.status, ["display.unknown", "neutral"] as const);
+  const modes: Readonly<Record<string, ProductTextKey>> = { enforce: "product.hbf.enforce", sniff: "product.hbf.observing", unknown: "display.unknown" };
   const errors = state.error_codes;
-  const errorText = errors == null ? "Hata bilgisi bilinmiyor." : errors.length
-    ? `Bildirilen sorunlar: ${errors.map(code => mapped(ERROR_LABELS, code, "Tanımsız bildirim")).join(" · ")}`
-    : "Bu bildirimde hata kodu yok.";
+  const errorText = errors == null ? t("product.errors.unknown") : errors.length
+    ? t("product.errors.reported", errors.map(code => t(mapped(ERROR_LABELS, code, "product.error.unknown_error"))).join(" · "))
+    : t("product.errors.none");
   return <article className="product-card">
-    <ProductHeading id="hostbasedfirewall" label={label} tone={tone}/>
-    <p className="product-description">Cihazın yerel firewall için bildirdiği son durum.</p>
+    <ProductHeading id="hostbasedfirewall" label={t(label)} tone={tone}/>
+    <p className="product-description">{t("product.hbf.description")}</p>
     <KeyValues values={[
-      ["Sürüm", displayText(state.version)], ["Çalışma modu", mode],
-      ["Kurulum beyanı", booleanLabel(state.installed)], ["Çalışma beyanı", booleanLabel(state.reported_running)],
-      ["Eski bildirim beyanı", booleanLabel(state.reported_stale)],
-      ["Merkeze ulaşma", formatDate(record.received_at)], ["Kaynak gözlem yaşı", formatAge(record.observation)],
+      [t("product.label.version"), displayText(state.version, t("display.unknown"))],
+      [t("product.label.mode"), t(mapped(modes, state.firewall_mode, "display.unknown"))],
+      [t("product.label.installed"), booleanLabel(state.installed, locale)],
+      [t("product.label.running"), booleanLabel(state.reported_running, locale)],
+      [t("product.label.reportedStale"), booleanLabel(state.reported_stale, locale)],
+      [t("product.label.received"), formatDate(record.received_at, locale)],
+      [t("product.label.sourceAge"), formatAge(record.observation, locale)],
     ]}/>
     <p className="state-note">{errorText}</p>
   </article>;
 }
 
 function SeveritySummary({ report }: { report: TermivarSummary }) {
+  const { locale, t } = useLocale();
   const values = report.severity_counts;
   if (!values || SEVERITIES.some(([key]) => !Number.isSafeInteger(values[key]) || values[key] < 0)) {
-    return <p className="muted">Önem derecesi dağılımı bilinmiyor.</p>;
+    return <p className="muted">{t("product.severity.unknown")}</p>;
   }
   const total = SEVERITIES.reduce((sum, [key]) => sum + values[key], 0);
-  if (total === 0) return <p className="muted">Bu raporda kayıt yok.</p>;
-  return <div className="severity-legend" role="list" aria-label="Rapordaki önem derecesi kayıt sayıları">
+  if (total === 0) return <p className="muted">{t("product.severity.empty")}</p>;
+  return <div className="severity-legend" role="list" aria-label={t("product.severity.aria")}>
     {SEVERITIES.map(([key, label]) =>
-      <span key={key} role="listitem" data-severity={key}>{label} {formatCount(values[key])}</span>
+      <span key={key} role="listitem" data-severity={key}>{t(label)} {formatCount(values[key], locale)}</span>
     )}
   </div>;
 }
 
 function TermivarCard({ record }: { record: TermivarRecord }) {
+  const { locale, t } = useLocale();
   const state = record.state;
   const report = state.latest_report;
+  const presence: Readonly<Record<string, ProductTextKey>> = { present: "product.termivar.present", none: "product.termivar.none", unknown: "display.unknown" };
   return <article className="product-card">
-    <ProductHeading id="termivar" label={state.status === "experimental" ? "Deneysel" : "Bilinmiyor"} tone="purple"/>
-    <p className="product-description">İçe aktarılmış değerlendirmenin sayısal rapor özeti.</p>
+    <ProductHeading id="termivar" label={t(state.status === "experimental" ? "product.catalog.experimental" : "display.unknown")} tone="purple"/>
+    <p className="product-description">{t("product.termivar.description")}</p>
     <KeyValues values={[
-      ["Rapor", mapped({ present: "Özet mevcut", none: "Özet yok", unknown: "Bilinmiyor" }, state.report_presence, "Bilinmiyor")],
-      ["Tarayıcı kurulum beyanı", booleanLabel(state.scanner_installed)],
-      ["İçe aktarma yaşı", formatAge(record.report_import_age)], ["Kaynak gözlem yaşı", formatAge(record.observation)],
-      ["Merkeze ulaşma", formatDate(record.received_at)],
+      [t("product.termivar.report"), t(mapped(presence, state.report_presence, "display.unknown"))],
+      [t("product.termivar.installed"), booleanLabel(state.scanner_installed, locale)],
+      [t("product.termivar.importAge"), formatAge(record.report_import_age, locale)],
+      [t("product.label.sourceAge"), formatAge(record.observation, locale)],
+      [t("product.label.received"), formatDate(record.received_at, locale)],
     ]}/>
     {report && state.report_presence === "present" && <>
-      <h4>Raporun bildirdiği kayıtlar</h4>
+      <h4>{t("product.termivar.recordsTitle")}</h4>
       <KeyValues values={[
-        ["Konu", formatCount(report.subject_count)], ["Kayıt", formatCount(report.item_count)],
-        ["Bilgi", formatCount(report.counts.informational)], ["İnceleme gerekli", formatCount(report.counts.needs_review)],
-        ["Raporda doğrulandı", formatCount(report.counts.confirmed)], ["İçe aktarma", formatDate(report.imported_at)],
+        [t("product.termivar.subjects"), formatCount(report.subject_count, locale)],
+        [t("product.termivar.items"), formatCount(report.item_count, locale)],
+        [t("product.termivar.informational"), formatCount(report.counts.informational, locale)],
+        [t("product.termivar.needsReview"), formatCount(report.counts.needs_review, locale)],
+        [t("product.termivar.confirmed"), formatCount(report.counts.confirmed, locale)],
+        [t("product.termivar.imported"), formatDate(report.imported_at, locale)],
       ]}/>
       <SeveritySummary report={report}/>
     </>}
-    <p className="state-note">Raporun varlığı tarayıcının kurulu olduğunu göstermez. Raporda doğrulandı işareti bağımsız doğrulama değildir.</p>
+    <p className="state-note">{t("product.termivar.notice")}</p>
   </article>;
 }
 
 function AntivirusCard({ record }: { record: AntivirusRecord }) {
+  const { locale, t } = useLocale();
   const state = record.state;
   return <article className="product-card">
-    <ProductHeading id="antivirus" label={state.status === "planned" ? "Planlanan" : "Bilinmiyor"} tone="neutral"/>
-    <p className="product-description">Antivirüs motoru ve aktif koruma henüz sunulmuyor.</p>
+    <ProductHeading id="antivirus" label={t(state.status === "planned" ? "product.catalog.planned" : "display.unknown")} tone="neutral"/>
+    <p className="product-description">{t("product.catalog.antivirusDescription")}</p>
     <KeyValues values={[
-      ["Kullanılabilirlik", state.availability === "unavailable" ? "Henüz kullanılamıyor" : "Bilinmiyor"],
-      ["Merkeze ulaşma", formatDate(record.received_at)], ["Kaynak gözlem yaşı", formatAge(record.observation)],
+      [t("product.antivirus.availability"), t(state.availability === "unavailable" ? "product.antivirus.unavailable" : "display.unknown")],
+      [t("product.label.received"), formatDate(record.received_at, locale)],
+      [t("product.label.sourceAge"), formatAge(record.observation, locale)],
     ]}/>
-    <p className="state-note">Bu kart aktif antivirüs koruması bildirimi değildir.</p>
+    <p className="state-note">{t("product.antivirus.notice")}</p>
   </article>;
 }
 
@@ -180,49 +195,55 @@ function ProductGrid({ detail }: { detail: DeviceDetailDto | null }) {
 export interface ProductCardsProps { detail?: DeviceDetailDto | null }
 
 export function ProductCards({ detail = null }: ProductCardsProps) {
+  const { t } = useLocale();
   return <section className="panel">
-    <Heading title="Güvenlik ürünleri" eyebrow="ÜRÜN DURUMLARI" subtitle={detail
-      ? `${displayText(detail.label, "Seçili cihaz")} için bildirilen son ürün durumları.`
-      : "Cihaz seçtiğinizde bildirilen ürün ayrıntıları burada görünür."}/>
+    <Heading title={t("product.products.title")} eyebrow={t("product.products.eyebrow")} subtitle={detail
+      ? t("product.products.forDevice", displayText(detail.label, t("product.device.unnamed")))
+      : t("product.products.noSelection")}/>
     <ProductGrid detail={detail}/>
-    {detail && <p className="muted">Kaynak cihaz beyanıdır. Üretici ve koruma durumu bağımsız olarak doğrulanmadı.</p>}
+    {detail && <p className="muted">{t("product.products.sourceNotice")}</p>}
   </section>;
 }
 
 export interface DeviceDetailProps { detail: DeviceDetailDto | null; onClose?: () => void; actions?: ReactNode }
 
 export function DeviceDetail({ detail, onClose, actions }: DeviceDetailProps) {
-  if (!detail) return <EmptyState title="Cihaz seçilmedi" description="Ayrıntıları görmek için cihaz listesinden bir kayıt seçin."/>;
-  const connection: Readonly<Record<string, readonly [string, Tone]>> = {
-    recent: ["Yakın zamanda bildirim alındı", "success"], stale: ["Bildirim güncel değil", "warning"],
-    never_seen: ["Henüz bildirim alınmadı", "neutral"],
+  const { locale, t } = useLocale();
+  if (!detail) return <EmptyState title={t("product.device.notSelected")} description={t("product.device.selectHelp")}/>;
+  const connection: Readonly<Record<string, readonly [ProductTextKey, Tone]>> = {
+    recent: ["product.device.recent", "success"], stale: ["product.device.stale", "warning"],
+    never_seen: ["product.device.neverSeen", "neutral"],
   };
-  const [connectionLabel, connectionTone] = mapped(connection, detail.connection_status, ["Bağlantı bilgisi bilinmiyor", "neutral"] as const);
+  const [connectionLabel, connectionTone] = mapped(connection, detail.connection_status, ["product.device.unknownConnection", "neutral"] as const);
   return <section className="panel">
     <div className="panel-heading">
-      <Heading title={displayText(detail.label, "Adsız cihaz")} subtitle={detail.id} eyebrow="CİHAZ AYRINTILARI"/>
-      {onClose && <button type="button" className="btn btn-ghost" onClick={onClose} aria-label="Cihaz ayrıntılarını kapat">Kapat</button>}
+      <Heading title={displayText(detail.label, t("product.device.unnamed"))} subtitle={detail.id} eyebrow={t("product.device.eyebrow")}/>
+      {onClose && <button type="button" className="btn btn-ghost" onClick={onClose} aria-label={t("product.device.closeAria")}>{t("product.device.close")}</button>}
     </div>
     <div className="detail-actions">
-      <Badge tone={detail.identity_status === "revoked" ? "danger" : "neutral"}>{detail.identity_status === "revoked"
-        ? "Cihaz kaydı iptal edildi" : detail.identity_status === "active" ? "Cihaz kaydı etkin" : "Kayıt durumu bilinmiyor"}</Badge>
-      <Badge tone={connectionTone}>{connectionLabel}</Badge>
+      <Badge tone={detail.identity_status === "revoked" ? "danger" : "neutral"}>{t(detail.identity_status === "revoked"
+        ? "product.device.revoked" : detail.identity_status === "active" ? "product.device.active" : "product.device.unknownRegistration")}</Badge>
+      <Badge tone={connectionTone}>{t(connectionLabel)}</Badge>
     </div>
     {actions}
     <KeyValues values={[
-      ["Kayıt tarihi", formatDate(detail.created_at)], ["Son merkeze ulaşma", formatDate(detail.last_received_at)],
-      ["Kaynak gözlem zamanı", formatDate(detail.source_observed_at)], ["Kaynak gözlem yaşı", formatAge(detail.source_observation)],
-      ["Son bildirim sırası", formatCount(detail.last_sequence)], ["İptal tarihi", detail.revoked_at ? formatDate(detail.revoked_at) : "İptal kaydı yok"],
+      [t("product.device.created"), formatDate(detail.created_at, locale)],
+      [t("product.device.lastReceived"), formatDate(detail.last_received_at, locale)],
+      [t("product.device.sourceObserved"), formatDate(detail.source_observed_at, locale)],
+      [t("product.label.sourceAge"), formatAge(detail.source_observation, locale)],
+      [t("product.device.sequence"), detail.last_sequence === null ? t("display.unknown") : String(detail.last_sequence)],
+      [t("product.device.revokedAt"), detail.revoked_at ? formatDate(detail.revoked_at, locale) : t("product.device.noRevocation")],
     ]}/>
-    <p className="state-note">Cihaz kaydının etkin olması ve bildirimin yakın zamanda gelmesi, korumanın çalıştığını doğrulamaz. Kaynak zamanı cihazın beyanıdır.</p>
-    <h3 className="detail-section">Ürün durumları</h3>
+    <p className="state-note">{t("product.device.trustNotice")}</p>
+    <h3 className="detail-section">{t("product.device.productsTitle")}</h3>
     <ProductGrid detail={detail}/>
-    <p className="muted">Durumlar cihaz tarafından bildirildi; bağımsız üretici veya koruma doğrulaması yapılmadı.</p>
+    <p className="muted">{t("product.device.sourceNotice")}</p>
   </section>;
 }
 
 function AuditReference({ label, value }: { label: string; value: string | null }) {
-  return <div className="audit-reference"><span>{label}</span><small className="muted" title={value ?? undefined}>{shortIdentifier(value)}</small></div>;
+  const { locale } = useLocale();
+  return <div className="audit-reference"><span>{label}</span><small className="muted" title={value ?? undefined}>{shortIdentifier(value, locale)}</small></div>;
 }
 
 export interface AuditViewProps {
@@ -235,37 +256,39 @@ export interface AuditViewProps {
 }
 
 export function AuditView({ page, tenantName = "", status = "ready", errorMessage = "", onNext, onPrev }: AuditViewProps) {
+  const { locale, t } = useLocale();
   const nextOffset = page?.next_offset ?? null;
   const hasNext = nextOffset !== null && Number.isSafeInteger(nextOffset) && nextOffset >= 0 && nextOffset <= 10000;
+  const columns = ["product.audit.action", "product.audit.object", "product.audit.actor", "product.audit.time", "product.audit.outcome"] as const;
   return <section className="panel" aria-busy={status === "loading"}>
-    <Heading title="Denetim geçmişi" eyebrow="ETKİNLİKLER" subtitle={tenantName
-      ? `${tenantName} için kayıtlı kimlik ve üyelik işlemleri.` : "Organizasyonun kayıtlı kimlik ve üyelik işlemleri."}/>
-    {status === "loading" ? <EmptyState title="Etkinlikler yükleniyor…" role="status"/>
-      : status === "error" ? <EmptyState title="Etkinlikler alınamadı" role="alert" description={displayText(errorMessage, "Bağlantıyı ve erişim yetkinizi kontrol edin.")}/>
-      : status !== "ready" || !page ? <EmptyState title="Etkinlikler henüz yüklenmedi" description="Bir organizasyon seçin ve kayıtları yükleyin."/>
+    <Heading title={t("product.audit.title")} eyebrow={t("product.audit.eyebrow")} subtitle={tenantName
+      ? t("product.audit.tenantSubtitle", tenantName) : t("product.audit.defaultSubtitle")}/>
+    {status === "loading" ? <EmptyState title={t("product.audit.loading")} role="status"/>
+      : status === "error" ? <EmptyState title={t("product.audit.error")} role="alert" description={displayText(errorMessage, t("product.audit.errorHelp"))}/>
+      : status !== "ready" || !page ? <EmptyState title={t("product.audit.notLoaded")} description={t("product.audit.selectHelp")}/>
       : <>
-        {!page.items.length ? <EmptyState title="Bu sayfada etkinlik yok" description="Yeni kayıt veya başka bir sayfa varsa burada görüntülenir."/>
+        {!page.items.length ? <EmptyState title={t("product.audit.empty")} description={t("product.audit.emptyHelp")}/>
           : <div className="table-scroll"><table className="data-table">
-            <caption className="muted">{displayText(tenantName, "Seçili organizasyon")} denetim kayıtları</caption>
-            <thead><tr>{["İşlem", "Nesne", "Gerçekleştiren", "Zaman", "Sonuç"].map(label => <th key={label} scope="col">{label}</th>)}</tr></thead>
+            <caption className="muted">{t("product.audit.caption", displayText(tenantName, t("product.audit.selectedTenant")))}</caption>
+            <thead><tr>{columns.map(key => <th key={key} scope="col">{t(key)}</th>)}</tr></thead>
             <tbody>{page.items.map(entry => <tr key={entry.id}>
-              <td>{mapped(AUDIT_ACTIONS, entry.action, "Bilinmeyen işlem")}</td>
-              <td><AuditReference label={mapped(OBJECT_LABELS, entry.object_type, "Nesne")} value={entry.object_id}/></td>
-              <td><AuditReference label={mapped(ACTOR_LABELS, entry.actor_type, "Bilinmiyor")} value={entry.actor_id}/></td>
-              <td>{formatDate(entry.created_at)}</td>
-              <td><Badge tone={entry.outcome === "success" ? "success" : "neutral"}>{entry.outcome === "success" ? "Başarılı" : "Sonuç bilinmiyor"}</Badge></td>
+              <td>{t(mapped(AUDIT_ACTIONS, entry.action, "product.audit.unknownAction"))}</td>
+              <td><AuditReference label={t(mapped(OBJECT_LABELS, entry.object_type, "product.audit.object"))} value={entry.object_id}/></td>
+              <td><AuditReference label={t(mapped(ACTOR_LABELS, entry.actor_type, "display.unknown"))} value={entry.actor_id}/></td>
+              <td>{formatDate(entry.created_at, locale)}</td>
+              <td><Badge tone={entry.outcome === "success" ? "success" : "neutral"}>{t(entry.outcome === "success" ? "product.audit.success" : "product.audit.unknownOutcome")}</Badge></td>
             </tr>)}</tbody>
           </table></div>}
         <div className="audit-pagination">
-          <span className="muted">Bu sayfada {formatCount(page.items.length)} kayıt</span>
+          <span className="muted">{t("product.audit.loadedCount", formatCount(page.items.length, locale), page.items.length)}</span>
           <div className="detail-actions">
-            <button type="button" className="btn btn-ghost" disabled={!onPrev} onClick={onPrev}>Önceki</button>
+            <button type="button" className="btn btn-ghost" disabled={!onPrev} onClick={onPrev}>{t("product.audit.previous")}</button>
             <button type="button" className="btn btn-ghost" disabled={!hasNext || !onNext} onClick={() => {
               if (hasNext && onNext && nextOffset !== null) onNext(nextOffset);
-            }}>Sonraki</button>
+            }}>{t("product.audit.next")}</button>
           </div>
         </div>
-        <p className="muted">Bu sayfa yüklenen kayıtları gösterir; tam veya bağımsız doğrulanmış olay geçmişi değildir.</p>
+        <p className="muted">{t("product.audit.scopeNotice")}</p>
       </>}
   </section>;
 }
