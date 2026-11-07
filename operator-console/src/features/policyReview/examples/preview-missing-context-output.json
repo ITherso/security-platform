@@ -1,0 +1,82 @@
+{
+  "adapter_fingerprint": "sp-hbf-adapter-v1:sha256:704d9ff518623761a14e934fd1472a70873efa0a21dfd3b8d2aae59f99fe1afe",
+  "adapter_identity": {
+    "contract_version": "sp-hbf-adapter/v1",
+    "evaluator_contract": "hbf-explicit-time-profile/v1",
+    "normalization_version": "hbf-source-normalization/v1",
+    "pydantic_version": "2.13.5",
+    "python_implementation": "cpython",
+    "python_version": "3.14.7",
+    "source_manifest": [
+      {
+        "component": "hbf",
+        "name": "config_store.py",
+        "sha256": "ae2a404fea37b14df9f44c1e3c8f6a8e815abdb1a6d60422ee15d81d152c99c5"
+      },
+      {
+        "component": "hbf",
+        "name": "document_limits.py",
+        "sha256": "503a222580d29093700c0f660b3fa8691c301d57dd6e9a2873f86368b96b9dc2"
+      },
+      {
+        "component": "hbf",
+        "name": "policy_objects.py",
+        "sha256": "e3ec4f30d98663cfc019c661397dc17d8d54aca85ae52e3180c7b5e5aca75277"
+      },
+      {
+        "component": "hbf",
+        "name": "policy_engine.py",
+        "sha256": "13301115b0eed7536469e34e0c3cba669e9baf286b1c8d943872007c8ab311f5"
+      },
+      {
+        "component": "platform",
+        "name": "errors.py",
+        "sha256": "7ca15208f143d2128f0e1eda220aafb27f880f265cc27fe429a60afeb066316c"
+      },
+      {
+        "component": "platform",
+        "name": "immutable.py",
+        "sha256": "7306308b15764c813a90ae1d2a9eedc9f9e8c5a62c61b2f74f7b15bd7bf20da4"
+      },
+      {
+        "component": "platform",
+        "name": "models.py",
+        "sha256": "7ce4b278c371b5f33ec9b653796941db20c5b2ceb196cdd1775033038d307b71"
+      },
+      {
+        "component": "platform",
+        "name": "fingerprints.py",
+        "sha256": "42155856bd7d2afbef7fa9dc74d5408bdd7a812d39558fe09ed7c7ad5a487cb7"
+      },
+      {
+        "component": "platform",
+        "name": "zone_safety.py",
+        "sha256": "8c53bad6ca8bcd9fdfa003b541f510036131c6938f694d6c2ab23558a66c4ebc"
+      },
+      {
+        "component": "platform",
+        "name": "preview.py",
+        "sha256": "24e622d11a0bd87acd253304bbfa73d77c0824e37689684ee4059c160f88440c"
+      },
+      {
+        "component": "platform",
+        "name": "hbf_bridge.py",
+        "sha256": "4630716db9fe148608dea1d1aaa595ffa5413c6223eab414d5bbbf5a5259e766"
+      }
+    ]
+  },
+  "authorization": "not_evaluated",
+  "base_fingerprint": "sp-hbf-bundle-v1:sha256:5333ada734c2e7c8091b6bd1790a0ba40575483c10b8a8bf3f3751fd6a488a73",
+  "blocker_codes": [
+    "insufficient_context"
+  ],
+  "candidate_fingerprint": "sp-hbf-bundle-v1:sha256:05d5020bfce0ca0c6e9df06a29ef769387a29b1d25d1900a776a6099e83f7cf9",
+  "contract_version": "sp-hbf-preview/v1",
+  "execution_authorized": false,
+  "legacy_base_version": "88b86e3a3a61f5929dbea8e2a70d4e33d7b718d397865e7a476453d1df158ffe",
+  "preview_fingerprint": null,
+  "results": [],
+  "scope": "packet_policy_preview_only",
+  "status": "blocked",
+  "verification": "not_performed"
+}

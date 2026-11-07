@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "base": {
+    "schema_version": 1,
+    "ordered_zones": [{"name": "OFFICE", "cidrs": ["192.0.2.0/24"]}],
+    "objects": {},
+    "policies": {"default_action": "ALLOW", "policies": []}
+  },
+  "candidate": {
+    "schema_version": 1,
+    "ordered_zones": [{"name": "OFFICE", "cidrs": ["192.0.2.0/24"]}],
+    "objects": {},
+    "policies": {
+      "default_action": "ALLOW",
+      "policies": [{"id": 1, "name": "Synthetic office deny", "src_zones": ["OFFICE"], "action": "DENY"}]
+    }
+  },
+  "scenarios": [
+    {
+      "scenario_id": "office-https",
+      "src_ip": "192.0.2.10",
+      "dst_ip": "198.51.100.20",
+      "protocol": "TCP",
+      "dst_port": 443,
+      "network_profile": null,
+      "evaluation_local_time": "09:30:00",
+      "src_geo": "TR"
+    },
+    {
+      "scenario_id": "outside-dns",
+      "src_ip": "203.0.113.10",
+      "dst_ip": "198.51.100.20",
+      "protocol": "UDP",
+      "dst_port": 53,
+      "network_profile": "PUBLIC",
+      "evaluation_local_time": "21:00:00",
+      "src_geo": "GB"
+    }
+  ]
+}

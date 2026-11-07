@@ -8,6 +8,8 @@ Bu sürüm envanter ve durum aktarımıdır. Firewall politika gönderimi, uzakt
 
 Ek çevrimdışı araç, mevcut HBF değerlendiricisiyle açık senaryoları karşılaştırır ve yürütülemeyen politika sözleşmeleri üretir. Ayrı içerik kimlikleri, iki CAS önkoşulu ve raporlanan receipt tutarlılığı saf fonksiyonlarla kontrol edilir. Bu araç HTTP/DB yüzeyini veya cihaz yetkilerini genişletmez.
 
+Konsolun [politika etki inceleme alanı](operator-console/docs/POLICY_REVIEW_WORKBENCH.tr.md) ([English](operator-console/docs/POLICY_REVIEW_WORKBENCH.en.md)), bu CLI'nin önceden ürettiği sürümlü preview dosyasını yerel olarak görüntüler. Evaluator'ı tarayıcıya taşımaz; cihaz/uygulama yetkisi veya eksik revision/CAS kanıtı oluşturmaz.
+
 ## Korunan başlangıç
 
 Yanındaki HostBasedFirewall kaynağının sürümü 1.4.3 olarak korundu. Platform başlangıcı yerel `94037a261b63e2443f04d56356cd525a3d3445df` commit'idir. Korunan ilk aşama arşivi `HostBasedFirewall-phase1-2026-11-07-source.zip` SHA256 değeri `bb4e4c876ae56047aa114023bbf1059fc9f979908f7f65f0fbe849713b332261` olarak kaydedildi. Başlangıcın doğrulanmış sonuçları **2106 Python testi + 47 alt test**, **8 fixture Edge paketi** ve **11 gerçek izole localhost oturum/UI import kontrolüdür**. Yeni EXE veya GitHub push yapılmadı.

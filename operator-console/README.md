@@ -23,6 +23,7 @@ Kayıt/iptal, credential/snapshot, policy push/apply, scan, uzaktan komut veya e
 - [Ürün durumlarının anlamı](docs/PRODUCT_STATES.tr.md)
 - [Seçili cihazlar — ürün bildirim özeti](docs/REPORTS.tr.md)
 - [İki cihazın bildirimlerini karşılaştırma](docs/DEVICE_COMPARISON.tr.md)
+- [Politika etki inceleme çalışma alanı](docs/POLICY_REVIEW_WORKBENCH.tr.md) / [English guide](docs/POLICY_REVIEW_WORKBENCH.en.md)
 - [Türkçe/İngilizce yerelleştirme](docs/LOCALIZATION.tr.md)
 - [English quick start](docs/QUICKSTART.en.md)
 - [Teslim, build ve elle önizleme kaydı](docs/DELIVERY.tr.md)
@@ -38,3 +39,5 @@ Durum raporu, yalnız açılıp görüntülenen ayrıntılardan en fazla 20 ciha
 Cihaz ayrıntısındaki önceki/sonraki geçişi yalnız mevcut sayfanın görüntülenen, filtrelenmiş ve sıralanmış cihazlarını kapsar. İlk/son kayıtta durur; başa sarmaz, komşuyu önceden okumaz veya başka sayfa çekmez. Seçilen komşunun ayrıntısı mevcut GET ile kullanıcı eylemi üzerine okunur. Pencere kapanınca liste araması/filtre/sıralama/sayfa korunur; dil değişimi hedef cihazı değiştirmez. Geçiş rapora otomatik ekleme veya güncelleme yapmaz.
 
 Karşılaştırma, yalnız ayrıntısı açılmış iki cihazın sabit kopyasını tutar: en fazla 32 KiB/kayıt ve 64 KiB toplam. Üçüncü cihaz için taraf değiştirme, mevcut kopyayı yenileme ve temizleme açık eylemlerdir; normal gezinti/dil seçimi korur, kaynak/erişim bağlamı değişimi temizler. Eksik/unknown “aynı” sayılmaz; kapsamı kanıtlanmayan Termivar sayıları karşılaştırılamaz. Bu görünüm gerçek koruma eşdeğerliği/skor veya yeni istek/export/rapor otomasyonu değildir.
+
+Politika önizlemeleri, mevcut `security-policy` CLI'nin önceden ürettiği `sp-hbf-preview/v1` çıktısını tek yerel dosyadan (512 KiB) inceler. Ayrı base/candidate/adapter/preview kimlikleri, yalnız verilmiş senaryoların farkları ve mevcut blocker'lar gösterilir. Bu çıktı revision/CAS/rollout kanıtı taşımaz; bulunmayan bilgi uydurulmaz. Tarayıcıda yeni evaluator, gönderme/uygulama, cihaz bağlantısı veya kalıcı saklama yoktur. Ayrıntılar varsayılan gizli; import açık temizleme, kaynak/oturum değişimi ve reload ile silinir. Gerçek CLI'den üretilmiş örnekler gerçek cihaz değerlendirmesi değildir.
