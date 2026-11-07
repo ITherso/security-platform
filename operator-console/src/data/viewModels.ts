@@ -15,6 +15,11 @@ export interface DeviceListViewModel {
   readonly nextOffset: number | null;
   readonly canNext: boolean;
 }
+/** Exact ordering for validated UTC timestamps, including up to six fractional digits. */
+export function receivedSortKey(value: string | null): string {
+  return value === null ? "" : value.replace(/(?:\.(\d{1,6}))?Z$/, (_match, fraction: string | undefined) =>
+    `.${(fraction ?? "").padEnd(6, "0")}Z`);
+}
 export function toDeviceListViewModel(page: DevicePage): DeviceListViewModel {
   const connections: Readonly<Record<Device["connection_status"], { label: string; tone: DisplayTone }>> = {
     recent: { label: "Yakın zamanda rapor alındı", tone: "good" },

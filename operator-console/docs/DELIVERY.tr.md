@@ -14,7 +14,7 @@ Yeni commit, kaynak ZIP boyutu/SHA256 ve tam dosya farkı dış `delivery-manife
 
 Üretim build'i üç dosyadır: `index.html`, `assets/console.js`, `assets/console.css`. `dist/build-manifest.json`, gerçek boyut/SHA256 değerlerini ve varlık kümesi özetini taşır. Son varlık kümesi SHA256:
 
-`7e33265a256364b34e88f93d5745feb00adc86d281ab81bf37f794523a3e001a`
+`ec564e510ca0003c2dc500686ddeeb840fb4726d773d5057a54da5ff5c867029`
 
 Bu özet bütünlük kaydıdır; imza veya güvenlik kabulü değildir. Python önizlemesi doğrulanmış varlıkları belleğe alarak yalnız `127.0.0.1:8787` üzerinde sundu; HTTP 200 gözlendi. İş bitiminde önizleme durduruldu. Hazır `dist/` ile yeniden açmak için yalnız `python serve.py --port 8787` yeterlidir.
 
@@ -24,7 +24,7 @@ Gerçek yerel tarayıcıda örnek verilerle genel görünüm, cihaz araması, du
 
 390×844 dar ekran önizlemesinde menü açma/kapama ve içerik akışı incelendi. Sayfa yatay taşması giderildi; tablo kendi içinde kayar. Geçici tarayıcı ölçüsü geri alındı. Klavye Tab odağı ve Escape ile ayrıntı kapatma gözlendi. Bu, kapsamlı erişilebilirlik veya cihaz uyumluluk kabulü değildir.
 
-Gerçek ekran görüntüleri teslimde `evidence/operator-console/operator-console-*.png` altındadır: `overview`, `overview-full`, `detail`, `products`, `audit`, `empty`, `error`, `mobile`, `keyboard`. Ayrıntılı gerçekleşen çalışma `console-delivery-status.json` dosyasındadır. Örnek veriler gerçek tenant/cihaz/credential faaliyeti kanıtı değildir; hiçbir gerçek token veya canlı API kullanılmadı.
+Gerçek ekran görüntüleri teslimde `evidence/operator-console/operator-console-*.png` altındadır: `overview`, `overview-full`, `detail`, `products`, `audit`, `empty`, `error`, `mobile`, `keyboard`, `sort`. Son tarih sıralaması düzeltmesi sonrasında typecheck/build ve örnek verili sıralama önizlemesi tekrar tamamlandı; eski ekran görüntüleri aynı görünümün önceki build gözlemidir. Ayrıntılı gerçekleşen çalışma `console-delivery-status.json` dosyasındadır. Örnek veriler gerçek tenant/cihaz/credential faaliyeti kanıtı değildir; hiçbir gerçek token veya canlı API kullanılmadı.
 
 ## Çalıştırılmayan testler ve canlı kabul
 

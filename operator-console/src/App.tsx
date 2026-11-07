@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
 import { consoleStore as store, type Scenario, type View } from './consoleStore';
 import { ProductCards, DeviceDetail, AuditView } from './components/ProductViews';
 import { formatDate } from './components/display';
-import { toDeviceListViewModel } from './data/viewModels';
+import { toDeviceListViewModel, receivedSortKey } from './data/viewModels';
 export { consoleStore } from './consoleStore';
 
 const TITLES: Record<View, [string, string, string]> = {
@@ -47,7 +47,7 @@ function DeviceList() {
   const query = s.query.trim().toLocaleLowerCase('tr-TR');
   const rows = items.filter((d) => (!query || `${d.label} ${d.id}`.toLocaleLowerCase('tr-TR').includes(query)) &&
     (s.filter === 'all' || (s.filter === 'revoked' ? d.identity_status === 'revoked' : d.connection_status === s.filter)))
-    .sort((a, b) => s.sort === 'received' ? (b.last_received_at || '').localeCompare(a.last_received_at || '') : a.label.localeCompare(b.label, 'tr'));
+    .sort((a, b) => s.sort === 'received' ? receivedSortKey(b.last_received_at).localeCompare(receivedSortKey(a.last_received_at)) : a.label.localeCompare(b.label, 'tr'));
   return <section className="panel"><div className="panel-heading"><div><h2>Cihazlar</h2><p>Kayıt ve bildirim durumlarını ayrı inceleyin.</p></div><Badge>Bu sayfa</Badge></div>
     <div className="list-toolbar"><div className="search-wrap"><input type="search" value={s.query} onChange={(e) => store.setQuery(e.target.value)} placeholder="Yüklü cihazlarda ara…" aria-label="Bu sayfadaki cihazlarda ara" /></div>
       <select className="filter-select" aria-label="Cihazları duruma göre filtrele" value={s.filter} onChange={(e) => store.setFilter(e.target.value)}>
