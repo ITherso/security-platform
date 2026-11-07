@@ -92,7 +92,7 @@ Credential/state dizini owner/DACL veya POSIX izin denetimini geçmelidir. Payla
 
 ## Çevrimdışı politika önizlemesi
 
-Yalnız açık girdi ve çıktı dosyalarıyla çalışır. Aşağıdaki yollar proje köküne göredir; `../HostBasedFirewall-main` bu çalışma alanındaki açıkça seçilmiş yerel kaynak dizinidir. Kaynak paketlerini yan yana farklı adlarla açtıysanız `--hbf-root` yolunu uyarlayın.
+Yalnız açık girdi ve çıktı dosyalarıyla çalışır. Aşağıdaki yollar proje köküne göredir; `../HostBasedFirewall-main` bu çalışma alanındaki açıkça seçilmiş yerel kaynak dizinidir. Birleşik ZIP'i açtıysanız `--hbf-root ../HostBasedFirewall` kullanın. Test fixture'ları iki klasör adını da bulur; ayrıca açık `SP_HBF_SOURCE` desteklenir. Geçersiz açık test yolu sessizce atlanmaz.
 
 ```powershell
 ./.venv/Scripts/python.exe -m security_platform.policy_contracts.cli preview --input examples/policy-preview.json --hbf-root ../HostBasedFirewall-main --output preview-result.json
@@ -122,6 +122,6 @@ CLI çıkış kodu 0 yalnız belirtilen çıktı dosyasının yazıldığını b
 
 Gerçek DB testleri hazır fixture gerektirir; atlanan DB testini başarı saymayın. Windows'ta native owner/DACL testleri çalışır; POSIX chmod kontrolü ayrı atlanır. Fiziksel cihaz, üretim IdP, canlı Windows sürücüsü/servis/reboot ve yayıncı imzası bu merkezî hizmetin fixture kabulünden çıkarılamaz.
 
-Bu deneysel kaynak sürümünün son birleşik koşusu **344 passed, 1 POSIX-only skipped, 1 mevcut bağımlılık uyarısı** ile 22,33 saniyede geçti. Bunun içindeki **160 politika sözleşmesi testi** ayrıca 2,17 saniyede geçti. Gerçek PostgreSQL, migration kaynaklarının seçimi ve ayrı süreç TLS E2E birleşik koşuya dahildir; üretim release kabulü değildir.
+Bu deneysel kaynak sürümünün son birleşik koşusu **344 passed, 1 POSIX-only skipped, 1 mevcut bağımlılık uyarısı** ile 23,07 saniyede geçti. Bunun içindeki **160 politika sözleşmesi testi** ayrıca 2,16 saniyede geçti. Aynı kaynaklar taze dışa aktarılıp ZIP'teki `HostBasedFirewall` klasör adıyla da 160 passed / 0 skipped olarak doğrulandı. Gerçek PostgreSQL, migration kaynaklarının seçimi ve ayrı süreç TLS E2E birleşik koşuya dahildir; üretim release kabulü değildir.
 
 Sonraki ayrı karar kapısı: **kalıcı controller/endpoint policy revision ve lineage kaynağı, gerçek Windows kabulü ve yetkilendirilmiş yürütücünün tasarımı**. Bu kaynak teslimatı bunları uygulamaz; dağıtım planı yürütülemez.
