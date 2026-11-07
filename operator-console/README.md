@@ -22,6 +22,7 @@ Kayıt/iptal, credential/snapshot, policy push/apply, scan, uzaktan komut veya e
 - [Gerçek API–UI eşlemesi](docs/API_UI_MAPPING.tr.md)
 - [Ürün durumlarının anlamı](docs/PRODUCT_STATES.tr.md)
 - [Seçili cihazlar — ürün bildirim özeti](docs/REPORTS.tr.md)
+- [İki cihazın bildirimlerini karşılaştırma](docs/DEVICE_COMPARISON.tr.md)
 - [Türkçe/İngilizce yerelleştirme](docs/LOCALIZATION.tr.md)
 - [English quick start](docs/QUICKSTART.en.md)
 - [Teslim, build ve elle önizleme kaydı](docs/DELIVERY.tr.md)
@@ -35,3 +36,5 @@ Durum raporu, yalnız açılıp görüntülenen ayrıntılardan en fazla 20 ciha
 Üst çubuktan Türkçe/English seçilebilir; ilk açılış Türkçe ve tercih yalnız sayfa belleğindedir. Dil değişimi veri/bağlantı bağlamını, arama/filtre/sayfayı veya taslağı değiştirmez ve istek yapmaz. Yalnız hazır rapor önizlemesi geçersizleşir; yeni önizleme kendi dilini sabitler. Tarih/sayı sunumu tr-TR/en-GB ve her iki dilde UTC'dir. Veri adları, kimlikler, durum kodları ve güven anlamları çevrilmez/değiştirilmez. Yeni native printpreview/PDF veya test kabulü iddia edilmez.
 
 Cihaz ayrıntısındaki önceki/sonraki geçişi yalnız mevcut sayfanın görüntülenen, filtrelenmiş ve sıralanmış cihazlarını kapsar. İlk/son kayıtta durur; başa sarmaz, komşuyu önceden okumaz veya başka sayfa çekmez. Seçilen komşunun ayrıntısı mevcut GET ile kullanıcı eylemi üzerine okunur. Pencere kapanınca liste araması/filtre/sıralama/sayfa korunur; dil değişimi hedef cihazı değiştirmez. Geçiş rapora otomatik ekleme veya güncelleme yapmaz.
+
+Karşılaştırma, yalnız ayrıntısı açılmış iki cihazın sabit kopyasını tutar: en fazla 32 KiB/kayıt ve 64 KiB toplam. Üçüncü cihaz için taraf değiştirme, mevcut kopyayı yenileme ve temizleme açık eylemlerdir; normal gezinti/dil seçimi korur, kaynak/erişim bağlamı değişimi temizler. Eksik/unknown “aynı” sayılmaz; kapsamı kanıtlanmayan Termivar sayıları karşılaştırılamaz. Bu görünüm gerçek koruma eşdeğerliği/skor veya yeni istek/export/rapor otomasyonu değildir.

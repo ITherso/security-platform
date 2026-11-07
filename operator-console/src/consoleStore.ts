@@ -5,10 +5,13 @@ import { selectDeviceRows } from './data/deviceRows';
 import type { ReportContext, ReportDraft, ReportModel } from './features/reports/reportModel';
 import { captureRecord } from './features/reports/capture';
 import { createDraft, addRecord, updateRecord, removeRecord, clearDraft, buildPreview } from './features/reports/reportDraft';
+import type { CompareState } from './features/compare/compareModel';
+import { captureComparableDevice } from './features/compare/capture';
+import { createCompareState, addComparableDevice, updateComparableDevice, replaceSlot, removeComparableDevice, clearCompareState } from './features/compare/compareState';
 
 import { message, type UiMessage, type Locale } from './i18n';
 
-export type View = 'overview' | 'devices' | 'products' | 'audit' | 'reports';
+export type View = 'overview' | 'devices' | 'products' | 'audit' | 'reports' | 'compare';
 export type Scenario = 'normal' | 'empty' | 'error';
 const EMPTY_DEVICE_IDS: readonly string[] = Object.freeze([]);
 interface DetailNavigationContext { readonly epoch: number; readonly tenantId: string; readonly generation: number }
@@ -40,6 +43,7 @@ interface State {
   connectionOpen: boolean; connectionError: UiMessage | null;
   detailReadAt: string; reportDraft: ReportDraft | null; reportPreview: ReportModel | null;
   previewRevision: number | null; showIdentifiers: boolean; reportError: UiMessage | null; reportNotice: UiMessage | null;
+  comparison: CompareState | null; compareError: UiMessage | null; compareNotice: UiMessage | null;
 }
 class ConsoleStore {
   private client: DataClient | null = createDemoClient();
@@ -55,7 +59,8 @@ class ConsoleStore {
     audit: null, auditOffset: 0, auditStatus: 'idle', auditError: null, query: '', filter: 'all', sort: 'name',
     error: null, lastRead: '', detailOpen: false, detail: null, detailBusy: false, detailError: null, connectionOpen: false, connectionError: null,
     detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS,
-    detailReadAt: '', reportDraft: null, reportPreview: null, previewRevision: null, showIdentifiers: false, reportError: null, reportNotice: null };
+    detailReadAt: '', reportDraft: null, reportPreview: null, previewRevision: null, showIdentifiers: false, reportError: null, reportNotice: null,
+    comparison: null, compareError: null, compareNotice: null };
   snapshot = () => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private emit(patch: Partial<State> = {}) { this.state = { ...this.state, ...patch }; this.listeners.forEach((fn) => fn()); }
@@ -65,20 +70,24 @@ class ConsoleStore {
     this.scope = new AbortController(); this.detailRequest = new AbortController();
     this.emit({ devices: null, audit: null, auditStatus: 'idle', auditError: null, error: null, lastRead: '',
       detail: null, detailOpen: false, detailError: null, detailBusy: false, detailReadAt: '',
-      detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS, loading: false, busy: false });
+      detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS, loading: false, busy: false, compareError: null, compareNotice: null });
   }
   private clearReportContext() {
     ++this.contextGeneration;
-    this.emit({ reportDraft: null, reportPreview: null, previewRevision: null, showIdentifiers: false, reportError: null, reportNotice: null });
+    this.emit({ reportDraft: null, reportPreview: null, previewRevision: null, showIdentifiers: false, reportError: null, reportNotice: null,
+      comparison: null, compareError: null, compareNotice: null });
   }
   private bindReportContext(tenant: Tenant | null) {
     if (!tenant || !this.client || this.state.mode === 'disconnected') { this.clearReportContext(); return; }
     const draft = this.state.reportDraft;
-    if (draft && (draft.context.tenantId !== tenant.id || draft.context.mode !== (this.state.mode === 'demo' ? 'example' : 'api') || draft.context.generation !== this.contextGeneration)) this.clearReportContext();
+    const comparison = this.state.comparison;
+    const context = { tenantId: tenant.id, mode: this.state.mode === 'demo' ? 'example' as const : 'api' as const, generation: this.contextGeneration };
+    if ([draft?.context, comparison?.context].some((value) => value && (value.tenantId !== context.tenantId || value.mode !== context.mode || value.generation !== context.generation))) this.clearReportContext();
     if (!this.state.reportDraft) {
       const context: ReportContext = { tenantId: tenant.id, mode: this.state.mode === 'demo' ? 'example' : 'api', generation: this.contextGeneration };
       this.emit({ reportDraft: createDraft(context) });
     }
+    if (!this.state.comparison) this.emit({ comparison: createCompareState({ tenantId: tenant.id, mode: this.state.mode === 'demo' ? 'example' : 'api', generation: this.contextGeneration }) });
   }
   private reportFailure(error: unknown) {
     const messages: Readonly<Record<string, UiMessage>> = {
@@ -203,7 +212,7 @@ class ConsoleStore {
     this.detailRequest.abort(); this.detailRequest = new AbortController();
     const client = this.client, epoch = this.epoch, sequence = ++this.detailSequence, tenant = this.state.tenant.id, reportGeneration = this.contextGeneration;
     this.emit({ detail: null, detailOpen: true, detailBusy: true, detailError: null, detailReadAt: '',
-      detailTargetId: id, reportError: null, reportNotice: null });
+      detailTargetId: id, reportError: null, reportNotice: null, compareError: null, compareNotice: null });
     try {
       const detail = await client.getDevice(tenant, id, { signal: this.detailRequest.signal });
       if (!this.detailCurrent(epoch, client, sequence, reportGeneration, tenant, id)) return;
@@ -233,6 +242,43 @@ class ConsoleStore {
       const next = update ? updateRecord(draft, record) : addRecord(draft, record);
       this.emit({ reportDraft: next, reportPreview: null, previewRevision: null, reportError: null, reportNotice: message(update ? 'app.reportNotice.updated' : 'app.reportNotice.added') });
     } catch (error) { this.reportFailure(error); }
+  };
+  private compareFailure(error: unknown) {
+    const messages: Readonly<Record<string, UiMessage>> = {
+      invalid_comparison: message('compare.error.invalid_comparison'), context_mismatch: message('compare.error.context_mismatch'),
+      duplicate_device: message('compare.error.duplicate_device'), selection_full: message('compare.error.selection_full'),
+      device_not_found: message('compare.error.device_not_found'), record_size_limit: message('compare.error.record_size_limit'),
+      size_limit: message('compare.error.size_limit'), invalid_slot: message('compare.error.invalid_slot')
+    };
+    const key = code(error);
+    this.emit({ compareError: Object.hasOwn(messages, key) ? messages[key] : message('compare.error.invalid_comparison'), compareNotice: null });
+  }
+  private captureComparison(action: 'add' | 'update' | 'replace', side?: 'left' | 'right') {
+    const { detail, tenant, comparison } = this.state;
+    if (!this.client || !tenant || !detail || !comparison || !this.state.detailOpen || this.state.detailBusy || this.state.detailError
+      || !this.state.detailReadAt || detail.tenant_id !== tenant.id || detail.id !== this.state.detailTargetId
+      || (this.detailNavigationContext !== null && !this.navigationCurrent()) || comparison.context.tenantId !== tenant.id
+      || comparison.context.mode !== (this.state.mode === 'demo' ? 'example' : 'api') || comparison.context.generation !== this.contextGeneration) return;
+    if (action === 'replace' && side !== 'left' && side !== 'right') return;
+    try {
+      const device = captureComparableDevice(detail, { tenantId: tenant.id, readAt: this.state.detailReadAt });
+      const next = action === 'add' ? addComparableDevice(comparison, device)
+        : action === 'update' ? updateComparableDevice(comparison, device) : replaceSlot(comparison, side!, device);
+      this.emit({ comparison: next, compareError: null, compareNotice: message(action === 'add' ? 'compare.notice.added' : action === 'update' ? 'compare.notice.updated' : 'compare.notice.replaced') });
+    } catch (error) { this.compareFailure(error); }
+  }
+  addDetailToComparison = () => this.captureComparison('add');
+  updateDetailInComparison = () => this.captureComparison('update');
+  replaceComparisonSide = (side: 'left' | 'right') => this.captureComparison('replace', side);
+  removeCompareDevice = (id: string) => {
+    if (!this.state.comparison) return;
+    try { this.emit({ comparison: removeComparableDevice(this.state.comparison, id), compareError: null, compareNotice: null }); }
+    catch (error) { this.compareFailure(error); }
+  };
+  clearComparison = () => {
+    if (!this.state.comparison) return;
+    try { this.emit({ comparison: clearCompareState(this.state.comparison), compareError: null, compareNotice: null }); }
+    catch (error) { this.compareFailure(error); }
   };
   removeReportRecord = (id: string) => {
     if (!this.state.reportDraft) return;
