@@ -1,5 +1,7 @@
 # Security Platform 0.1.0 — deneysel kaynak teslimatı
 
+Türkçe, salt okunur [operatör konsolu](operator-console/README.md), açıkça etiketlenen örnek veriyle bağımsız çalışır. React/TypeScript kaynakları, kilitli bağımlılıklar ve yerel kurulum yönergesi `operator-console/` altındadır. Gerçek API adapter'ı mevcut dört operatör GET'iyle sınırlıdır; canlı bağlantı kabulü yapılmadı. Kullanıcının yönlendirmesiyle bu frontend turunda testler bekletildi; önceki kabul sonuçları tarihsel temeldir.
+
 Bağımsız FastAPI/PostgreSQL hizmeti: şirket üyeliklerini, tek kullanımlık cihaz kaydını ve cihazların bildirdiği son ürün durumunu tutar. Operatör yalnız güncel DB üyeliğinin izin verdiği tenant'a erişir; cihaz bearer kimliği yalnız kendi snapshot ve credential yaşam döngüsünü kullanır.
 
 Bu sürüm envanter ve durum aktarımıdır. Firewall politika gönderimi, uzaktan shell, Termivar tarama yürütmesi, antivirüs motoru, otomatik enrollment veya ajan daemon'u içermez. Cihazın kimliğinin doğrulanması, bildirdiği korumanın veya raporun doğru olduğunu kanıtlamaz.
