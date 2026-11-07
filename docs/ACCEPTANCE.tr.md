@@ -1,6 +1,6 @@
 # Kabul kaydı — 7 Kasım 2026
 
-Bu kayıt `platform-02-excerpt.txt` ve `platform-02-continuation.txt` görevindeki 27 kapıyı ayrı sonuçla izler. `passed` belirtilen test kapsamını, `not_run` çalıştırılmamış dış kabulü ifade eder. Fixture cihazlar fiziksel filo veya üretim kabulü sayılmaz.
+Bu kayıt ikinci turun `platform-02-excerpt.txt` ve `platform-02-continuation.txt` görevindeki 27 kapıyı ayrı sonuçla izler. `passed` belirtilen test kapsamını, `not_run` çalıştırılmamış dış kabulü ifade eder. Fixture cihazlar fiziksel filo veya üretim kabulü sayılmaz. Sonraki saf politika turunun 160 testi ve güncel birleşik 344 passed / 1 skipped sonucu [POLICY_PREVIEW_ACCEPTANCE.tr.md](POLICY_PREVIEW_ACCEPTANCE.tr.md) içinde ayrıca kaydedilir; aşağıdaki 183 sonucu ikinci turun tarihsel koşusudur.
 
 ## Korunan firewall başlangıcı
 
@@ -20,7 +20,7 @@ Köprü sonrası firewall commit'i `74a88ed336cb8a0a2fab16e20389c9410590c292`; �
 
 | Koşu | Kaydedilen sonuç ve kapsam |
 |---|---|
-| Nihai birleşik platform koşusu | `platform-final-tests.log`: **183 passed, 1 POSIX-only skipped**, 1 mevcut bağımlılık uyarısı; 22,29 saniye. Gerçek PG, güvenlik incelemesi, migration kaynak seçimi ve ayrı süreç TLS E2E dahildir. |
+| İkinci tur birleşik platform koşusu | Tarihsel ikinci tur kaydı: **183 passed, 1 POSIX-only skipped**, 1 mevcut bağımlılık uyarısı; 22,29 saniye. Gerçek PG, güvenlik incelemesi, migration kaynak seçimi ve ayrı süreç TLS E2E dahildir. Güncel aynı adlı teslimat logu sonraki turun birleşik sonucunu tutar. |
 | Mapper/manuel istemci/transport | **85 passed, 1 skipped**; üç odaklı dosya. Gerçek TCP cevap kaybı/redirect/boyut ve self-signed TLS reddi içerir. Atlanan yalnız POSIX chmod testidir; gerçek Windows owner/DACL denetimleri çalıştı. |
 | Portable PostgreSQL yardımcı aracı | **22 birim testi geçti**. Yabancı cluster/yol/URL kontrolü, secret çıktı koruması ve Windows pg_ctl capture sınırı. |
 | Gerçek PostgreSQL servis transaction'ları | **17 test geçti**; composite FK, tenant kapsamı, enrollment/rotasyon yarışları, rollback, snapshot sırası ve retention. |
@@ -86,4 +86,4 @@ Odaklı koşular ortak testler içerir; bu sayılar toplanarak tek büyük sonu�
 
 E2E komutu geçici public/özel fixture anahtarları, kendi API süreci ve kendi fixture istemcilerini oluşturur; üretim IdP veya Windows servisi kurmaz. Normal kaynak/delivery paketine secret dosyaları, DB data dizini, `.tooling`, sanal ortam veya gerçek credential girmez. Raporlarda yalnız sabit sonuçlar/sınırlı metrikler tutulur.
 
-Sonraki tek uygulama kapısı: **sürümlü politika önizleme ve kontrollü dağıtım sözleşmesi**. Yeni komut yetkisi eklenmeden önce kimlik/tenant temeli ve yerel Windows kabulünün açık maddeleri ayrı değerlendirilmelidir.
+İkinci turun sonraki kapısı olan **sürümlü politika önizleme ve kontrollü dağıtım sözleşmesi**, saf ve yürütülemeyen kapsamıyla ayrı [kabul kaydında](POLICY_PREVIEW_ACCEPTANCE.tr.md) tamamlandı. Kalıcı revision/lineage, yeni komut yetkisi ve canlı Windows kabulü ayrıca değerlendirilmelidir.

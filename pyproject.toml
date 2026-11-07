@@ -24,6 +24,7 @@ test = ["pytest>=9,<10"]
 [project.scripts]
 security-platform = "security_platform.cli:main"
 security-snapshot = "security_platform.connectors.hostbased_firewall.client:main"
+security-policy = "security_platform.policy_contracts.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

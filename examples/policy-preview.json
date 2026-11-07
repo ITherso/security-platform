@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "base": {
+    "schema_version": 1,
+    "ordered_zones": [{"name": "OFFICE", "cidrs": ["10.0.0.0/8"]}],
+    "objects": {},
+    "policies": {"default_action": "ALLOW", "policies": []}
+  },
+  "candidate": {
+    "schema_version": 1,
+    "ordered_zones": [{"name": "OFFICE", "cidrs": ["10.0.0.0/8"]}],
+    "objects": {},
+    "policies": {
+      "default_action": "ALLOW",
+      "policies": [{"id": 1, "name": "Office preview deny", "src_zones": ["OFFICE"], "action": "DENY"}]
+    }
+  },
+  "scenarios": [{
+    "scenario_id": "office-https",
+    "src_ip": "10.1.2.3",
+    "dst_ip": "8.8.8.8",
+    "protocol": "TCP",
+    "dst_port": 443,
+    "network_profile": "WORK",
+    "evaluation_local_time": "09:30:00",
+    "src_geo": "TR"
+  }]
+}

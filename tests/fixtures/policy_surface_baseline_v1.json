@@ -1,0 +1,1541 @@
+{
+  "schema_version": 1,
+  "hash_canonicalization": "utf8-lf-v1",
+  "platform_commit": "2755336",
+  "approved_exceptions": {
+    "src/security_platform/services/inventory.py": {
+      "commit": "9c2ce8c",
+      "reason": "Reviewed FOR SHARE coherence fix, predating pure policy phase"
+    }
+  },
+  "platform_files": {
+    "migrations/env.py": {
+      "commit": "2755336",
+      "sha256": "bea8a2342244fe445ac5b8521725bbc6de2de2d21e9da6acf1dbe0935d26e26b"
+    },
+    "migrations/script.py.mako": {
+      "commit": "2755336",
+      "sha256": "849e6d4b05fe0dff5cada78d2fc27a8e3ba38dd4fc241af999af725b1c885f96"
+    },
+    "migrations/versions/0001_initial.py": {
+      "commit": "2755336",
+      "sha256": "70862efb3fb86079c5271efb559be70545f82abc19d1c181a6b663ea2f903d1a"
+    },
+    "src/security_platform/__init__.py": {
+      "commit": "2755336",
+      "sha256": "c7d46ab53e479f05664abad99a22b9dce43857c975c34659402570b87f05d830"
+    },
+    "src/security_platform/api/__init__.py": {
+      "commit": "2755336",
+      "sha256": "c2a5a71d29c2806ddbc91d88197225888aec0fcba5570b9a6e2ae36020ccffc6"
+    },
+    "src/security_platform/api/dependencies.py": {
+      "commit": "2755336",
+      "sha256": "ead8a1e831cdc34e7ae3ee7dfd52096f124c70146fecc002caca3c3b1b4a55f3"
+    },
+    "src/security_platform/api/device.py": {
+      "commit": "2755336",
+      "sha256": "fe39917dd9163aefb03461d3fc1cad3f1de96c3c561770a5698105d06b8dff96"
+    },
+    "src/security_platform/api/operator.py": {
+      "commit": "2755336",
+      "sha256": "6eebead07d87e4f7e423fb2a08d04eb5ac757745044023bf3595222f64037519"
+    },
+    "src/security_platform/app.py": {
+      "commit": "2755336",
+      "sha256": "d66c111b28048d5ae1b993f144b0a2cbe3003ad6e8abd8e7263ba93e16fa953b"
+    },
+    "src/security_platform/auth/__init__.py": {
+      "commit": "2755336",
+      "sha256": "763bef6b7ae87e1ba632864bb69f8112f715875b5bbc4bf4c589a75885e3d8b3"
+    },
+    "src/security_platform/auth/operator_oidc.py": {
+      "commit": "2755336",
+      "sha256": "de401b4f006f57d4fb2c1a6f6914e97bf059f8d30860ca167486b3f8ba2a7042"
+    },
+    "src/security_platform/auth/principals.py": {
+      "commit": "2755336",
+      "sha256": "02c002466a58b8d7bfae353e93900da300b36d740e5e620375a9f1fdc473215c"
+    },
+    "src/security_platform/boundary.py": {
+      "commit": "2755336",
+      "sha256": "c2bb89b0e6b9aaefaee05b15879ba6032f3d968cc4e391c0120ac31357fcbb54"
+    },
+    "src/security_platform/cli.py": {
+      "commit": "2755336",
+      "sha256": "dde1d17da4475d05fbd175ce10b022d4a53b35386001a52e55eb15fc92b0d43f"
+    },
+    "src/security_platform/connectors/__init__.py": {
+      "commit": "2755336",
+      "sha256": "6cf28fb732cb9edc9660a0f34486d6b9b079bb645a3bb5f61b8ee56d0a284ed8"
+    },
+    "src/security_platform/connectors/hostbased_firewall/__init__.py": {
+      "commit": "2755336",
+      "sha256": "1a0e87184d2c302307ef35da55504105ea62de7dfa8e5ff7b434d96d061777c4"
+    },
+    "src/security_platform/connectors/hostbased_firewall/client.py": {
+      "commit": "2755336",
+      "sha256": "99ecf72acee9e53f4dab24a9bf0963a850d19fa0de2be327238062bbbdbc0de9"
+    },
+    "src/security_platform/connectors/hostbased_firewall/private_files.py": {
+      "commit": "2755336",
+      "sha256": "905f45d13a8da1fc6e84c8fade295fcb81b8c65b873eadcbda59a994ad0fda04"
+    },
+    "src/security_platform/connectors/hostbased_firewall/snapshot_mapper.py": {
+      "commit": "2755336",
+      "sha256": "e21a4fe2258283c4455dc21bdadda211f1a71b0f116dd8140817c10b8985324f"
+    },
+    "src/security_platform/contracts.py": {
+      "commit": "2755336",
+      "sha256": "bcef784d6e1a80f9266bd24b90bbdea30ac051e189ad1bcb148b2df16cfbb6d2"
+    },
+    "src/security_platform/db.py": {
+      "commit": "2755336",
+      "sha256": "c393ea7a4bc9630cecbd9367ea8387e2b941eb9279ae7c0e299e1e6204907468"
+    },
+    "src/security_platform/models.py": {
+      "commit": "2755336",
+      "sha256": "ece057e313393fbbe0f0d7b0ad11efc252f00eaca5e7f15ebbca0e301e67d932"
+    },
+    "src/security_platform/services/__init__.py": {
+      "commit": "2755336",
+      "sha256": "264052c7dde21012c10ca761ef468b5cf178e2aa2b20dd56cd102e5b64f178b5"
+    },
+    "src/security_platform/services/administration.py": {
+      "commit": "2755336",
+      "sha256": "c8f7f48865af1c19a6e775042dd9b9692730c77c51dd662e9e059fc7a9c3b59c"
+    },
+    "src/security_platform/services/audit.py": {
+      "commit": "2755336",
+      "sha256": "5a8ac7dfc1217c325cfd3d053c4dfdc6adaa6eeeb6965d4be1e0fa76c31ed367"
+    },
+    "src/security_platform/services/common.py": {
+      "commit": "2755336",
+      "sha256": "efcb89b46dcc25ab0f23dd03dbf220bfcdeb96a8ace8728226a4a90a6ed62de1"
+    },
+    "src/security_platform/services/enrollment.py": {
+      "commit": "2755336",
+      "sha256": "5c399ebe5e13737aaf5e7262cb0e99a170f759a700b3e6668dce1987c5b5eb42"
+    },
+    "src/security_platform/services/inventory.py": {
+      "commit": "9c2ce8c",
+      "sha256": "afd8398f10eb4c9bd7f400652aecedab64ed3af344af8e1ba3eddaa883a20072"
+    },
+    "src/security_platform/services/snapshots.py": {
+      "commit": "2755336",
+      "sha256": "f0ad6cbcd1194c688d08bd0e296a2d1cd71dca54b62ce59a61d60db9e223f328"
+    },
+    "src/security_platform/settings.py": {
+      "commit": "2755336",
+      "sha256": "a9a0254a40ad1a3b7c79c811e940ad51399846bc3efdaffb8d11a84104ac12e6"
+    },
+    "alembic.ini": {
+      "commit": "2755336",
+      "sha256": "dfa8ba5f65ce739811838702b177f38044fb21c46b09406bfcf779f03e7b9e01"
+    },
+    "scripts/managed_postgres.py": {
+      "commit": "2755336",
+      "sha256": "438b656449e33c2174d8be76d90a0943438103116cf3663753d959405faabe8f"
+    },
+    "requirements-lock.txt": {
+      "commit": "2755336",
+      "sha256": "c22905612c27d2126fabde08d64a0393005d5b3f559b8cb1f1d68c529e1db4c4"
+    },
+    "requirements-build-lock.txt": {
+      "commit": "2755336",
+      "sha256": "7886595e0c22b774c86de1b5c5dca5aea51c686811c8c1124ffc0c62c58302a4"
+    }
+  },
+  "guarded_directories": {
+    "src/security_platform/api": [
+      "src/security_platform/api/__init__.py",
+      "src/security_platform/api/dependencies.py",
+      "src/security_platform/api/device.py",
+      "src/security_platform/api/operator.py"
+    ],
+    "src/security_platform/auth": [
+      "src/security_platform/auth/__init__.py",
+      "src/security_platform/auth/operator_oidc.py",
+      "src/security_platform/auth/principals.py"
+    ],
+    "migrations": [
+      "migrations/env.py",
+      "migrations/script.py.mako",
+      "migrations/versions/0001_initial.py"
+    ]
+  },
+  "openapi": {
+    "openapi": "3.1.0",
+    "info": {
+      "title": "Security Platform inventory API",
+      "version": "0.1.0"
+    },
+    "paths": {
+      "/livez": {
+        "get": {
+          "tags": [
+            "operations"
+          ],
+          "summary": "Live",
+          "operationId": "live_livez_get",
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "/readyz": {
+        "get": {
+          "tags": [
+            "operations"
+          ],
+          "summary": "Ready",
+          "operationId": "ready_readyz_get",
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/tenants": {
+        "get": {
+          "tags": [
+            "operator"
+          ],
+          "summary": "Tenants",
+          "operationId": "tenants_api_v1_tenants_get",
+          "security": [
+            {
+              "OperatorAccessToken": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "limit",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "maximum": 100,
+                "minimum": 1,
+                "default": 50,
+                "title": "Limit"
+              }
+            },
+            {
+              "name": "offset",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "maximum": 10000,
+                "minimum": 0,
+                "default": 0,
+                "title": "Offset"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/tenants/{tenant_id}/enrollment-grants": {
+        "post": {
+          "tags": [
+            "operator"
+          ],
+          "summary": "Create Grant",
+          "operationId": "create_grant_api_v1_tenants__tenant_id__enrollment_grants_post",
+          "security": [
+            {
+              "OperatorAccessToken": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "tenant_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid",
+                "title": "Tenant Id"
+              }
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GrantRequest"
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/tenants/{tenant_id}/enrollment-grants/{grant_id}/revoke": {
+        "post": {
+          "tags": [
+            "operator"
+          ],
+          "summary": "Revoke Grant",
+          "operationId": "revoke_grant_api_v1_tenants__tenant_id__enrollment_grants__grant_id__revoke_post",
+          "security": [
+            {
+              "OperatorAccessToken": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "tenant_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid",
+                "title": "Tenant Id"
+              }
+            },
+            {
+              "name": "grant_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid",
+                "title": "Grant Id"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyRequest",
+                  "default": {}
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/tenants/{tenant_id}/devices": {
+        "get": {
+          "tags": [
+            "operator"
+          ],
+          "summary": "Devices",
+          "operationId": "devices_api_v1_tenants__tenant_id__devices_get",
+          "security": [
+            {
+              "OperatorAccessToken": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "tenant_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid",
+                "title": "Tenant Id"
+              }
+            },
+            {
+              "name": "limit",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "maximum": 100,
+                "minimum": 1,
+                "default": 50,
+                "title": "Limit"
+              }
+            },
+            {
+              "name": "offset",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "maximum": 10000,
+                "minimum": 0,
+                "default": 0,
+                "title": "Offset"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/tenants/{tenant_id}/devices/{device_id}": {
+        "get": {
+          "tags": [
+            "operator"
+          ],
+          "summary": "Device",
+          "operationId": "device_api_v1_tenants__tenant_id__devices__device_id__get",
+          "security": [
+            {
+              "OperatorAccessToken": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "tenant_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid",
+                "title": "Tenant Id"
+              }
+            },
+            {
+              "name": "device_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid",
+                "title": "Device Id"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/tenants/{tenant_id}/devices/{device_id}/revoke": {
+        "post": {
+          "tags": [
+            "operator"
+          ],
+          "summary": "Revoke Device",
+          "operationId": "revoke_device_api_v1_tenants__tenant_id__devices__device_id__revoke_post",
+          "security": [
+            {
+              "OperatorAccessToken": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "tenant_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid",
+                "title": "Tenant Id"
+              }
+            },
+            {
+              "name": "device_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid",
+                "title": "Device Id"
+              }
+            }
+          ],
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmptyRequest",
+                  "default": {}
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/tenants/{tenant_id}/audit": {
+        "get": {
+          "tags": [
+            "operator"
+          ],
+          "summary": "Audit Log",
+          "operationId": "audit_log_api_v1_tenants__tenant_id__audit_get",
+          "security": [
+            {
+              "OperatorAccessToken": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "tenant_id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string",
+                "format": "uuid",
+                "title": "Tenant Id"
+              }
+            },
+            {
+              "name": "limit",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "maximum": 100,
+                "minimum": 1,
+                "default": 50,
+                "title": "Limit"
+              }
+            },
+            {
+              "name": "offset",
+              "in": "query",
+              "required": false,
+              "schema": {
+                "type": "integer",
+                "maximum": 10000,
+                "minimum": 0,
+                "default": 0,
+                "title": "Offset"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/enroll": {
+        "post": {
+          "tags": [
+            "device"
+          ],
+          "summary": "Enroll",
+          "operationId": "enroll_api_v1_enroll_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrollRequest"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "201": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "EnrollmentGrant": []
+            }
+          ]
+        }
+      },
+      "/api/v1/device/snapshot": {
+        "put": {
+          "tags": [
+            "device"
+          ],
+          "summary": "Snapshot",
+          "operationId": "snapshot_api_v1_device_snapshot_put",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SnapshotEnvelope"
+                }
+              }
+            },
+            "required": true
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "DeviceCredential": []
+            }
+          ]
+        }
+      },
+      "/api/v1/device/credentials/rotate": {
+        "post": {
+          "tags": [
+            "device"
+          ],
+          "summary": "Rotate",
+          "operationId": "rotate_api_v1_device_credentials_rotate_post",
+          "requestBody": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RotateRequest",
+                  "default": {}
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Successful Response",
+              "content": {
+                "application/json": {
+                  "schema": {}
+                }
+              }
+            },
+            "422": {
+              "description": "Validation Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/HTTPValidationError"
+                  }
+                }
+              }
+            }
+          },
+          "security": [
+            {
+              "DeviceCredential": []
+            }
+          ]
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "AntivirusStatus": {
+          "properties": {
+            "catalog_available": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Catalog Available"
+            },
+            "source": {
+              "type": "string",
+              "const": "self_reported",
+              "title": "Source",
+              "default": "self_reported"
+            },
+            "producer_verification": {
+              "type": "string",
+              "const": "not_verified",
+              "title": "Producer Verification",
+              "default": "not_verified"
+            },
+            "version": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._+\\-]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version"
+            },
+            "source_observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Observed At"
+            },
+            "product_id": {
+              "type": "string",
+              "const": "antivirus",
+              "title": "Product Id"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "planned",
+                "unknown"
+              ],
+              "title": "Status",
+              "default": "unknown"
+            },
+            "availability": {
+              "type": "string",
+              "enum": [
+                "unavailable",
+                "unknown"
+              ],
+              "title": "Availability",
+              "default": "unknown"
+            },
+            "execution_available": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Execution Available"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "product_id"
+          ],
+          "title": "AntivirusStatus"
+        },
+        "DispositionCounts": {
+          "properties": {
+            "informational": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "Informational"
+            },
+            "needs_review": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "Needs Review"
+            },
+            "confirmed": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "Confirmed"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "informational",
+            "needs_review",
+            "confirmed"
+          ],
+          "title": "DispositionCounts"
+        },
+        "EmptyRequest": {
+          "properties": {},
+          "additionalProperties": false,
+          "type": "object",
+          "title": "EmptyRequest"
+        },
+        "EnrollRequest": {
+          "properties": {
+            "label": {
+              "type": "string",
+              "maxLength": 80,
+              "minLength": 1,
+              "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+              "title": "Label"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "label"
+          ],
+          "title": "EnrollRequest"
+        },
+        "GrantRequest": {
+          "properties": {
+            "ttl_seconds": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 3600.0,
+                  "minimum": 1.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ttl Seconds"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "title": "GrantRequest"
+        },
+        "HTTPValidationError": {
+          "properties": {
+            "detail": {
+              "items": {
+                "$ref": "#/components/schemas/ValidationError"
+              },
+              "type": "array",
+              "title": "Detail"
+            }
+          },
+          "type": "object",
+          "title": "HTTPValidationError"
+        },
+        "HostBasedFirewallStatus": {
+          "properties": {
+            "catalog_available": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Catalog Available"
+            },
+            "source": {
+              "type": "string",
+              "const": "self_reported",
+              "title": "Source",
+              "default": "self_reported"
+            },
+            "producer_verification": {
+              "type": "string",
+              "const": "not_verified",
+              "title": "Producer Verification",
+              "default": "not_verified"
+            },
+            "version": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._+\\-]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version"
+            },
+            "source_observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Observed At"
+            },
+            "product_id": {
+              "type": "string",
+              "const": "hostbasedfirewall",
+              "title": "Product Id"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "running",
+                "observing",
+                "degraded",
+                "stopped",
+                "unavailable",
+                "unknown"
+              ],
+              "title": "Status",
+              "default": "unknown"
+            },
+            "installed": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Installed"
+            },
+            "reported_running": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reported Running"
+            },
+            "reported_stale": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Reported Stale"
+            },
+            "firewall_mode": {
+              "type": "string",
+              "enum": [
+                "enforce",
+                "sniff",
+                "unknown"
+              ],
+              "title": "Firewall Mode",
+              "default": "unknown"
+            },
+            "error_codes": {
+              "anyOf": [
+                {
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "config_error",
+                      "policy_error",
+                      "temp_error",
+                      "runtime_error",
+                      "telemetry_error",
+                      "history_error",
+                      "network_profile_error",
+                      "recovery_error",
+                      "application_rule_recovery_error",
+                      "liveness_error",
+                      "application_usage_error",
+                      "maintenance",
+                      "health_unavailable",
+                      "unknown_error"
+                    ]
+                  },
+                  "type": "array",
+                  "maxItems": 16
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error Codes"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "product_id"
+          ],
+          "title": "HostBasedFirewallStatus"
+        },
+        "RotateRequest": {
+          "properties": {
+            "ttl_seconds": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 2592000.0,
+                  "minimum": 60.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Ttl Seconds"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "title": "RotateRequest"
+        },
+        "SeverityCounts": {
+          "properties": {
+            "unassigned": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "Unassigned"
+            },
+            "info": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "Info"
+            },
+            "low": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "Low"
+            },
+            "medium": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "Medium"
+            },
+            "high": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "High"
+            },
+            "critical": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "Critical"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "unassigned",
+            "info",
+            "low",
+            "medium",
+            "high",
+            "critical"
+          ],
+          "title": "SeverityCounts"
+        },
+        "SnapshotEnvelope": {
+          "properties": {
+            "schema_version": {
+              "type": "integer",
+              "const": 1,
+              "title": "Schema Version"
+            },
+            "message_id": {
+              "type": "string",
+              "maxLength": 36,
+              "minLength": 36,
+              "title": "Message Id"
+            },
+            "sequence": {
+              "type": "integer",
+              "maximum": 9.223372036854776e+18,
+              "minimum": 1.0,
+              "title": "Sequence"
+            },
+            "source_observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Observed At"
+            },
+            "products": {
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/HostBasedFirewallStatus"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TermivarStatus"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AntivirusStatus"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "product_id",
+                  "mapping": {
+                    "antivirus": "#/components/schemas/AntivirusStatus",
+                    "hostbasedfirewall": "#/components/schemas/HostBasedFirewallStatus",
+                    "termivar": "#/components/schemas/TermivarStatus"
+                  }
+                }
+              },
+              "type": "array",
+              "maxItems": 3,
+              "title": "Products"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "schema_version",
+            "message_id",
+            "sequence",
+            "products"
+          ],
+          "title": "SnapshotEnvelope"
+        },
+        "TermivarStatus": {
+          "properties": {
+            "catalog_available": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Catalog Available"
+            },
+            "source": {
+              "type": "string",
+              "const": "self_reported",
+              "title": "Source",
+              "default": "self_reported"
+            },
+            "producer_verification": {
+              "type": "string",
+              "const": "not_verified",
+              "title": "Producer Verification",
+              "default": "not_verified"
+            },
+            "version": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._+\\-]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version"
+            },
+            "source_observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Observed At"
+            },
+            "product_id": {
+              "type": "string",
+              "const": "termivar",
+              "title": "Product Id"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "experimental",
+                "unknown"
+              ],
+              "title": "Status",
+              "default": "unknown"
+            },
+            "scanner_installed": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scanner Installed"
+            },
+            "execution_available": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Execution Available"
+            },
+            "report_presence": {
+              "type": "string",
+              "enum": [
+                "present",
+                "none",
+                "unknown"
+              ],
+              "title": "Report Presence",
+              "default": "unknown"
+            },
+            "latest_report": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/TermivarSummary"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "product_id"
+          ],
+          "title": "TermivarStatus"
+        },
+        "TermivarSummary": {
+          "properties": {
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Digest"
+            },
+            "report_schema": {
+              "type": "string",
+              "const": "venom-rendered-assessment/v1",
+              "title": "Report Schema"
+            },
+            "imported_at": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Imported At"
+            },
+            "subject_count": {
+              "type": "integer",
+              "maximum": 1024.0,
+              "minimum": 1.0,
+              "title": "Subject Count"
+            },
+            "item_count": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "Item Count"
+            },
+            "counts": {
+              "$ref": "#/components/schemas/DispositionCounts"
+            },
+            "severity_counts": {
+              "$ref": "#/components/schemas/SeverityCounts"
+            },
+            "source": {
+              "type": "string",
+              "const": "self_reported",
+              "title": "Source",
+              "default": "self_reported"
+            },
+            "producer_verification": {
+              "type": "string",
+              "const": "not_verified",
+              "title": "Producer Verification",
+              "default": "not_verified"
+            },
+            "scope": {
+              "type": "string",
+              "const": "offline_report_summary",
+              "title": "Scope",
+              "default": "offline_report_summary"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "digest",
+            "report_schema",
+            "imported_at",
+            "subject_count",
+            "item_count",
+            "counts",
+            "severity_counts"
+          ],
+          "title": "TermivarSummary"
+        },
+        "ValidationError": {
+          "properties": {
+            "loc": {
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "integer"
+                  }
+                ]
+              },
+              "type": "array",
+              "title": "Location"
+            },
+            "msg": {
+              "type": "string",
+              "title": "Message"
+            },
+            "type": {
+              "type": "string",
+              "title": "Error Type"
+            },
+            "input": {
+              "title": "Input"
+            },
+            "ctx": {
+              "type": "object",
+              "title": "Context"
+            }
+          },
+          "type": "object",
+          "required": [
+            "loc",
+            "msg",
+            "type"
+          ],
+          "title": "ValidationError"
+        }
+      },
+      "securitySchemes": {
+        "OperatorAccessToken": {
+          "type": "http",
+          "description": "RS256 RFC 9068 API access token. Tenant roles come from current database memberships.",
+          "scheme": "bearer",
+          "bearerFormat": "JWT"
+        },
+        "EnrollmentGrant": {
+          "type": "http",
+          "description": "Single-use enrollment grant; valid only for device enrollment.",
+          "scheme": "bearer",
+          "bearerFormat": "opaque"
+        },
+        "DeviceCredential": {
+          "type": "http",
+          "description": "One device credential; cannot access operator endpoints.",
+          "scheme": "bearer",
+          "bearerFormat": "opaque"
+        }
+      }
+    }
+  },
+  "existing_scripts": {
+    "security-platform": "security_platform.cli:main",
+    "security-snapshot": "security_platform.connectors.hostbased_firewall.client:main"
+  },
+  "allowed_added_scripts": [
+    "security-policy"
+  ],
+  "alembic_heads": [
+    "0001_initial"
+  ],
+  "database_tables": [
+    "audit_events",
+    "device_credentials",
+    "devices",
+    "enrollment_grants",
+    "memberships",
+    "principals",
+    "product_states",
+    "tenants"
+  ],
+  "hbf_commit": "74a88ed",
+  "hbf_files": {
+    "src/policy_engine.py": "13301115b0eed7536469e34e0c3cba669e9baf286b1c8d943872007c8ab311f5",
+    "src/policy_objects.py": "e3ec4f30d98663cfc019c661397dc17d8d54aca85ae52e3180c7b5e5aca75277",
+    "src/policy_workspace.py": "d997cc48a3b08743224c69b2b2622671829e3cf832acaebd7821fea7e577d406",
+    "src/policy_trial.py": "8efe8ed71187d8e9fc08d17d0673d951556213907d19e09d940c8d06df991305",
+    "src/backup_workspace.py": "cd17f4259a0155aa7a46ddc210c229fc208b51efd2bfec3c7d96c672563eda9f",
+    "src/config_store.py": "ae2a404fea37b14df9f44c1e3c8f6a8e815abdb1a6d60422ee15d81d152c99c5",
+    "src/input_validation.py": "6534e90df1ed98be766055904176a2c46337c3963231f8e8a021ffade4957710",
+    "src/document_limits.py": "503a222580d29093700c0f660b3fa8691c301d57dd6e9a2873f86368b96b9dc2"
+  }
+}

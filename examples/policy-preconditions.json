@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "expected": {
+    "binding": {
+      "tenant_id": "11111111-1111-4111-8111-111111111111",
+      "device_id": "22222222-2222-4222-8222-222222222222",
+      "product_id": "hostbasedfirewall",
+      "enforcement_scope": "packet_policy"
+    },
+    "controller_revision": null,
+    "endpoint_revision": null,
+    "base_fingerprint": "sp-hbf-bundle-v1:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "candidate_fingerprint": "sp-hbf-bundle-v1:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "adapter_fingerprint": "sp-hbf-adapter-v1:sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "preview_fingerprint": "sp-hbf-preview-v1:sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
+  "observed": {
+    "binding": {
+      "tenant_id": "11111111-1111-4111-8111-111111111111",
+      "device_id": "22222222-2222-4222-8222-222222222222",
+      "product_id": "hostbasedfirewall",
+      "enforcement_scope": "packet_policy"
+    },
+    "controller_revision": null,
+    "endpoint_revision": null,
+    "base_fingerprint": "sp-hbf-bundle-v1:sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "candidate_fingerprint": "sp-hbf-bundle-v1:sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "adapter_fingerprint": "sp-hbf-adapter-v1:sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "preview_fingerprint": "sp-hbf-preview-v1:sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  }
+}

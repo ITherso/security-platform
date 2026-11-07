@@ -4,6 +4,8 @@ Bağımsız FastAPI/PostgreSQL hizmeti: şirket üyeliklerini, tek kullanımlık
 
 Bu sürüm envanter ve durum aktarımıdır. Firewall politika gönderimi, uzaktan shell, Termivar tarama yürütmesi, antivirüs motoru, otomatik enrollment veya ajan daemon'u içermez. Cihazın kimliğinin doğrulanması, bildirdiği korumanın veya raporun doğru olduğunu kanıtlamaz.
 
+Ek çevrimdışı araç, mevcut HBF değerlendiricisiyle açık senaryoları karşılaştırır ve yürütülemeyen politika sözleşmeleri üretir. Ayrı içerik kimlikleri, iki CAS önkoşulu ve raporlanan receipt tutarlılığı saf fonksiyonlarla kontrol edilir. Bu araç HTTP/DB yüzeyini veya cihaz yetkilerini genişletmez.
+
 ## Korunan başlangıç
 
 Yanındaki HostBasedFirewall kaynağının sürümü 1.4.3 olarak korundu. Platform başlangıcı yerel `94037a261b63e2443f04d56356cd525a3d3445df` commit'idir. Korunan ilk aşama arşivi `HostBasedFirewall-phase1-2026-11-07-source.zip` SHA256 değeri `bb4e4c876ae56047aa114023bbf1059fc9f979908f7f65f0fbe849713b332261` olarak kaydedildi. Başlangıcın doğrulanmış sonuçları **2106 Python testi + 47 alt test**, **8 fixture Edge paketi** ve **11 gerçek izole localhost oturum/UI import kontrolüdür**. Yeni EXE veya GitHub push yapılmadı.
@@ -88,6 +90,22 @@ Credential/state dizini owner/DACL veya POSIX izin denetimini geçmelidir. Payla
 
 İstemci TLS doğrular, redirect izlemez, proxy ortamını kullanmaz, yanıtı 4 KiB ve bağlantı/okuma sürelerini sınırlar. CLI özel CA bayrağı sunmaz; normal güvenilir TLS sertifikası kullanılır. Test düzeneğinin programatik fixture CA bağlamı ayrı ve sertifika doğrulamalıdır; `verify=False` kullanılmaz. İstemci enrollment veya credential rotasyonunu kendiliğinden çalıştırmaz ve firewall dosyalarına yazmaz.
 
+## Çevrimdışı politika önizlemesi
+
+Yalnız açık girdi ve çıktı dosyalarıyla çalışır. Aşağıdaki yollar proje köküne göredir; `../HostBasedFirewall-main` bu çalışma alanındaki açıkça seçilmiş yerel kaynak dizinidir. Kaynak paketlerini yan yana farklı adlarla açtıysanız `--hbf-root` yolunu uyarlayın.
+
+```powershell
+./.venv/Scripts/python.exe -m security_platform.policy_contracts.cli preview --input examples/policy-preview.json --hbf-root ../HostBasedFirewall-main --output preview-result.json
+./.venv/Scripts/python.exe -m security_platform.policy_contracts.cli check-preconditions --input examples/policy-preconditions.json --output preconditions-result.json
+./.venv/Scripts/python.exe -m security_platform.policy_contracts.cli validate-rollout --input examples/policy-rollout.json --evaluation-time 2030-01-01T00:30:00Z --output rollout-result.json
+```
+
+Kurulu wheel aynı aracı `security-policy` olarak sunar. Preview örneği açık WORK profili ve 09:30 yerel senaryo saatiyle ALLOW→DENY farkını hesaplar. Evaluator sağlanmazsa `evaluator_unavailable`; gerekli bağlam eksikse `insufficient_context` döner. Aynı CIDR'ın farklı zone'larda bulunması iki girdide de reddedilir. Mevcut yerel hash/trial protokolü korunur; eşit-prefix sıra sorununun yerel enforcement motorunda düzeltildiği iddia edilmez.
+
+CAS ve rollout örnekleri sentetik UUID ve fingerprint yer tutucuları içerir; gerçek bir önizlemenin veya cihazın kanıtı değildir. Mevcut üründe kalıcı policy revision/lineage kaynağı bulunmadığı için örneklerde bu alanlar `null` bırakılır: CAS `precondition_evidence_missing`, rollout `would_pause` üretir. Timestamp veya inventory sequence bu eksiği doldurmaz. Eşleşen fixture beyanları bile `verified` veya uygulama yetkisine dönüşmez.
+
+CLI çıkış kodu 0 yalnız belirtilen çıktı dosyasının yazıldığını bildirir; JSON içindeki `blocked`, `would_wait`, `would_pause` ve blocker alanlarını okuyun. Geçersiz girdi çıkış kodu 1 üretir ve mevcut çıktıyı değiştirmez. Politika IP/nesneleri ve trace yalnız açık çıktı dosyasında tutulur; konsola, audit'e veya envanter telemetrisine aktarılmaz. Dosyaları kullanıcı seçtiği konumda korumalıdır. Kaynak loader'ı yerel operatörün seçtiği güvenilir Python kaynağını çalıştırır; sandbox veya üretici doğrulaması sağlamaz.
+
 ## Sözleşme ve kabul
 
 - [API V1 ve statik OpenAPI](docs/API_V1.tr.md): 12 dar endpoint ve üç ayrı bearer türü.
@@ -95,6 +113,8 @@ Credential/state dizini owner/DACL veya POSIX izin denetimini geçmelidir. Payla
 - [Tehdit modeli](docs/THREAT_MODEL.tr.md): güven sınırları ve kalan riskler.
 - [İşletim](docs/OPERATIONS.tr.md): portable PostgreSQL, roller, migration, TLS ve durdurma.
 - [Kabul matrisi](docs/ACCEPTANCE.tr.md): 27 kapı; `passed`, `failed`, `not_run` ayrımı.
+- [Politika sözleşmesi](docs/POLICY_CONTRACT_V1.tr.md): sıralı zone'lar, açık bağlam, fingerprint, fixture CAS ve yürütülemeyen rollout.
+- [Politika kabul kaydı](docs/POLICY_PREVIEW_ACCEPTANCE.tr.md): 22 ayrı kapı ve canlı uygulamanın açık sınırları.
 
 ```powershell
 ./.venv/Scripts/python.exe -m pytest -q --tb=short
@@ -102,6 +122,6 @@ Credential/state dizini owner/DACL veya POSIX izin denetimini geçmelidir. Payla
 
 Gerçek DB testleri hazır fixture gerektirir; atlanan DB testini başarı saymayın. Windows'ta native owner/DACL testleri çalışır; POSIX chmod kontrolü ayrı atlanır. Fiziksel cihaz, üretim IdP, canlı Windows sürücüsü/servis/reboot ve yayıncı imzası bu merkezî hizmetin fixture kabulünden çıkarılamaz.
 
-Bu deneysel kaynak sürümünün birleşik koşusu **183 passed, 1 POSIX-only skipped, 1 mevcut bağımlılık uyarısı** ile 22,29 saniyede geçti. Gerçek PostgreSQL, migration kaynaklarının seçimi ve ayrı süreç TLS E2E bu koşuya dahildir; üretim release kabulü değildir.
+Bu deneysel kaynak sürümünün son birleşik koşusu **344 passed, 1 POSIX-only skipped, 1 mevcut bağımlılık uyarısı** ile 22,33 saniyede geçti. Bunun içindeki **160 politika sözleşmesi testi** ayrıca 2,17 saniyede geçti. Gerçek PostgreSQL, migration kaynaklarının seçimi ve ayrı süreç TLS E2E birleşik koşuya dahildir; üretim release kabulü değildir.
 
-Sonraki tek karar kapısı: kimlik ve tenant temeli kabul edildikten sonra **sürümlü politika önizleme ve kontrollü dağıtım sözleşmesi**. Yeni komut yetkisi eklenmeden önce yerel Windows kabulünün açık maddeleri ayrıca değerlendirilmelidir.
+Sonraki ayrı karar kapısı: **kalıcı controller/endpoint policy revision ve lineage kaynağı, gerçek Windows kabulü ve yetkilendirilmiş yürütücünün tasarımı**. Bu kaynak teslimatı bunları uygulamaz; dağıtım planı yürütülemez.
