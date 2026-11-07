@@ -5,6 +5,7 @@ from dataclasses import FrozenInstanceError
 from datetime import time as LocalTime
 import hashlib
 import json
+import os
 from pathlib import Path
 import shutil
 import subprocess
@@ -22,14 +23,22 @@ from security_platform.policy_contracts.models import MAX_SCENARIOS, MAX_TRACE_E
 from security_platform.policy_contracts.preview import preview_policy
 from security_platform.policy_contracts.zone_safety import ensure_unambiguous_zones
 
-HBF_ROOT = Path(__file__).resolve().parents[3] / "HostBasedFirewall-main"
+@pytest.fixture(scope="module")
+def hbf_root():
+    explicit = os.environ.get("SP_HBF_SOURCE")
+    parent = Path(__file__).resolve().parents[3]
+    candidates = [Path(explicit)] if explicit is not None else [parent / "HostBasedFirewall-main", parent / "HostBasedFirewall"]
+    source = next((path for path in candidates if (path / "src/policy_engine.py").is_file()), None)
+    if source is None:
+        if explicit is not None:
+            pytest.fail("SP_HBF_SOURCE does not identify the explicit HBF source checkout", pytrace=False)
+        pytest.skip("Sibling HBF source unavailable; real evaluator acceptance is not checked in this standalone package")
+    return source
 
 
 @pytest.fixture(scope="module")
-def adapter():
-    if not (HBF_ROOT / "src/policy_engine.py").exists():
-        pytest.skip("Explicit reviewed HBF source fixture is unavailable")
-    result = load_hbf_adapter(HBF_ROOT)
+def adapter(hbf_root):
+    result = load_hbf_adapter(hbf_root)
     assert result is not None
     return result
 
@@ -148,11 +157,11 @@ def test_time_profile_and_country_are_explicit_source_inputs(adapter):
     assert result.status == "ok" and result.results[0].candidate.decision.action == "DENY"
 
 
-def test_manifest_tracks_exact_compiled_source_and_repeated_loader_changes(tmp_path, adapter):
+def test_manifest_tracks_exact_compiled_source_and_repeated_loader_changes(tmp_path, adapter, hbf_root):
     source = tmp_path / "HBF" / "src"
     source.mkdir(parents=True)
     for filename in HBF_SOURCE_FILES:
-        shutil.copyfile(HBF_ROOT / "src" / filename, source / filename)
+        shutil.copyfile(hbf_root / "src" / filename, source / filename)
     old = load_hbf_adapter(source.parent)
     assert old is not None
     engine = source / "policy_engine.py"
@@ -172,9 +181,9 @@ def test_manifest_tracks_exact_compiled_source_and_repeated_loader_changes(tmp_p
     assert not list(source.rglob("*.pyc"))
 
 
-def test_concurrent_loader_namespaces_do_not_collide(adapter):
+def test_concurrent_loader_namespaces_do_not_collide(adapter, hbf_root):
     with ThreadPoolExecutor(max_workers=4) as pool:
-        copies = list(pool.map(lambda _: load_hbf_adapter(HBF_ROOT), range(12)))
+        copies = list(pool.map(lambda _: load_hbf_adapter(hbf_root), range(12)))
     assert all(copy is not None for copy in copies)
     assert {adapter_fingerprint(copy.identity) for copy in copies} == {adapter_fingerprint(adapter.identity)}
 
@@ -221,9 +230,8 @@ def test_bounds_and_no_partial_success(adapter):
         bundle(objects={"security_profiles": {"nested": deep}})
 
 
-def test_workspace_preview_returns_base_not_candidate_legacy_version():
-    if not (HBF_ROOT / "src/policy_workspace.py").exists():
-        pytest.skip("Explicit reviewed source fixture unavailable")
+def test_workspace_preview_returns_base_not_candidate_legacy_version(hbf_root):
+    assert (hbf_root / "src/policy_workspace.py").is_file(), "Reviewed HBF source is missing policy_workspace.py"
     script = textwrap.dedent('''
         import json,sys,tempfile
         from pathlib import Path
@@ -242,7 +250,7 @@ def test_workspace_preview_returns_base_not_candidate_legacy_version():
             print(json.dumps({'returned':result['version'],'base':base['version'],
                 'candidate':policy_version(base['objects'],validate_policies(candidate,base['objects']))}))
     ''')
-    process = subprocess.run([sys.executable, "-B", "-c", script, str(HBF_ROOT)], capture_output=True, text=True, timeout=15)
+    process = subprocess.run([sys.executable, "-B", "-c", script, str(hbf_root)], capture_output=True, text=True, timeout=15)
     assert process.returncode == 0, process.stderr
     result = json.loads(process.stdout)
     assert result["returned"] == result["base"] and result["returned"] != result["candidate"]
@@ -328,11 +336,11 @@ def test_unvalidated_copied_adapter_identity_is_unavailable(adapter):
     assert result.blocker_codes == ("evaluator_unavailable",) and result.results == ()
 
 
-def test_incompatible_source_initialization_error_is_fixed_unavailable(tmp_path):
+def test_incompatible_source_initialization_error_is_fixed_unavailable(tmp_path, hbf_root):
     source = tmp_path / "HBF" / "src"
     source.mkdir(parents=True)
     for filename in HBF_SOURCE_FILES:
-        shutil.copyfile(HBF_ROOT / "src" / filename, source / filename)
+        shutil.copyfile(hbf_root / "src" / filename, source / filename)
     with (source / "policy_engine.py").open("ab") as stream:
         stream.write(b"\nraise NameError('private source detail must not escape')\n")
     assert load_hbf_adapter(source.parent) is None
