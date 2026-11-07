@@ -1,5 +1,10 @@
 import type { CatalogShape } from '../types';
 export const appTr = {
+  'app.detailNav.label': 'Bu sayfadaki cihazlar arasında gezinme',
+  'app.detailNav.position': (position: string, count: string) => `Bu sayfadaki görünüm: ${position} / ${count}`,
+  'app.detailNav.current': 'Seçili cihaz',
+  'app.detailNav.scope': 'Yalnız bu sayfada arama, filtre ve sıralamayla görüntülenen cihazlar. Sayfa sınırında geçiş durur.',
+  'app.detailNav.previous': '‹ Önceki cihaz', 'app.detailNav.next': 'Sonraki cihaz ›',
   'app.claim.device': 'Cihazın bildirdiği', 'app.claim.notVerified': 'Bağımsız doğrulanmadı',
   'app.documentTitle': 'Güvenlik Konsolu',
   'app.view.overview.title': 'Güvenlik görünümü', 'app.view.overview.subtitle': 'Cihazların bildirdiği durumu, veri güncelliğinden ayrı takip edin.', 'app.nav.overview': 'Genel bakış',
@@ -38,6 +43,11 @@ export const appTr = {
   'app.reportError.duplicate_record': 'Bu cihaz zaten raporda. Güncellemek için görüntülenen bilgilerle güncelle eylemini kullanın.', 'app.reportError.record_limit': 'Taslak en fazla 20 cihaz içerebilir. Yeni cihaz eklemek için bir kaydı kaldırın.', 'app.reportError.size_limit': 'Rapor taslağı 256 KiB sınırını aşıyor. Önce bir kaydı kaldırın.', 'app.reportError.context_mismatch': 'Veri bağlamı değişti. Cihaz ayrıntısını yeniden açıp yeni taslağa ekleyin.', 'app.reportError.record_not_found': 'Bu cihaz taslakta bulunmuyor. Ayrıntısını yeniden açıp rapora ekleyin.', 'app.reportError.empty_report': 'Önce bir cihazın ayrıntısını açıp durum raporuna ekleyin.', 'app.reportError.generic': 'Bu bilgilerle rapor taslağı oluşturulamadı. Geçerli cihaz ayrıntısını yeniden açın.', 'app.reportError.print': 'Tarayıcı yazdırma penceresi açılamadı. Bu tarayıcıda yazdırma kullanılamıyor olabilir.', 'app.reportNotice.updated': 'Rapordaki kayıt bu görüntülenen bilgilerle güncellendi.', 'app.reportNotice.added': 'Görüntülenen cihaz bilgileri rapor taslağına eklendi.'
 };
 export const appEn = {
+  'app.detailNav.label': 'Navigate devices on this page',
+  'app.detailNav.position': (position: string, count: string) => `Position on this page: ${position} / ${count}`,
+  'app.detailNav.current': 'Selected device',
+  'app.detailNav.scope': 'Only devices displayed by this page’s search, filter and sort. Navigation stops at the page boundary.',
+  'app.detailNav.previous': '‹ Previous device', 'app.detailNav.next': 'Next device ›',
   'app.claim.device': 'Reported by the device', 'app.claim.notVerified': 'Not independently verified',
   'app.documentTitle': 'Security Console',
   'app.view.overview.title': 'Security overview', 'app.view.overview.subtitle': 'Track device reports separately from data freshness.', 'app.nav.overview': 'Overview',

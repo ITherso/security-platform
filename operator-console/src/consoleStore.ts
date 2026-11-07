@@ -1,6 +1,7 @@
 import { createDemoClient } from './adapters/fixtures';
 import { createApiClient } from './adapters/platformReadOnly';
 import type { DataClient, Tenant, DevicePage, AuditPage, DeviceDetail } from './data/contracts';
+import { selectDeviceRows } from './data/deviceRows';
 import type { ReportContext, ReportDraft, ReportModel } from './features/reports/reportModel';
 import { captureRecord } from './features/reports/capture';
 import { createDraft, addRecord, updateRecord, removeRecord, clearDraft, buildPreview } from './features/reports/reportDraft';
@@ -9,6 +10,8 @@ import { message, type UiMessage, type Locale } from './i18n';
 
 export type View = 'overview' | 'devices' | 'products' | 'audit' | 'reports';
 export type Scenario = 'normal' | 'empty' | 'error';
+const EMPTY_DEVICE_IDS: readonly string[] = Object.freeze([]);
+interface DetailNavigationContext { readonly epoch: number; readonly tenantId: string; readonly generation: number }
 const ERRORS: Readonly<Record<string, UiMessage>> = {
   unauthorized: message('app.error.unauthorized'),
   forbidden: message('app.error.forbidden'),
@@ -33,6 +36,7 @@ interface State {
   audit: AuditPage | null; auditOffset: number; auditStatus: 'idle' | 'loading' | 'ready' | 'error'; auditError: UiMessage | null;
   query: string; filter: string; sort: string; error: UiMessage | null; lastRead: string;
   detailOpen: boolean; detail: DeviceDetail | null; detailError: UiMessage | null; detailBusy: boolean;
+  detailTargetId: string | null; detailNavigationIds: readonly string[];
   connectionOpen: boolean; connectionError: UiMessage | null;
   detailReadAt: string; reportDraft: ReportDraft | null; reportPreview: ReportModel | null;
   previewRevision: number | null; showIdentifiers: boolean; reportError: UiMessage | null; reportNotice: UiMessage | null;
@@ -43,21 +47,25 @@ class ConsoleStore {
   private scope = new AbortController();
   private detailRequest = new AbortController();
   private detailSequence = 0;
+  private detailNavigationContext: DetailNavigationContext | null = null;
   private contextGeneration = 1;
   private listeners = new Set<() => void>();
   private state: State = { locale: 'tr', mode: 'demo', scenario: 'normal', view: 'overview', mobile: false,
     tenants: [], nextTenant: null, tenant: null, devices: null, offset: 0, busy: false, loading: true,
     audit: null, auditOffset: 0, auditStatus: 'idle', auditError: null, query: '', filter: 'all', sort: 'name',
     error: null, lastRead: '', detailOpen: false, detail: null, detailBusy: false, detailError: null, connectionOpen: false, connectionError: null,
+    detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS,
     detailReadAt: '', reportDraft: null, reportPreview: null, previewRevision: null, showIdentifiers: false, reportError: null, reportNotice: null };
   snapshot = () => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private emit(patch: Partial<State> = {}) { this.state = { ...this.state, ...patch }; this.listeners.forEach((fn) => fn()); }
   private reset() {
     ++this.epoch; ++this.detailSequence; this.scope.abort(); this.detailRequest.abort();
+    this.detailNavigationContext = null;
     this.scope = new AbortController(); this.detailRequest = new AbortController();
     this.emit({ devices: null, audit: null, auditStatus: 'idle', auditError: null, error: null, lastRead: '',
-      detail: null, detailOpen: false, detailError: null, detailBusy: false, detailReadAt: '', loading: false, busy: false });
+      detail: null, detailOpen: false, detailError: null, detailBusy: false, detailReadAt: '',
+      detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS, loading: false, busy: false });
   }
   private clearReportContext() {
     ++this.contextGeneration;
@@ -92,7 +100,9 @@ class ConsoleStore {
     if (code(error) === 'unauthorized') {
       this.disconnect(); this.emit({ error: failureMessage }); return;
     }
-    this.emit({ devices: null, audit: null, detail: null, detailOpen: false, busy: false, loading: false,
+    ++this.detailSequence; this.detailRequest.abort(); this.detailNavigationContext = null;
+    this.emit({ devices: null, audit: null, detail: null, detailOpen: false, detailBusy: false, detailReadAt: '',
+      detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS, busy: false, loading: false,
       auditStatus: 'error', auditError: failureMessage, error: failureMessage });
   }
   reload = async () => {
@@ -156,25 +166,68 @@ class ConsoleStore {
   };
   openDevice = async (id: string) => {
     if (!this.client || !this.state.tenant) return;
+    if (this.state.detailOpen && this.state.detailTargetId === id) return;
+    const ids = this.state.busy || this.state.loading ? []
+      : selectDeviceRows(this.state.devices, this.state.query, this.state.filter, this.state.sort).map((device) => device.id);
+    const hasNavigation = ids.includes(id);
+    this.detailNavigationContext = hasNavigation
+      ? { epoch: this.epoch, tenantId: this.state.tenant.id, generation: this.contextGeneration } : null;
+    this.emit({ detailNavigationIds: hasNavigation ? Object.freeze(ids) : EMPTY_DEVICE_IDS });
+    await this.requestDevice(id);
+  };
+  private navigationCurrent() {
+    const context = this.detailNavigationContext;
+    if (!context || !this.client || context.epoch !== this.epoch || context.tenantId !== this.state.tenant?.id
+      || context.generation !== this.contextGeneration || this.state.loading || this.state.busy) return false;
+    const visible = selectDeviceRows(this.state.devices, this.state.query, this.state.filter, this.state.sort);
+    return visible.length === this.state.detailNavigationIds.length
+      && visible.every((device, index) => device.id === this.state.detailNavigationIds[index]);
+  }
+  private detailCurrent(epoch: number, client: DataClient, sequence: number, generation: number, tenantId: string, id: string) {
+    return this.current(epoch, client) && sequence === this.detailSequence && generation === this.contextGeneration
+      && tenantId === this.state.tenant?.id && this.state.detailOpen && this.state.detailTargetId === id
+      && (this.detailNavigationContext === null || this.navigationCurrent());
+  }
+  moveDevice = async (direction: -1 | 1) => {
+    if ((direction !== -1 && direction !== 1) || !this.state.detailOpen || !this.state.detailTargetId || this.detailNavigationContext === null) return;
+    if (!this.navigationCurrent()) { this.closeDevice(); return; }
+    const index = this.state.detailNavigationIds.indexOf(this.state.detailTargetId);
+    if (index < 0) return;
+    const id = this.state.detailNavigationIds[index + direction];
+    if (id === undefined) return; // No wrap, page traversal or automatic skip.
+    await this.requestDevice(id);
+  };
+  private requestDevice = async (id: string) => {
+    if (!this.client || !this.state.tenant) return;
+    if (this.detailNavigationContext !== null && (!this.navigationCurrent() || !this.state.detailNavigationIds.includes(id))) return;
     this.detailRequest.abort(); this.detailRequest = new AbortController();
     const client = this.client, epoch = this.epoch, sequence = ++this.detailSequence, tenant = this.state.tenant.id, reportGeneration = this.contextGeneration;
-    this.emit({ detail: null, detailOpen: true, detailBusy: true, detailError: null, detailReadAt: '', reportError: null, reportNotice: null });
+    this.emit({ detail: null, detailOpen: true, detailBusy: true, detailError: null, detailReadAt: '',
+      detailTargetId: id, reportError: null, reportNotice: null });
     try {
       const detail = await client.getDevice(tenant, id, { signal: this.detailRequest.signal });
-      if (!this.current(epoch, client) || sequence !== this.detailSequence || reportGeneration !== this.contextGeneration) return;
+      if (!this.detailCurrent(epoch, client, sequence, reportGeneration, tenant, id)) return;
       this.bindReportContext(this.state.tenant);
       this.emit({ detail, detailBusy: false, detailReadAt: this.readTime() });
     } catch (error) {
-      if (!this.current(epoch, client) || sequence !== this.detailSequence || code(error) === 'aborted') return;
-      if (code(error) === 'forbidden' || code(error) === 'not_found') this.clearReportContext();
+      if (!this.detailCurrent(epoch, client, sequence, reportGeneration, tenant, id) || code(error) === 'aborted') return;
+      const accessLost = code(error) === 'forbidden' || code(error) === 'not_found';
+      if (accessLost) { this.clearReportContext(); this.detailNavigationContext = null; }
       if (code(error) === 'unauthorized') this.fail(error, epoch, client);
-      else this.emit({ detail: null, detailBusy: false, detailError: errorMessage(error) });
+      else this.emit({ detail: null, detailBusy: false, detailError: errorMessage(error),
+        ...(accessLost ? { detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS } : {}) });
     }
   };
-  closeDevice = () => { ++this.detailSequence; this.detailRequest.abort(); this.emit({ detailOpen: false, detail: null, detailError: null, detailBusy: false, detailReadAt: '' }); };
+  closeDevice = () => {
+    ++this.detailSequence; this.detailRequest.abort(); this.detailNavigationContext = null;
+    this.emit({ detailOpen: false, detail: null, detailError: null, detailBusy: false, detailReadAt: '',
+      detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS });
+  };
   addDetailToReport = (update = false) => {
     const { detail, tenant, reportDraft: draft } = this.state;
-    if (!this.client || !tenant || !detail || !draft || !this.state.detailOpen || this.state.detailBusy || this.state.detailError || !this.state.detailReadAt || detail.tenant_id !== tenant.id || draft.context.generation !== this.contextGeneration) return;
+    if (!this.client || !tenant || !detail || !draft || !this.state.detailOpen || this.state.detailBusy || this.state.detailError
+      || !this.state.detailReadAt || detail.tenant_id !== tenant.id || detail.id !== this.state.detailTargetId
+      || (this.detailNavigationContext !== null && !this.navigationCurrent()) || draft.context.generation !== this.contextGeneration) return;
     try {
       const record = captureRecord(detail, { tenantName: tenant.name, readAt: this.state.detailReadAt, context: draft.context });
       const next = update ? updateRecord(draft, record) : addRecord(draft, record);
@@ -202,9 +255,9 @@ class ConsoleStore {
     if (!this.state.reportPreview || this.state.reportPreview.locale !== this.state.locale || !this.state.reportDraft || !this.client || !this.state.tenant || this.state.previewRevision !== this.state.reportDraft.revision || this.state.reportDraft.context.generation !== this.contextGeneration) return;
     try { window.print(); } catch { this.emit({ reportError: message('app.reportError.print') }); }
   };
-  setFilter = (filter: string) => this.emit({ filter });
-  setQuery = (query: string) => this.emit({ query });
-  setSort = (sort: string) => this.emit({ sort });
+  setFilter = (filter: string) => { if (filter !== this.state.filter && this.state.detailOpen) this.closeDevice(); this.emit({ filter }); };
+  setQuery = (query: string) => { if (query !== this.state.query && this.state.detailOpen) this.closeDevice(); this.emit({ query }); };
+  setSort = (sort: string) => { if (sort !== this.state.sort && this.state.detailOpen) this.closeDevice(); this.emit({ sort }); };
   setLocale = (locale: Locale) => {
     if ((locale !== 'tr' && locale !== 'en') || locale === this.state.locale) return;
     this.emit({ locale, reportPreview: null, previewRevision: null });

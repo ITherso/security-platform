@@ -25,6 +25,12 @@ Changing language keeps the selected organization, sample scenario, page, search
 
 The connection panel can select normal, empty and error sample scenarios. Those scenarios are labeled examples, not evidence of an actual access or network failure. The English interface does not translate API names, device names or user-entered search text.
 
+## Move between device details
+
+Use the previous/next controls inside the existing device dialog to move through **the displayed, filtered and sorted devices on the loaded page**. This is not the entire organization inventory. The first and last records are boundaries: navigation does not wrap, prefetch a neighbour or fetch another page. Each explicit move reads only the chosen device through the existing detail GET.
+
+Closing the dialog keeps your list search, filter, sort and page. Switching language keeps the current target device. A loading/error view is not a completed product report. Moving between devices does not add to or update the status report automatically; use the explicit report action after the chosen detail has loaded successfully.
+
 ## Understand the labels
 
 - **Reported by the device / Not independently verified** remains the trust level. Successful API access or TLS does not verify the product's claims.

@@ -79,3 +79,27 @@ Başlangıç `2825072f2e8bc78154586537da476a09b7dce691`, yerel git ve teslim man
 - Altı gerçek TR/EN ekran görüntüsü `operator-console-locale-*.png` adıyla teslim edilir. İngilizce genel görünüm son build, diğer ekranlar yalnız son tarih doğrulama sıkılaştırması öncesindeki aynı UI görünümüdür. Yeni kaynak/konsol/birleşik paket boyutları ve SHA256 değerleri dış manifestte gerçek arşivlerden ölçülür; önceki hash yeni teslimata taşınmaz.
 
 Bu tur native yazdırma önizlemesi veya PDF üretimi denenmez; önceki “native printpreview görülmedi / PDF kaydedilmedi” bilgisi korunur. Yeni test/runner/koşusu, canlı API/token/PG/IdP/Windows işlemi veya revision kabulü yoktur. 506/2 yalnız tarihsel temel; Windows 12 NOT_RUN ve symlink SKIP değişmez. Backend/HBF/wheel, kilitli runtime sürümleri, tarih sıralaması düzeltmesi ve MIT bildirimleri korunur. [Yerelleştirme](LOCALIZATION.tr.md), [English quick start](QUICKSTART.en.md).
+
+## Ürün Phase8 — aynı sayfada önceki/sonraki ayrıntı
+
+Başlangıç platform kaynağı `acbac544d9ebaea9f34147aed16d6654417c257e`; çalışma dalı `feat/operator-console-detail-navigation` olarak ayrıdır. Korunan Phase7 kopyaları değiştirilmez. Aşağıdaki kimlikler mevcut snapshot dosyalarının boyut/SHA256 değerleridir; yeni Phase8 arşivinin kimliği veya yeniden yapılmış bağımsız Phase7 kabulü değildir:
+
+| Korunan dosya | Bayt | SHA256 |
+|---|---:|---|
+| `Security-Ecosystem-phase7-2026-11-07.zip` | 8.231.270 | `24ab130c3bc0c54266bb7746ce2d4dabea01c238f54e39a07bf8d2b5fb562f02` |
+| `Security-Operator-Console-phase7-2026-11-07.zip` | 6.646.748 | `e777d4d6185e769131bea8530bdf36dcbb1032c8ede00d230c391539dbb1071e` |
+| `Security-Platform-phase7-0.1.0-source.zip` | 371.716 | `5eb824c8ad09a1139b9b451bfbd488ac9642cf81340173ca8911594b2c7107fa` |
+
+`phase7-delivery-manifest.json` ve `phase7-console-delivery-status.json` diğer iki korunan kayıt dosyasıdır. Tam paket/dosya kimlikleri dış teslim manifestinde tutulur; önceki hash'ler yeni çıktıya taşınmaz.
+
+Dar ürün kapsamı, mevcut cihaz ayrıntısı penceresinde yalnız ekrandaki filtrelenmiş/sıralanmış yüklü sayfa içinde önceki/sonraki geçişidir. İlk/son kayıtta durur; başa sarma, komşu prefetch'i, başka sayfa okuma veya yeni API yolu yoktur. Seçilen hedef mevcut ayrıntı GET'iyle açık kullanıcı eyleminde okunur. Kapatınca arama/filtre/sıralama/sayfa, dil değişince hedef korunur; rapora ekleme/güncelleme otomatikleşmez.
+
+Kaynakta mevcut abort ile epoch/sequence/generation/tenant/hedef denetimleri, geç başarı ve hata yanıtlarını etkin bağlama sınırlayan korumalar bulunur. Diyaloğu ilk açan kontrolün odak referansı saklanır; artık mevcut değilse arama alanı/ana içerik gibi güvenli dönüş hedefi kullanılır. Bunlar kaynakta uygulanan davranışlardır; yeni gezinme akışının canlı API, kontrollü gecikmiş yanıt/async hata ve erişim-hata dalları çalışma zamanında denenmedi. İlk açan kontrole dönüşün gerçek elle gözlemi de aşağıdaki bekleyen sonuçlardan ayrıdır.
+
+- Frozen-lockfile/ignore-scripts kurulumu, strict typecheck ve production build tamamlandı. Son build 40 modül ve üç statik varlık üretir; küme SHA256 `aa77219fbd1de284a951caabb0c7d01d5f53be9bd9c98fc543e7f073aca476a4`. Test veya runner çalıştırılmadı.
+- Gerçek yerel örnek tarayıcıda filtreli/sıralı sayfadan ayrıntı açma, önceki/sonraki ve ilk/son/tek cihaz sınırı gözlendi. Son build ile `DEMO` araması + stale filtresi + son kabul sırası, iki cihaz arasında geçiş, TR/EN dilinde aynı hedef, ilk açan İzmir satırına Escape ve kapat düğmesiyle dönüş tekrar incelendi. Liste kaydırması önce/sonra aynı `318.6666564941406` CSS px değerinde kaldı. İkinci sayfanın tek cihazında iki geçiş de kapalıydı; pencere kapatılınca `6–6` liste kapsamı kaldı. Önceki beş cihazlı görünümde ilk/son sınırı da incelendi; bu önceki UI derlemi gözlemidir.
+- Açık eylemle eklenen tek İzmir rapor kaydı, başka cihazlar incelenince aynı sayıda ve aynı kayıt olarak kaldı; kimlik seçimi varsayılan kapalıydı. Yeni hedef eski ürün/zaman bilgileriyle gösterilmez; yükleme, geç yanıt/hata, 401/403/404 ve bağlamsız ayrıntı dallarındaki korumalar kaynakta uygulanmıştır. Kontrollü gecikme/hata veya canlı erişim dalı çalıştırılmadı; yeni fixture/hata enjeksiyon düzeneği yoktur.
+- 390×844 ölçü ayarı mevcut ve yeni önizleme sekmesinde etkili olmadı; okunan gerçek ölçü `1280×720` kaldı. Geçici override geri alındı ve geçici sekme kapatıldı. Bu tur 390px dar görünüm **gözlenmedi**; CSS sarma kuralları kaynakta bulunur. Phase7 dar ekran gözlemi bu yeni işin sonucu sayılmaz.
+- Üç gerçek ekran görüntüsü `operator-console-navigation-tr.png`, `operator-console-navigation-en.png`, `operator-console-navigation-last-page.png` son build'e aittir. Görsel içerik değiştirilmeden PNG olarak kodlanır. Son yerel HTTP okuması 200 döndü; kendi başlatılan önizleme sunucusu durduruldu. Yeni kaynak/konsol/birleşik paket boyutu ve SHA256 değerleri dış teslim manifestinde gerçek arşivlerden hesaplanır; eski hash yeni teslimata taşınmaz.
+
+Bu kayıtlar sınırlı elle ürün gözlemleridir; otomatik test veya canlı kabul değildir. Önceki Phase7 kayıtları kendi teslimlerine aittir. Testler, canlı API/token/IdP/PG, yönetim/Windows ve native print/PDF işleri bekletilmeye devam eder. Önceki PDF kaydedilmeme ve native baskı önizlemesine erişilememe kaydı değişmez. Backend/HBF/wheel, yetki yüzeyi, tarihsel test sayıları ve revision kapıları genişletilmez.

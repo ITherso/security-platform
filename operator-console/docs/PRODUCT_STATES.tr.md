@@ -57,3 +57,9 @@ Runtime doğrulama gerekli alanları/türleri ve ilişkileri kontrol eder. Bilin
 ## İki dilde aynı anlam
 
 [TR/EN yerelleştirme](LOCALIZATION.tr.md) yalnız sunumdur. **Cihazın bildirdiği / Reported by the device**, **Bağımsız doğrulanmadı / Not independently verified**, **Bilinmiyor / Unknown**, **Veri yok / No data**, **Güncel değil / Stale** ayrımları korunur. **Device registration revoked**, firewall disabled değildir; **Planned product — unavailable** etkin AV değildir. Dil, 404 nedenini kesinleştirmez veya doğrulama/güncellik düzeyini yükseltmez. Timestamp ve sayısal veriler değişmez; tr-TR/en-GB sunumu aynı UTC anını gösterir.
+
+## Aynı sayfada cihaz ayrıntıları arasında geçiş
+
+Önceki/sonraki kapsamı tüm kurum değildir: mevcut yüklü sayfada, ekrandaki arama/filtre/sıralama sonucunda bulunan cihazlardır. Sınırda geçiş durur; sarmalama, gizli prefetch veya sayfa okuma yoktur. Her açık geçiş yalnız seçilen hedefin mevcut ayrıntı okumasıdır; yükleniyor/hata durumu o hedefe aittir ve ürünün güvenlik durumuna çevrilmez.
+
+Pencereyi kapatma liste seçimini ve sayfayı, dil değiştirme hedef cihazı korur. Tenant/kip/erişim bağlamı ve gecikmiş yanıt kuralları genişletilmez. Cihaz gezintisi rapordaki seçilmiş kopyaları kendiliğinden eklemez veya yenilemez; ekleme/güncelleme yine başarıyla görüntülenen ayrıntıda açık eylemdir.

@@ -4,7 +4,8 @@ import { ProductCards, DeviceDetail, AuditView } from './components/ProductViews
 import { formatDate, formatCount } from './i18n/formatters';
 import { renderMessage, type MessageKey } from './i18n';
 import { LocaleProvider, LanguageSelect, useLocale } from './i18n/LocaleProvider';
-import { toDeviceListViewModel, receivedSortKey } from './data/viewModels';
+import { toDeviceListViewModel } from './data/viewModels';
+import { selectDeviceRows } from './data/deviceRows';
 import { ReportPage } from './features/reports/ReportPage';
 import { ReportPreview } from './features/reports/ReportPreview';
 import './features/reports/print.css';
@@ -31,10 +32,27 @@ function Icon({ name = 'device' }: { name?: string }) {
     : <><rect x="3" y="4" width="18" height="13" rx="2" /><path d="M8 21h8M12 17v4" /></>}</svg>;
 }
 function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: string }) { return <span className="badge" data-tone={tone}>{children}</span>; }
-function Modal({ open, onClose, children, className, label }: { open: boolean; onClose: () => void; children: ReactNode; className: string; label: string }) {
+function Modal({ open, onClose, children, className, label, restorePageFocus = false }: { open: boolean; onClose: () => void; children: ReactNode; className: string; label: string; restorePageFocus?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => { const el = ref.current; if (!el) return; if (open && !el.open) el.showModal(); else if (!open && el.open) el.close(); }, [open]);
-  return <dialog ref={ref} className={className} aria-label={label} onCancel={(event) => { event.preventDefault(); onClose(); }} onClose={onClose}>{open && <><div className="modal-locale"><LanguageSelect /></div>{children}</>}</dialog>;
+  const opener = useRef<HTMLElement | null>(null), scroll = useRef({ x: 0, y: 0 });
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    if (open && !el.open) {
+      if (restorePageFocus) { opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null; scroll.current = { x: window.scrollX, y: window.scrollY }; }
+      el.showModal();
+    } else if (!open && el.open) el.close();
+  }, [open, restorePageFocus]);
+  const closed = () => {
+    onClose();
+    if (!restorePageFocus) return;
+    const original = opener.current;
+    const canReturn = original?.isConnected && !original.matches(':disabled');
+    const target = canReturn ? original : document.querySelector<HTMLInputElement>('main input[type="search"]') || document.getElementById('main');
+    target?.focus({ preventScroll: true });
+    if (canReturn) window.scrollTo({ left: scroll.current.x, top: scroll.current.y });
+    opener.current = null;
+  };
+  return <dialog ref={ref} className={className} aria-label={label} onCancel={(event) => { event.preventDefault(); onClose(); }} onClose={closed}>{open && <><div className="modal-locale"><LanguageSelect /></div>{children}</>}</dialog>;
 }
 function Metrics() {
   const { locale, t } = useLocale();
@@ -52,10 +70,7 @@ function DeviceList() {
   const { locale, t } = useLocale();
   const s = useSyncExternalStore(store.subscribe, store.snapshot), items = s.devices?.items || [];
   const model = s.devices ? toDeviceListViewModel(s.devices) : null;
-  const query = s.query.trim().toLocaleLowerCase('tr-TR');
-  const rows = items.filter((d) => (!query || `${d.label} ${d.id}`.toLocaleLowerCase('tr-TR').includes(query)) &&
-    (s.filter === 'all' || (s.filter === 'revoked' ? d.identity_status === 'revoked' : d.connection_status === s.filter)))
-    .sort((a, b) => s.sort === 'received' ? receivedSortKey(b.last_received_at).localeCompare(receivedSortKey(a.last_received_at)) : a.label.localeCompare(b.label, 'tr'));
+  const rows = selectDeviceRows(s.devices, s.query, s.filter, s.sort);
   return <section className="panel"><div className="panel-heading"><div><h2>{t('app.nav.devices')}</h2><p>{t('app.devices.subtitle')}</p></div><Badge>{t('app.thisPage')}</Badge></div>
     <div className="list-toolbar"><div className="search-wrap"><input type="search" value={s.query} onChange={(e) => store.setQuery(e.target.value)} placeholder={t('app.search.placeholder')} aria-label={t('app.search.label')} /></div>
       <select className="filter-select" aria-label={t('app.filter.label')} value={s.filter} onChange={(e) => store.setFilter(e.target.value)}>
@@ -115,6 +130,22 @@ function CaptureReportActions() {
   const selected = s.reportDraft?.records.some((record) => record.deviceId === s.detail?.id) ?? false;
   return <section className="report-capture"><p>{t('app.capture.description')}</p><div className="detail-actions"><button className="btn btn-primary" onClick={() => store.addDetailToReport(selected)}>{selected ? t('app.capture.update') : t('app.capture.add')}</button><button className="btn btn-ghost" onClick={() => store.navigate('reports')}>{t('app.capture.open', formatCount(s.reportDraft?.records.length || 0, locale))}</button></div>{s.reportNotice && <p role="status">{renderMessage(locale, s.reportNotice)}</p>}{s.reportError && <p className="inline-error" role="alert">{renderMessage(locale, s.reportError)}</p>}</section>;
 }
+function DetailNavigator() {
+  const { locale, t } = useLocale();
+  const s = useSyncExternalStore(store.subscribe, store.snapshot);
+  const status = useRef<HTMLParagraphElement>(null);
+  const index = s.detailTargetId === null ? -1 : s.detailNavigationIds.indexOf(s.detailTargetId);
+  const move = (direction: -1 | 1) => {
+    // This node remains mounted while the detail body loads or reports an error.
+    status.current?.focus();
+    void store.moveDevice(direction);
+  };
+  return <section className="detail-navigation" aria-label={t('app.detailNav.label')}>
+    <div className="detail-navigation-heading"><p ref={status} tabIndex={-1} role="status" aria-atomic="true">{index >= 0 ? t('app.detailNav.position', formatCount(index + 1, locale), formatCount(s.detailNavigationIds.length, locale)) : t('app.detailNav.current')}</p><button type="button" className="btn btn-ghost" onClick={store.closeDevice}>{t('app.close')}</button></div>
+    {index >= 0 && <><p className="detail-navigation-scope">{t('app.detailNav.scope')}</p>
+    <div className="detail-navigation-actions"><button type="button" className="btn btn-ghost" disabled={s.detailBusy || index === 0} onClick={() => move(-1)}>{t('app.detailNav.previous')}</button><button type="button" className="btn btn-ghost" disabled={s.detailBusy || index >= s.detailNavigationIds.length - 1} onClick={() => move(1)}>{t('app.detailNav.next')}</button></div></>}
+  </section>;
+}
 export function App() {
   const s = useSyncExternalStore(store.subscribe, store.snapshot);
   return <LocaleProvider locale={s.locale} setLocale={store.setLocale}><AppContent /></LocaleProvider>;
@@ -141,6 +172,6 @@ function AppContent() {
         : s.view === 'reports' ? s.reportDraft ? <><ReportPage draft={s.reportDraft} showIdentifiers={s.showIdentifiers} onShowIdentifiersChange={store.setReportIdentifiers} onRemove={store.removeReportRecord} onClear={store.clearReport} onPreview={store.createReportPreview} onBrowseDevices={() => store.navigate('devices')} />{s.reportError && <p className="page-message" role="alert">{renderMessage(locale, s.reportError)}</p>}</> : <section className="panel empty-state"><h2>{t('app.report.selectTenant')}</h2><p>{t('app.report.emptyTenant')}</p></section> : !admin ? <section className="panel empty-state"><h2>{t('app.audit.adminTitle')}</h2><p>{s.tenant ? t('app.audit.viewerNote') : t('app.audit.selectTenant')}</p></section> : <AuditView page={s.audit} tenantName={s.tenant?.name} status={s.auditStatus} errorMessage={renderMessage(locale, s.auditError)} onNext={(offset) => void store.loadAudit(offset)} onPrev={s.auditOffset > 0 ? () => void store.loadAudit(Math.max(0, s.auditOffset - (demo ? 5 : 50))) : undefined} />}
       <footer className="page-footer"><span><span className="footer-dot" />{t('app.footer.readOnly')}</span><span>{t('app.footer.trust')}</span></footer>
     </main></div></div>
-    <Modal open={s.detailOpen} onClose={store.closeDevice} className="detail-dialog" label={t('app.detail.title')}>{s.detailBusy ? <div className="empty-state" role="status">{t('app.detail.loading')}</div> : s.detailError ? <div className="empty-state"><p role="alert">{renderMessage(locale, s.detailError)}</p><button className="btn btn-ghost" onClick={store.closeDevice}>{t('app.close')}</button></div> : <DeviceDetail detail={s.detail} onClose={store.closeDevice} actions={<CaptureReportActions />} />}</Modal>
+    <Modal open={s.detailOpen} onClose={store.closeDevice} className="detail-dialog" label={t('app.detail.title')} restorePageFocus><DetailNavigator />{s.detailBusy ? <div className="empty-state" role="status">{t('app.detail.loading')}</div> : s.detailError ? <div className="empty-state"><p role="alert">{renderMessage(locale, s.detailError)}</p></div> : <DeviceDetail detail={s.detail} actions={<CaptureReportActions />} />}</Modal>
     <ConnectionPanel /></>;
 }
