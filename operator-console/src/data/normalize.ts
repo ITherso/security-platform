@@ -201,19 +201,25 @@ export const normalizeDevicePage = (input: unknown, options: Pagination, tenantI
 export const normalizeAuditPage = (input: unknown, options: Pagination, tenantId: string): Page<AuditEvent> =>
   page(input, options, (value) => auditEvent(value, tenantId));
 
-function boundedGraph(value: unknown): unknown {
+const STRICT_JSON_BUDGETS = {
+  default: { depth: 12, nodes: 12000, stringUnits: 1024, arrayItems: 100, objectKeys: 32, tokens: 60000 },
+  "termivar-comparison-v1": { depth: 12, nodes: 250000, stringUnits: 1024, arrayItems: 4096, objectKeys: 32, tokens: 750000 },
+} as const;
+export type StrictJsonProfile = keyof typeof STRICT_JSON_BUDGETS;
+type StrictJsonBudget = typeof STRICT_JSON_BUDGETS[StrictJsonProfile];
+function boundedGraph(value: unknown, budget: StrictJsonBudget): unknown {
   const stack: [unknown, number][] = [[value, 0]];
   let count = 0;
   while (stack.length) {
     const current = stack.pop();
     requireValue(current !== undefined);
     const [item, depth] = current;
-    requireValue(++count <= 12000 && depth <= 12);
-    if (typeof item === "string") requireValue(item.length <= 1024);
+    requireValue(++count <= budget.nodes && depth <= budget.depth);
+    if (typeof item === "string") requireValue(item.length <= budget.stringUnits);
     else if (typeof item === "number") requireValue(Number.isFinite(item));
     else if (item !== null && typeof item === "object") {
       const entries = Object.entries(item);
-      requireValue(entries.length <= (Array.isArray(item) ? 100 : 32));
+      requireValue(entries.length <= (Array.isArray(item) ? budget.arrayItems : budget.objectKeys));
       for (const [key, child] of entries) {
         requireValue(!["__proto__", "prototype", "constructor"].includes(key));
         stack.push([child, depth + 1]);
@@ -229,7 +235,10 @@ export function freeze<T>(value: T): T {
   }
   return value;
 }
-export function strictJson(textValue: string): unknown {
+export function strictJson(textValue: string, profile: StrictJsonProfile = "default"): unknown {
+  // A trusted caller selects a closed profile; JSON never supplies arbitrary limits.
+  requireValue(profile === "default" || profile === "termivar-comparison-v1");
+  const budget = STRICT_JSON_BUDGETS[profile];
   // Native JSON.parse loses duplicate keys and rounds unsafe/fractional values.
   const token = /"(?:\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|[^"\\\u0000-\u001f])*"|[{}\[\]:,]|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null/gy;
   const stack: { kind: string; keys: Set<string> }[] = [];
@@ -242,23 +251,23 @@ export function strictJson(textValue: string): unknown {
     while ((position = whitespace(position)) < textValue.length) {
       token.lastIndex = position;
       const match = token.exec(textValue);
-      requireValue(match !== null && ++count <= 60000);
+      requireValue(match !== null && ++count <= budget.tokens);
       const value = match[0];
       requireValue(value !== undefined);
       position = token.lastIndex;
       if (value === "{" || value === "[") {
-        stack.push({ kind: value, keys: new Set() }); requireValue(stack.length <= 12);
+        stack.push({ kind: value, keys: new Set() }); requireValue(stack.length <= budget.depth);
       } else if (value === "}" || value === "]") requireValue(stack.pop()?.kind === (value === "}" ? "{" : "["));
       else if (value.startsWith('"') && textValue[whitespace(position)] === ":") {
         const object = stack[stack.length - 1];
         requireValue(object?.kind === "{");
         const key: unknown = JSON.parse(value);
-        requireValue(typeof key === "string" && !object.keys.has(key) && object.keys.size < 32);
+        requireValue(typeof key === "string" && !object.keys.has(key) && object.keys.size < budget.objectKeys);
         object.keys.add(key);
       } else if (/^[\d-]/.test(value)) requireValue(/^-?(?:0|[1-9]\d*)$/.test(value)
         && value !== "-0" && Number.isSafeInteger(Number(value)));
     }
     requireValue(stack.length === 0);
-    return boundedGraph(JSON.parse(textValue) as unknown);
+    return boundedGraph(JSON.parse(textValue) as unknown, budget);
   } catch { throw new ClientError("malformed"); }
 }

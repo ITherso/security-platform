@@ -4,6 +4,7 @@ import { reportsEn } from './catalogs/reports';
 import { compareEn } from './catalogs/compare';
 import { policyReviewEn } from './catalogs/policyReview';
 import { termivarReviewEn } from './catalogs/termivarReview';
+import { termivarComparisonEn } from './catalogs/termivarComparison';
 import type { messagesTr } from './messages.tr';
 import type { CatalogShape } from './types';
-export const messagesEn = { ...appEn, ...productsEn, ...reportsEn, ...compareEn, ...policyReviewEn, ...termivarReviewEn } satisfies CatalogShape<typeof messagesTr>;
+export const messagesEn = { ...appEn, ...productsEn, ...reportsEn, ...compareEn, ...policyReviewEn, ...termivarReviewEn, ...termivarComparisonEn } satisfies CatalogShape<typeof messagesTr>;
