@@ -7,9 +7,9 @@ export type PolicyReviewSource = "file" | "example";
 export type PolicyReviewAction = "ALLOW" | "DENY" | "DENY_TEMP";
 export type PolicyReviewChange = "unchanged" | "allow_to_deny" | "deny_to_allow" | "other_changed" | "policy_only_changed";
 export type PolicyReviewErrorCode = "file_too_large" | "invalid_utf8" | "invalid_json"
-  | "unsupported_artifact" | "unsupported_version" | "invalid_artifact";
+  | "unsupported_artifact" | "unsupported_version" | "invalid_artifact" | "reader_unavailable";
 export const POLICY_REVIEW_ERROR_CODES: readonly PolicyReviewErrorCode[] = ["file_too_large", "invalid_utf8", "invalid_json",
-  "unsupported_artifact", "unsupported_version", "invalid_artifact"];
+  "unsupported_artifact", "unsupported_version", "invalid_artifact", "reader_unavailable"];
 
 export class PolicyReviewError extends Error {
   readonly code: PolicyReviewErrorCode;

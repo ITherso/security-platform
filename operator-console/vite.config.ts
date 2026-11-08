@@ -8,6 +8,6 @@ export default defineConfig({
     allowedHosts: ['127.0.0.1', 'localhost'], headers, fs: { strict: true, allow: [root] } },
   preview: { host: '127.0.0.1', port: 4173, strictPort: true, open: false, cors: false,
     allowedHosts: ['127.0.0.1', 'localhost'], headers },
-  build: { target: 'es2022', sourcemap: false, emptyOutDir: false, modulePreload: { polyfill: false },
-    rollupOptions: { output: { entryFileNames: 'assets/console.js', chunkFileNames: 'assets/[name].js', assetFileNames: 'assets/console.[ext]' } } }
+  build: { target: 'es2022', sourcemap: false, emptyOutDir: false, modulePreload: false, manifest: 'vite-manifest.json',
+    rollupOptions: { output: { entryFileNames: 'assets/console.js', chunkFileNames: 'assets/[name]-[hash].js', assetFileNames: 'assets/[name]-[hash][extname]' } } }
 });

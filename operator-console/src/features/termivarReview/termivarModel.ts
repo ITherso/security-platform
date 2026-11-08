@@ -6,7 +6,7 @@ export const MAX_TERMIVAR_MANIFEST_BYTES = 64 * 1024;
 export const TERMIVAR_REVIEW_FILTERS = ["all", "informational", "needs_review", "confirmed"] as const;
 export type TermivarReviewFilter = typeof TERMIVAR_REVIEW_FILTERS[number];
 export const TERMIVAR_REVIEW_ERROR_CODES = ["file_too_large", "invalid_utf8", "invalid_json", "unsupported_artifact", "unsupported_version",
-  "unsupported_extension", "invalid_artifact", "digest_unavailable", "unsupported_manifest"] as const;
+  "unsupported_extension", "invalid_artifact", "digest_unavailable", "unsupported_manifest", "reader_unavailable"] as const;
 export type TermivarReviewErrorCode = typeof TERMIVAR_REVIEW_ERROR_CODES[number];
 export type TermivarReviewSource = "file" | "example";
 export class TermivarReviewError extends Error {

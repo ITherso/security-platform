@@ -24,6 +24,7 @@ const ERROR_KEYS: Readonly<Record<ComparisonErrorCode, TermivarComparisonTextKey
   invalid_json: 'termivarComparison.error.invalid_json', unsupported_artifact: 'termivarComparison.error.unsupported_artifact',
   unsupported_version: 'termivarComparison.error.unsupported_version', unsupported_section: 'termivarComparison.error.unsupported_section',
   invalid_comparison: 'termivarComparison.error.invalid_comparison',
+  reader_unavailable: 'termivarComparison.error.reader_unavailable',
 };
 
 export function ComparisonPage({ state, onImportFile, onInvalidSelection, onLoadExample, onClear,

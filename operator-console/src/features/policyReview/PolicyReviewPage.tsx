@@ -24,6 +24,7 @@ const ERROR_KEYS: Readonly<Record<PolicyReviewErrorCode, PolicyReviewTextKey>> =
   file_too_large: 'policyReview.error.file_too_large', invalid_utf8: 'policyReview.error.invalid_utf8',
   invalid_json: 'policyReview.error.invalid_json', unsupported_artifact: 'policyReview.error.unsupported_artifact',
   unsupported_version: 'policyReview.error.unsupported_version', invalid_artifact: 'policyReview.error.invalid_artifact',
+  reader_unavailable: 'policyReview.error.reader_unavailable',
 };
 
 /** File reads and their race/context guards remain in the existing caller. */

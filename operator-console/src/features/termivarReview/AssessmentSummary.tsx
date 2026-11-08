@@ -9,6 +9,7 @@ const ERRORS: Readonly<Record<TermivarReviewErrorCode, TermivarReviewTextKey>> =
   unsupported_version: 'termivarReview.error.unsupported_version', unsupported_extension: 'termivarReview.error.unsupported_extension',
   invalid_artifact: 'termivarReview.error.invalid_artifact', digest_unavailable: 'termivarReview.error.digest_unavailable',
   unsupported_manifest: 'termivarReview.error.unsupported_manifest',
+  reader_unavailable: 'termivarReview.error.reader_unavailable',
 };
 export function TermivarReviewErrorMessage({ code }: { code: TermivarReviewErrorCode | null }) {
   const { t } = useLocale();

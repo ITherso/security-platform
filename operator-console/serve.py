@@ -2,6 +2,7 @@
 import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import sys
+from types import MappingProxyType
 
 from build import BuildError, read_dist
 
@@ -104,7 +105,7 @@ def main():
     try:
         assets = read_dist()
         server = PreviewServer(("127.0.0.1", args.port), PreviewHandler)
-        server.assets = {"/" + name: raw for name, raw in assets.items()}
+        server.assets = MappingProxyType({"/" + name: raw for name, raw in assets.items()})
         print(f"http://127.0.0.1:{server.server_address[1]}/", flush=True)
         server.serve_forever(poll_interval=0.25)
     except KeyboardInterrupt:

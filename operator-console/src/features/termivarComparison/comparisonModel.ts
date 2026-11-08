@@ -4,7 +4,7 @@ export type { ComparisonChangedField, ComparisonClaimBasis, ComparisonDispositio
 export const MAX_COMPARISON_REVIEW_BYTES = 8 * 1024 * 1024;
 export const COMPARISON_FILTERS = ["all", "only_in_after", "only_in_before", "changed", "unchanged"] as const;
 export type ComparisonFilter = typeof COMPARISON_FILTERS[number];
-export const COMPARISON_ERROR_CODES = ["file_too_large", "invalid_utf8", "invalid_json", "unsupported_artifact", "unsupported_version", "unsupported_section", "invalid_comparison"] as const;
+export const COMPARISON_ERROR_CODES = ["file_too_large", "invalid_utf8", "invalid_json", "unsupported_artifact", "unsupported_version", "unsupported_section", "invalid_comparison", "reader_unavailable"] as const;
 export type ComparisonErrorCode = typeof COMPARISON_ERROR_CODES[number];
 export type ComparisonSource = "file" | "example";
 export class TermivarComparisonError extends Error {

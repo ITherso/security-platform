@@ -5,7 +5,12 @@ export type { Locale } from './types';
 export type MessageKey = keyof typeof messagesTr;
 export type MessageArgs<K extends MessageKey> = (typeof messagesTr)[K] extends (...args: infer A) => string ? A : [];
 export type Translator = <K extends MessageKey>(key: K, ...args: MessageArgs<K>) => string;
-export type UiMessage = { [K in MessageKey]: { readonly key: K; readonly args: MessageArgs<K>; readonly sample?: boolean } }[MessageKey];
+// Static messages share the same empty tuple. Grouping them preserves key/args
+// checking without expanding a separate object union for every catalog string.
+type StaticMessageKey = { [K in MessageKey]: MessageArgs<K> extends [] ? K : never }[MessageKey];
+type ArgumentMessageKey = Exclude<MessageKey, StaticMessageKey>;
+export type UiMessage = { readonly key: StaticMessageKey; readonly args: []; readonly sample?: boolean }
+  | { [K in ArgumentMessageKey]: { readonly key: K; readonly args: MessageArgs<K>; readonly sample?: boolean } }[ArgumentMessageKey];
 
 function resolve(locale: Locale, key: MessageKey, args: readonly unknown[]): string {
   const value = (locale === 'en' ? messagesEn : messagesTr)[key];

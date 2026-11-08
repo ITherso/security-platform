@@ -21,6 +21,9 @@ Kayıt/iptal, credential/snapshot, policy push/apply, scan, uzaktan komut veya e
 - [Kurulum ve bağlantı](docs/SETUP.tr.md)
 - [Gerçek API–UI eşlemesi](docs/API_UI_MAPPING.tr.md)
 - [Ürün durumlarının anlamı](docs/PRODUCT_STATES.tr.md)
+- [Ürün Merkezi ve demo rehberi](docs/PRODUCT_HUB.tr.md) / [English guide](docs/PRODUCT_HUB.en.md)
+- [Yetenek ve açık kabul kapıları matrisi](docs/CAPABILITY_MATRIX.tr.md)
+- [Ekran bazlı yükleme ve gerçek byte ölçümleri](docs/FRONTEND_LOADING.tr.md)
 - [Seçili cihazlar — ürün bildirim özeti](docs/REPORTS.tr.md)
 - [İki cihazın bildirimlerini karşılaştırma](docs/DEVICE_COMPARISON.tr.md)
 - [Politika etki inceleme çalışma alanı](docs/POLICY_REVIEW_WORKBENCH.tr.md) / [English guide](docs/POLICY_REVIEW_WORKBENCH.en.md)
@@ -47,3 +50,5 @@ Politika önizlemeleri, mevcut `security-policy` CLI'nin önceden ürettiği `sp
 Termivar Değerlendirmeleri, desteklenen tamamlanmış temel assessment veya ayrı eksik tanı JSON'unu tek yerel dosyadan (1 MiB) inceler. Observation, kanıt referansı, NeedsReview ve tamamlanma ayrıdır; bulunmayan zaman/budget/üretici bilgisi uydurulmaz. İsteğe bağlı manifest yalnız seçilen JSON girdisinin byte/özet ilişkisini kontrol eder; HTML okunmaz ve tam bundle doğrulaması yapılmaz. Yerleşik örnekler elle yazılmış sentetiktir; scanner çalıştırılmaz, cihaz bağlanmaz ve koruma/remediation hükmü üretilmez.
 
 Aynı Termivar alanındaki karşılaştırma görünümü, önceden oluşturulmuş temel `termivar-report-comparison/v1` JSON'unu tek dosyadan (8 MiB) inceler; iki assessment birleştirmez. Gerçek dört grubun sayıları yüklenmiş dizilerden gelir. `only_in_before` düzeltme, `unchanged` eşit koruma veya `--same-scope` kanıtlanmış eşit kapsam değildir. Opsiyonel comparison/audit bölümleri bu sürümde bütün dosya için açık ret üretir; sessiz kısmi yorum yoktur. Yeni scanner/CLI/ağ/backend işlemi yapılmaz.
+
+Ürün Merkezi, beş mevcut ürün/bileşeni sabit katalogdan tanıtır; çalışma alanı kullanılabilirliğini bağımsız doğrulamadan ayrı tutar. Üç demo rehberi yalnız mevcut kontrollara yönlendirir; sonraki/önceki adımlar dosya/örnek/cihaz yüklemez, API oturumunu değiştirmez. Büyük ekranların lazy yüklemesi yerel uygulama kodudur; yeni tarama veya API yetkisi değildir. Kurumsal ücretli ürün için açık kalan teknik/işletimsel kapılar capability matrix'te mevcut durumlarıyla belirtilir; fiyat/SLA veya production readiness onayı üretilmez.

@@ -14,6 +14,8 @@ Konsolun [politika etki inceleme alanı](operator-console/docs/POLICY_REVIEW_WOR
 
 Bu alanın [karşılaştırma görünümü](operator-console/docs/TERMIVAR_COMPARISON.tr.md) ([English](operator-console/docs/TERMIVAR_COMPARISON.en.md)) hazır `termivar-report-comparison/v1` JSON'unu okur. Dört grup yalnız rapor projection farklarını anlatır; tarayıcı yeni karşılaştırma üretmez ve bir öğenin kaybolmasını remediation kanıtı saymaz.
 
+[Ürün Merkezi ve demo rehberi](operator-console/docs/PRODUCT_HUB.tr.md) ([English](operator-console/docs/PRODUCT_HUB.en.md)) beş mevcut ürün/bileşenin kapsamını ve gerçek sayfa bağlantılarını toplar. [Yetenek matrisi](operator-console/docs/CAPABILITY_MATRIX.tr.md) kullanılabilir UI ile yapılmamış/kararlaştırılmamış kurumsal kabul kapılarını, [yükleme kaydı](operator-console/docs/FRONTEND_LOADING.tr.md) gerçek frontend byte ölçümlerini ayrı tutar. Yeni marka, fiyat, lisans/SLA veya production onayı oluşturulmaz.
+
 ## Korunan başlangıç
 
 Yanındaki HostBasedFirewall kaynağının sürümü 1.4.3 olarak korundu. Platform başlangıcı yerel `94037a261b63e2443f04d56356cd525a3d3445df` commit'idir. Korunan ilk aşama arşivi `HostBasedFirewall-phase1-2026-11-07-source.zip` SHA256 değeri `bb4e4c876ae56047aa114023bbf1059fc9f979908f7f65f0fbe849713b332261` olarak kaydedildi. Başlangıcın doğrulanmış sonuçları **2106 Python testi + 47 alt test**, **8 fixture Edge paketi** ve **11 gerçek izole localhost oturum/UI import kontrolüdür**. Yeni EXE veya GitHub push yapılmadı.
