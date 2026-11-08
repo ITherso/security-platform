@@ -1,0 +1,62 @@
+{
+  "schema": "venom-rendered-assessment/v1",
+  "source_schema": "venom-assessment-run/v1",
+  "run_schema": "venom-run/v1",
+  "profile_schema": "venom.scan-profile/v1",
+  "profile": "web-review",
+  "status": "complete",
+  "subject_count": 1,
+  "item_count": 2,
+  "items": [
+    {
+      "schema": "venom-assessment-item/v1",
+      "capability_id": "example.review.observation@1",
+      "subject_reference": "subject-0000",
+      "title": "Synthetic observation example",
+      "disposition": "informational",
+      "claim_basis": "observation",
+      "severity": null,
+      "confidence_ppm": 0,
+      "fingerprint": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "evidence_count": 1,
+      "redacted_summary": "Hand-authored example data. No target was assessed and no vulnerability is asserted.",
+      "category": "synthetic-example",
+      "cwe": null,
+      "remediation": {
+        "id": "example.recommendation.observation@1",
+        "summary": "Review this synthetic record only. It authorizes no action and proves no fix."
+      },
+      "evidence_references": ["evidence-0000"],
+      "control_evidence_references": [],
+      "candidate_evidence_references": [],
+      "case_reference": null,
+      "outcome_reference": null,
+      "verification_stage": null
+    },
+    {
+      "schema": "venom-assessment-item/v1",
+      "capability_id": "example.review.differential@1",
+      "subject_reference": "subject-0000",
+      "title": "Synthetic review candidate example",
+      "disposition": "needs_review",
+      "claim_basis": "differential",
+      "severity": null,
+      "confidence_ppm": 0,
+      "fingerprint": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence_count": 1,
+      "redacted_summary": "Hand-authored review candidate. No independent verification or security conclusion is implied.",
+      "category": "synthetic-example",
+      "cwe": null,
+      "remediation": {
+        "id": "example.recommendation.review@1",
+        "summary": "Keep the example in review status. No scan, remediation or active verification is requested."
+      },
+      "evidence_references": ["evidence-0001"],
+      "control_evidence_references": [],
+      "candidate_evidence_references": [],
+      "case_reference": null,
+      "outcome_reference": null,
+      "verification_stage": null
+    }
+  ]
+}

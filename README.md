@@ -10,6 +10,8 @@ Ek çevrimdışı araç, mevcut HBF değerlendiricisiyle açık senaryoları kar
 
 Konsolun [politika etki inceleme alanı](operator-console/docs/POLICY_REVIEW_WORKBENCH.tr.md) ([English](operator-console/docs/POLICY_REVIEW_WORKBENCH.en.md)), bu CLI'nin önceden ürettiği sürümlü preview dosyasını yerel olarak görüntüler. Evaluator'ı tarayıcıya taşımaz; cihaz/uygulama yetkisi veya eksik revision/CAS kanıtı oluşturmaz.
 
+[Termivar değerlendirme alanı](operator-console/docs/TERMIVAR_REVIEW.tr.md) ([English](operator-console/docs/TERMIVAR_REVIEW.en.md)), desteklenen yerel assessment ve ayrı incomplete tanı artefaktlarını salt okunur inceler. Yeni scanner veya backend importer değildir; isteğe bağlı manifest kontrolü yalnız seçilen JSON girdisine ilişkindir, tam bundle/üretici doğrulaması değildir.
+
 ## Korunan başlangıç
 
 Yanındaki HostBasedFirewall kaynağının sürümü 1.4.3 olarak korundu. Platform başlangıcı yerel `94037a261b63e2443f04d56356cd525a3d3445df` commit'idir. Korunan ilk aşama arşivi `HostBasedFirewall-phase1-2026-11-07-source.zip` SHA256 değeri `bb4e4c876ae56047aa114023bbf1059fc9f979908f7f65f0fbe849713b332261` olarak kaydedildi. Başlangıcın doğrulanmış sonuçları **2106 Python testi + 47 alt test**, **8 fixture Edge paketi** ve **11 gerçek izole localhost oturum/UI import kontrolüdür**. Yeni EXE veya GitHub push yapılmadı.

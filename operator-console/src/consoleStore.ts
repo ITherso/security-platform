@@ -16,10 +16,18 @@ import { createPolicyReviewState, beginPolicyReviewImport, completePolicyReviewI
   setPolicyReviewDetails } from './features/policyReview/policyReviewState';
 import policyComparisonExample from './features/policyReview/examples/preview-output.json?raw';
 import policyBlockedExample from './features/policyReview/examples/preview-missing-context-output.json?raw';
+import { MAX_TERMIVAR_REVIEW_BYTES, MAX_TERMIVAR_MANIFEST_BYTES, TERMIVAR_REVIEW_ERROR_CODES } from './features/termivarReview/termivarModel';
+import type { AssessmentDocument, TermivarReviewState, TermivarReviewErrorCode, TermivarReviewFilter } from './features/termivarReview/termivarModel';
+import { parseTermivarAssessment, parseTermivarManifest } from './features/termivarReview/termivarAdapter';
+import { createTermivarReviewState, beginTermivarImport, completeTermivarImport, failTermivarImport,
+  clearTermivarReview as clearTermivarReviewState, beginTermivarManifestImport, completeTermivarManifestImport,
+  failTermivarManifestImport, setTermivarDetails, setTermivarQuery, setTermivarFilter, selectTermivarFinding } from './features/termivarReview/termivarReviewState';
+import termivarCompleteExample from './features/termivarReview/examples/assessment-example.json?raw';
+import termivarIncompleteExample from './features/termivarReview/examples/incomplete-example.json?raw';
 
 import { message, type UiMessage, type Locale } from './i18n';
 
-export type View = 'overview' | 'devices' | 'products' | 'audit' | 'reports' | 'compare' | 'policyReview';
+export type View = 'overview' | 'devices' | 'products' | 'audit' | 'reports' | 'compare' | 'policyReview' | 'termivarReview';
 export type Scenario = 'normal' | 'empty' | 'error';
 const EMPTY_DEVICE_IDS: readonly string[] = Object.freeze([]);
 interface DetailNavigationContext { readonly epoch: number; readonly tenantId: string; readonly generation: number }
@@ -53,6 +61,7 @@ interface State {
   previewRevision: number | null; showIdentifiers: boolean; reportError: UiMessage | null; reportNotice: UiMessage | null;
   comparison: CompareState | null; compareError: UiMessage | null; compareNotice: UiMessage | null;
   policyReview: PolicyReviewState; policyReviewImportId: number;
+  termivarReview: TermivarReviewState; termivarReviewImportId: number;
 }
 class ConsoleStore {
   private client: DataClient | null = createDemoClient();
@@ -63,6 +72,8 @@ class ConsoleStore {
   private detailNavigationContext: DetailNavigationContext | null = null;
   private contextGeneration = 1;
   private policyReviewReadSequence = 0;
+  private termivarReadSequence = 0;
+  private termivarManifestReadSequence = 0;
   private listeners = new Set<() => void>();
   private state: State = { locale: 'tr', mode: 'demo', scenario: 'normal', view: 'overview', mobile: false,
     tenants: [], nextTenant: null, tenant: null, devices: null, offset: 0, busy: false, loading: true,
@@ -70,7 +81,8 @@ class ConsoleStore {
     error: null, lastRead: '', detailOpen: false, detail: null, detailBusy: false, detailError: null, connectionOpen: false, connectionError: null,
     detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS,
     detailReadAt: '', reportDraft: null, reportPreview: null, previewRevision: null, showIdentifiers: false, reportError: null, reportNotice: null,
-    comparison: null, compareError: null, compareNotice: null, policyReview: createPolicyReviewState(), policyReviewImportId: 0 };
+    comparison: null, compareError: null, compareNotice: null, policyReview: createPolicyReviewState(), policyReviewImportId: 0,
+    termivarReview: createTermivarReviewState(), termivarReviewImportId: 0 };
   snapshot = () => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private emit(patch: Partial<State> = {}) { this.state = { ...this.state, ...patch }; this.listeners.forEach((fn) => fn()); }
@@ -85,7 +97,7 @@ class ConsoleStore {
   private clearReportContext() {
     ++this.contextGeneration;
     this.emit({ reportDraft: null, reportPreview: null, previewRevision: null, showIdentifiers: false, reportError: null, reportNotice: null,
-      comparison: null, compareError: null, compareNotice: null, ...this.resetPolicyReviewPatch() });
+      comparison: null, compareError: null, compareNotice: null, ...this.resetPolicyReviewPatch(), ...this.resetTermivarReviewPatch() });
   }
   private bindReportContext(tenant: Tenant | null) {
     if (!tenant || !this.client || this.state.mode === 'disconnected') { this.clearReportContext(); return; }
@@ -127,6 +139,7 @@ class ConsoleStore {
   reload = async () => {
     if (!this.client) { this.openConnection(); return; }
     this.clearPolicyReview();
+    this.clearTermivarReview();
     const previous = this.state.tenant?.id;
     this.reset(); this.emit({ loading: true, tenants: [], tenant: null, nextTenant: null });
     const client = this.client, epoch = this.epoch;
@@ -152,7 +165,7 @@ class ConsoleStore {
   };
   selectTenant = async (id: string) => {
     const tenant = this.state.tenants.find((item) => item.id === id); if (!tenant) return;
-    if (id !== this.state.tenant?.id) this.clearPolicyReview();
+    if (id !== this.state.tenant?.id) { this.clearPolicyReview(); this.clearTermivarReview(); }
     this.bindReportContext(tenant);
     this.reset(); this.emit({ tenant, query: '', filter: 'all', offset: 0 }); await this.loadView();
   };
@@ -161,7 +174,7 @@ class ConsoleStore {
     else if (this.state.view === 'overview' || this.state.view === 'devices') await this.loadDevices(0);
   };
   navigate = (view: View, filter = 'all') => {
-    if (this.state.loading && view !== 'policyReview') return;
+    if (this.state.loading && view !== 'policyReview' && view !== 'termivarReview') return;
     this.reset(); this.emit({ view, filter, query: '', offset: 0, mobile: false, reportPreview: null, previewRevision: null }); void this.loadView();
   };
   loadDevices = async (offset = 0) => {
@@ -348,6 +361,86 @@ class ConsoleStore {
     this.emit({ policyReview: selectPolicyReviewScenario(this.state.policyReview, id) });
   };
   setPolicyReviewDetails = (show: boolean) => this.emit({ policyReview: setPolicyReviewDetails(this.state.policyReview, show) });
+  private resetTermivarReviewPatch() {
+    ++this.termivarManifestReadSequence;
+    return { termivarReview: clearTermivarReviewState(this.state.termivarReview), termivarReviewImportId: ++this.termivarReadSequence };
+  }
+  private termivarReadCurrent(sequence: number, generation: number) {
+    return sequence === this.termivarReadSequence && generation === this.contextGeneration;
+  }
+  private beginTermivarRead() {
+    const sequence = ++this.termivarReadSequence, generation = this.contextGeneration;
+    ++this.termivarManifestReadSequence;
+    this.emit({ termivarReview: beginTermivarImport(this.state.termivarReview), termivarReviewImportId: sequence });
+    return { sequence, generation };
+  }
+  private termivarErrorCode(error: unknown): TermivarReviewErrorCode {
+    const value = code(error);
+    return TERMIVAR_REVIEW_ERROR_CODES.includes(value as TermivarReviewErrorCode) ? value as TermivarReviewErrorCode : 'invalid_artifact';
+  }
+  private termivarFailure(error: unknown, sequence: number, generation: number) {
+    if (this.termivarReadCurrent(sequence, generation)) this.emit({ termivarReview: failTermivarImport(this.state.termivarReview, this.termivarErrorCode(error)) });
+  }
+  importTermivarFile = async (file: File) => {
+    const { sequence, generation } = this.beginTermivarRead();
+    try {
+      if (!(file instanceof File)) { this.termivarFailure(null, sequence, generation); return; }
+      if (file.size > MAX_TERMIVAR_REVIEW_BYTES) {
+        this.emit({ termivarReview: failTermivarImport(this.state.termivarReview, 'file_too_large') }); return;
+      }
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (!this.termivarReadCurrent(sequence, generation)) return;
+      const document = await parseTermivarAssessment(bytes, 'file');
+      if (this.termivarReadCurrent(sequence, generation)) this.emit({ termivarReview: completeTermivarImport(this.state.termivarReview, document) });
+    } catch (error) { this.termivarFailure(error, sequence, generation); }
+  };
+  rejectTermivarSelection = () => {
+    const { sequence, generation } = this.beginTermivarRead(); this.termivarFailure(null, sequence, generation);
+  };
+  loadTermivarExample = async (kind: 'complete' | 'incomplete') => {
+    const { sequence, generation } = this.beginTermivarRead();
+    try {
+      if (kind !== 'complete' && kind !== 'incomplete') { this.termivarFailure(null, sequence, generation); return; }
+      const bytes = new TextEncoder().encode(kind === 'complete' ? termivarCompleteExample : termivarIncompleteExample);
+      const document = await parseTermivarAssessment(bytes, 'example');
+      if (this.termivarReadCurrent(sequence, generation)) this.emit({ termivarReview: completeTermivarImport(this.state.termivarReview, document) });
+    } catch (error) { this.termivarFailure(error, sequence, generation); }
+  };
+  private termivarManifestCurrent(sequence: number, generation: number, document: AssessmentDocument) {
+    return sequence === this.termivarManifestReadSequence && generation === this.contextGeneration && document === this.state.termivarReview.document;
+  }
+  private beginTermivarManifestRead() {
+    const document = this.state.termivarReview.document;
+    if (!document || this.state.termivarReview.status !== 'ready') return null;
+    const sequence = ++this.termivarManifestReadSequence, generation = this.contextGeneration;
+    this.emit({ termivarReview: beginTermivarManifestImport(this.state.termivarReview) });
+    return { sequence, generation, document };
+  }
+  importTermivarManifest = async (file: File) => {
+    const read = this.beginTermivarManifestRead(); if (!read) return;
+    const { sequence, generation, document } = read;
+    try {
+      if (!(file instanceof File)) throw { code: 'invalid_artifact' };
+      if (file.size > MAX_TERMIVAR_MANIFEST_BYTES) throw { code: 'file_too_large' };
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      if (!this.termivarManifestCurrent(sequence, generation, document)) return;
+      const manifest = parseTermivarManifest(bytes, document);
+      this.emit({ termivarReview: completeTermivarManifestImport(this.state.termivarReview, manifest) });
+    } catch (error) {
+      if (this.termivarManifestCurrent(sequence, generation, document)) this.emit({ termivarReview: failTermivarManifestImport(this.state.termivarReview, this.termivarErrorCode(error)) });
+    }
+  };
+  rejectTermivarManifestSelection = () => {
+    if (this.beginTermivarManifestRead()) this.emit({ termivarReview: failTermivarManifestImport(this.state.termivarReview, 'invalid_artifact') });
+  };
+  clearTermivarReview = () => this.emit(this.resetTermivarReviewPatch());
+  setTermivarQuery = (query: string) => {
+    if (query.length > 256 || /[\u0000-\u001f]/.test(query)) return;
+    this.emit({ termivarReview: setTermivarQuery(this.state.termivarReview, query) });
+  };
+  setTermivarFilter = (filter: TermivarReviewFilter) => this.emit({ termivarReview: setTermivarFilter(this.state.termivarReview, filter) });
+  selectTermivarFinding = (itemKey: string) => this.emit({ termivarReview: selectTermivarFinding(this.state.termivarReview, itemKey) });
+  setTermivarDetails = (show: boolean) => this.emit({ termivarReview: setTermivarDetails(this.state.termivarReview, show) });
   removeReportRecord = (id: string) => {
     if (!this.state.reportDraft) return;
     try { this.emit({ reportDraft: removeRecord(this.state.reportDraft, id), reportPreview: null, previewRevision: null, reportError: null, reportNotice: null }); }
