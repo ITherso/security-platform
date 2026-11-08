@@ -1,0 +1,117 @@
+{
+  "schema_version": "web-assessment/v2",
+  "target_origin": "https://example.invalid",
+  "disposition": "incomplete",
+  "incomplete_reasons": ["subject_execution_incomplete", "wall_time_limit"],
+  "profile_contract": {
+    "schema": "venom.scan-profile/v1",
+    "profile": "web-review",
+    "scope": "exact-origin",
+    "capabilities": {
+      "standard_web_decision": true,
+      "origin_discovery": true,
+      "semantic_extraction": true,
+      "defense_observation": true,
+      "defense_shadow_planning": true,
+      "passive_security_review": true,
+      "low_risk_differential_review": true
+    },
+    "limits": {
+      "max_subjects": 64,
+      "max_discovery_depth": 2,
+      "max_references_per_document": 128,
+      "max_canonical_url_bytes": 8192,
+      "max_retained_url_bytes": 524288,
+      "max_forms": 64,
+      "max_controls_per_form": 64,
+      "max_query_parameter_names": 64,
+      "max_total_requests": 256,
+      "max_response_body_bytes": 262144,
+      "max_total_response_bytes": 16777216,
+      "max_wall_time_ms": 0,
+      "max_active_verifications": 10
+    },
+    "defense": {"enforcement_enabled": false}
+  },
+  "assessment": {
+    "scope": "exact-origin",
+    "report": {
+      "subjects": [
+        {
+          "subject_reference": "subject-0000",
+          "method": "get",
+          "depth": 0,
+          "provenance": "authorized_root",
+          "query_parameter_names": [],
+          "discovery_evidence_count": 0,
+          "executed": false,
+          "decision": {
+            "bootstrap_evidence_writes": 0,
+            "planning_turns": 0,
+            "verification_outcomes": 0,
+            "conclusive_outcomes": 0,
+            "inconclusive_outcomes": 0,
+            "unverified_evidence_writes": 0,
+            "terminal": null,
+            "runtime_limit": null,
+            "execution_failure_recorded": false
+          }
+        }
+      ],
+      "forms": [],
+      "assessment_items": {
+        "projection_status": "unavailable",
+        "code": "incomplete_assessment_items_withheld"
+      },
+      "semantics": {
+        "entity_count": 0,
+        "entity_types": {
+          "endpoint": 0,
+          "domain": 0,
+          "ip_address": 0,
+          "auth_artifact": 0,
+          "header": 0,
+          "technology": 0,
+          "parameter": 0,
+          "user_role": 0,
+          "other": 0
+        },
+        "truncated": false,
+        "dropped_entities": 0,
+        "dropped_attributes": 0,
+        "dropped_sources": 0
+      },
+      "defense": {
+        "mode": "observation_only",
+        "observation_count": 0,
+        "metadata_only_observations": 0,
+        "complete_prefix_observations": 0,
+        "input_limited_observations": 0,
+        "challenge_observations": 0,
+        "rate_limit_observations": 0,
+        "transition_count": 0,
+        "candidate_block_transitions": 0,
+        "newly_rate_limited_transitions": 0,
+        "shadow_plan_count": 0,
+        "unchanged_actions": 0,
+        "deprioritized_actions": 0,
+        "suppressed_actions": 0
+      },
+      "usage": {
+        "retained_subjects": 1,
+        "executed_subjects": 0,
+        "retained_forms": 0,
+        "retained_unique_url_bytes": 24,
+        "total_requests": 0,
+        "active_verifications": 0,
+        "request_body_bytes": 0,
+        "response_bytes": 0,
+        "elapsed_ms": 0
+      },
+      "transport": {
+        "retained_dispatch_receipts": 0,
+        "omitted_dispatch_receipts": 0
+      }
+    }
+  }
+}
