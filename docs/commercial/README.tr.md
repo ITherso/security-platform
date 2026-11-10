@@ -11,6 +11,8 @@
 | [PILOT_READINESS](PILOT_READINESS.tr.md) | Ücretli pilot öncesi teknik, işletimsel ve hukuki/kurumsal kararlar ile ölçülebilir kapanış ölçütleri. |
 | [Sentetik teslimat](examples/README.tr.md) | Yalnız önceden mevcut artefact'ların kopyaları ve bunların insan tarafından yazılmış örnek açıklaması. |
 
+[Phase15 uzman inceleme ve teslim kiti](operations/README.tr.md), bu belgelerin elle doldurulabilir kayıtlar ve ayrı müşteri handoff taslağıyla nasıl uygulanacağını gösterir; gerçek değerlendirme veya teslim izni oluşturmaz.
+
 **Demonstration only — No real system assessed.** Örnek kaynak JSON'lara yeni bulgu veya alan eklenmez. Bunlar müşteri verisi veya bu fazda çalıştırılmış scanner çıktısı değildir. Tam kaynak/byte ilişkileri örnek provenance kaydında bulunur.
 
 İncelenen kaynaklar: Termivar `6a2639348c2366d0bf71b9a34e5484d40aa393a3`, Security Platform/operator-console `aa643d40797998d5f615cb5ba5b71b972596abc9`, HostBasedFirewall `74a88ed336cb8a0a2fab16e20389c9410590c292`. Termivar kaynak hattı `0.10.0-alpha.3`, örneklerin tarihsel üretim sürümü ve seçilecek pilot binary'si ayrı kimliklerdir. Kodda mevcut olmak production güvenilirliğini kanıtlamaz.
