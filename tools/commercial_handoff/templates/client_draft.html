@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>Termivar — müşteri teslim taslağı</title>
+<style>
+body { margin: 0; background: #f5f7fa; color: #192333; font: 16px/1.65 system-ui, sans-serif; }
+main { max-width: 900px; margin: 0 auto; padding: 32px 20px 64px; }
+h1, h2, h3 { line-height: 1.3; }
+h2 { margin-top: 36px; border-bottom: 1px solid #c7d0dc; padding-bottom: 8px; }
+.notice { border: 2px solid #8c3b00; padding: 16px; background: #fff1df; font-weight: 700; }
+article { background: #fff; border: 1px solid #c7d0dc; border-radius: 6px; padding: 8px 18px 18px; margin: 16px 0; }
+dt { font-weight: 700; margin-top: 12px; }
+dd { margin: 2px 0 0; }
+p, dd { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media print { body { background: #fff; } main { max-width: none; padding: 0; } article { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main>
+<h1>Müşteri teslim taslağı</h1>
+<p class="notice">DEMONSTRATION ONLY — NOT APPROVED FOR CLIENT DELIVERY</p>
+<section>
+<h2>1. Değerlendirme referansı</h2>
+<p>Vaka referansı: $case_id</p>
+<p>Bu bir demo belge taslağıdır; gerçek müşteri değerlendirmesi, gönderim veya teslim onayı değildir.</p>
+</section>
+<section>
+<h2>2. Amaç ve bildirilen kapsam</h2>
+<p>Amaç: Açıkça seçilmiş kayıtların sınırlı müşteri anlatımına hazırlanması. Yeni değerlendirme veya zafiyet doğrulaması yapılmaz.</p>
+<p>Bildirilen kapsam — doğrulanmamış giriş: $scope_summary</p>
+</section>
+<section>
+<h2>3. Yetki ve tamamlanma sınırlamaları</h2>
+<p>Bu taslak çalışma yetkisini, gerçek reviewer kimliğini veya incelemenin doğruluğunu bağımsız doğrulamaz. Kaynak complete etiketi kapsamın eksiksizliği veya sistem güvenliği değildir. İnsan reviewed_for_delivery etiketi bağımsız teknik doğrulama ya da teslim izni değildir. Native disposition değerleri yalnız ithal kaynak etiketleri olarak gösterilir.</p>
+</section>
+<section>
+<h2>4. Taslak için seçilmiş kayıtlar, varsa</h2>
+$selected_items
+<p>Seçilmiş açıklama bir doğrulanmış zafiyet veya etkili düzeltme taahhüdü değildir. İnceleme durumu ve kaynak sınıfı birbirinin yerine geçmez.</p>
+</section>
+<section>
+<h2>5. Eksik veya sonuçlandırılmamış alanlar</h2>
+<p>$incomplete_review</p>
+</section>
+<section>
+<h2>6. İzinli kaynak referansları</h2>
+$source_references
+<p>Referans, ham kanıtın sağlandığı veya incelendiği anlamına gelmez. Bu renderer kaynak dosyaları açmaz ve hash ölçmez. Beyan edilmiş dosya hash'i veya manifest üretici kimliği, yetki, bulgu doğruluğu ya da düzeltme kanıtı değildir. Bu taslak karşılaştırma veya yeniden değerlendirme sonucu üretmez.</p>
+</section>
+<section>
+<h2>7. Gelecekteki takip ihtiyaçları</h2>
+<p>Gerçek bir paylaşım öncesinde kapsam/yetki, kaynak ve kanıt erişimi, uzman incelemesi ve seçilmiş anlatımlar ayrıca değerlendirilmelidir. Gereken canlı işlem veya yeniden değerlendirme yalnız ayrı yetkilendirilecek gelecek iştir; bu belge onları başlatmaz. Veri işleme kararları ve gerçek teslim sahibi henüz bu araç tarafından kurulmaz.</p>
+</section>
+<section>
+<h2>8. Veri ve yorumlama sınırlamaları</h2>
+<p>Serbest metinler otomatik redakte edilmedi ve sır taramasından geçirilmedi. Safe_summary adı, içeriğin sır içermediğinin kanıtı değildir; ayrıca insan incelemesi gerekir. Metin encoding'i sırrı kaldırmaz. İç karar gerekçeleri, provenance notları, credential ve ham HTTP için bu müşteri modelinde alan yoktur; ancak serbest metne böyle veri girilmesini araç anlamsal olarak tespit etmez.</p>
+<p>Bu demo gerçek müşteri için kabul edilmiş değildir. Uzman incelemesi, kurumsal kararlar, veri işleme yetkileri, güvenlik testleri ve teslim onayı açık kalır. Bu taslak kapsamlı güvenlik, düzeltme, müşteri kabulü veya gerçek paylaşım yapıldığı iddiası taşımaz.</p>
+</section>
+</main>
+</body>
+</html>

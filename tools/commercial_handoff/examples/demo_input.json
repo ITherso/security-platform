@@ -1,0 +1,86 @@
+{
+  "schema_version": "termivar-handoff-draft/v1",
+  "case_id": "DEMO-TERMIVAR-015",
+  "mode": "demo",
+  "scope_summary": "Demonstration only — No real system assessed. Mevcut sentetik ART-A1 kaynağının dört informational gözlemi için offline teslim taslağı; gerçek hedef, müşteri kapsamı veya yetki kaydı sağlanmadı.",
+  "authorization_status": "not_provided",
+  "source_artifacts": [
+    {
+      "artifact_id": "ART-A1",
+      "contract": "venom-rendered-assessment/v1",
+      "sha256": "c3104e05c372eab172f2247ae748d867b5e5e01d2adf4daa40d21e5515267ab9",
+      "byte_length": 3907,
+      "completion_status": "complete",
+      "provenance_note": "Phase14'te korunmuş sentetik assessment.json; pinli Termivar source 6a2639348c2366d0bf71b9a34e5484d40aa393a3 altındaki report-bundle örneği. Tarihsel generation revision e747db4153eb52e06664bcec9dcb3411daef6fe6 ve development alpha.2 kaydı, yeni çalıştırma veya üretici kimliği doğrulaması değildir. Phase15 belge commit'i bcf8a94f60129aacaa21e90c56e74747a8ea2222; kaynak dört öğe ve insan inceleme durumları ayrı kaydedildi."
+    }
+  ],
+  "observations": [
+    {
+      "observation_id": "OBS-01",
+      "source_artifact": "ART-A1",
+      "observation_ref": "sha256:32adc97266dff2c8c11116f202bc894adcab02b7a9f1c315f988f1878bd10004",
+      "source_json_pointer": "/items/0",
+      "capability_id": "web.passive.referrer-policy.missing@1",
+      "source_disposition": "informational",
+      "review_status": "unreviewed",
+      "scope_status": "unknown",
+      "client_inclusion": "pending_decision",
+      "safe_summary": null,
+      "evidence_limitations": "Kaynakta opaque evidence referansları bulunur; ham HTTP içeriği sağlanmadı ve uzman incelemesi yapılmadı. Referrer-Policy gözleminden müşteri kapsamı, etki veya doğrulanmış zafiyet sonucu çıkarılmaz.",
+      "decision_ref": null
+    },
+    {
+      "observation_id": "OBS-02",
+      "source_artifact": "ART-A1",
+      "observation_ref": "sha256:423a41c26f6479fa1d15e672819aea23926e3dee76902559fe92cbc564ddf53a",
+      "source_json_pointer": "/items/1",
+      "capability_id": "web.passive.x-content-type-options.missing@1",
+      "source_disposition": "informational",
+      "review_status": "unreviewed",
+      "scope_status": "unknown",
+      "client_inclusion": "pending_decision",
+      "safe_summary": null,
+      "evidence_limitations": "Ham response ve content bağlamı sağlanmadı veya uzman tarafından incelenmedi. X-Content-Type-Options kaynak gözlemi MIME etkisi, istismar veya müşteri kapsamı kanıtı değildir.",
+      "decision_ref": null
+    },
+    {
+      "observation_id": "OBS-03",
+      "source_artifact": "ART-A1",
+      "observation_ref": "sha256:e0e9548ae2581d2522aac9b1cdce9ade61e4010d02308c716f252a15cbb7addb",
+      "source_json_pointer": "/items/2",
+      "capability_id": "web.passive.permissions-policy.missing@1",
+      "source_disposition": "informational",
+      "review_status": "unreviewed",
+      "scope_status": "unknown",
+      "client_inclusion": "pending_decision",
+      "safe_summary": null,
+      "evidence_limitations": "Ham HTML/header ve uygulamanın gerekli browser feature bağlamı sağlanmadı veya incelenmedi. Permissions-Policy gözleminden fiili kötüye kullanım veya yeni risk seviyesi türetilmez.",
+      "decision_ref": null
+    },
+    {
+      "observation_id": "OBS-04",
+      "source_artifact": "ART-A1",
+      "observation_ref": "sha256:fa8c2374a132316b67a492e8ab213f26b389c9fecefcdf39685026c75fde46f2",
+      "source_json_pointer": "/items/3",
+      "capability_id": "web.passive.csp.missing@1",
+      "source_disposition": "informational",
+      "review_status": "unreviewed",
+      "scope_status": "unknown",
+      "client_inclusion": "pending_decision",
+      "safe_summary": null,
+      "evidence_limitations": "Opaque evidence bağlantıları ham response veya exploit kanıtı değildir. CSP kaynak gözlemi XSS, etki, sömürülebilirlik veya uygulanmış düzeltmeyi bağımsız doğrulamaz; uzman incelemesi yapılmadı.",
+      "decision_ref": null
+    }
+  ],
+  "review_decisions": [],
+  "delivery_constraints": [
+    "Demonstration only — No real system assessed.",
+    "Dört observation unreviewed, scope unknown ve client inclusion pending_decision olarak korunur; gerçek reviewer veya karar zamanı verilmedi.",
+    "Bu taslakta müşteri raporuna dahil edilmesi kararlaştırılmış bir bulgu bulunmamaktadır. Bu durum değerlendirmede güvenlik açığı olmadığı anlamına gelmez.",
+    "ART-A1 status complete kaynak metadata'sıdır; bütün kapsamın incelendiği veya sistemin güvenli olduğu anlamına gelmez.",
+    "Ham HTTP, credential, target ve kanıt payload'ı bu girişe alınmadı; evidence referansları ham kanıta erişim veya paylaşım izni değildir.",
+    "Üretici kimliği, uzman incelemesinin gerçekliği, müşteri kapsamı ve teknik etki bağımsız doğrulanmadı.",
+    "A2 manifesti, C karşılaştırma kümesi ve D elle hazırlanmış incomplete diagnostic ana assessment modeline dahil edilmedi; tam bundle veya retest doğrulaması iddia edilmez.",
+    "Veri erişimi, redaksiyon, saklama ve gerçek teslim onayı kararları açık; gerçek müşteri teslimi, pilot veya production GO yok."
+  ]
+}
