@@ -9,6 +9,16 @@ from .source_graph_contracts import (InputError, relative_path, reference_identi
 from .rust_reference_lexer import LexResult, Token
 
 
+# These strict keywords can precede unary `!`; they are not macro names.
+# Weak/edition-dependent identifiers remain outside this narrow guard, and a
+# raw identifier still follows the ordinary opaque-macro path.
+_NON_MACRO_KEYWORDS = frozenset((
+    "as", "break", "const", "continue", "crate", "else", "enum", "extern", "false", "fn", "for",
+    "if", "impl", "in", "let", "loop", "match", "mod", "move", "mut", "pub", "ref", "return",
+    "self", "Self", "static", "struct", "super", "trait", "true", "type", "unsafe", "use", "where", "while",
+))
+
+
 class _MacroBoundary(Exception):
     def __init__(self, first: Token, last: Token):
         self.first, self.last = first, last
@@ -209,7 +219,8 @@ def classify_source(raw: bytes, source_identity: dict, lexed: LexResult,
                 detach_paths(attrs, scope)
                 statement_conditions += [a["condition_id"] for a in attrs if a["condition_id"]]
                 attrs = []
-            if (token.kind == "identifier" and cursor + 1 < end and _is(tokens[cursor + 1], "!")
+            if (token.kind == "identifier" and (token.raw_identifier or token.text not in _NON_MACRO_KEYWORDS)
+                    and cursor + 1 < end and _is(tokens[cursor + 1], "!")
                     and not (cursor + 2 < end and _is(tokens[cursor + 2], "="))):
                 opening = cursor + 2
                 if _is(token, "macro_rules"):
