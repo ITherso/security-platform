@@ -1,0 +1,358 @@
+{
+  "schema_version": "termivar-offline-composition-scope/v1",
+  "mode": "demo",
+  "candidate_reference": "DEMO-TERMIVAR-COMPOSITION-024",
+  "source_roots": [
+    {
+      "root_id": "termivar",
+      "repository_label": "ITherso/termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3"
+    },
+    {
+      "root_id": "platform",
+      "repository_label": "security-platform",
+      "pinned_commit": "e3b11d3101eafb3178868f391db713639c921c01"
+    }
+  ],
+  "included_components": [
+    {
+      "component_id": "termivar-assessment-core",
+      "root_id": "termivar",
+      "role": "assessment_core",
+      "manifest_path": "crates/termivar-scanner/Cargo.toml",
+      "source_files": [
+        "Cargo.toml",
+        "crates/termivar-core/Cargo.toml",
+        "crates/termivar-scanner/Cargo.toml",
+        "crates/termivar-cli/Cargo.toml",
+        "crates/termivar-cli/src/assessment_scan.rs",
+        "crates/termivar-scanner/src/web_runtime/web_assessment.rs",
+        "crates/termivar-scanner/src/web_runtime/assessment_report.rs",
+        "crates/termivar-scanner/src/web_runtime/assessment_item.rs",
+        "crates/termivar-scanner/src/web_runtime/scan_profile.rs",
+        "crates/termivar-scanner/src/http_evidence.rs",
+        "crates/termivar-scanner/src/http_evidence/policy.rs",
+        "crates/termivar-scanner/src/api_evidence.rs",
+        "crates/termivar-scanner/src/openapi_review.rs",
+        "crates/termivar-scanner/src/rest_review.rs",
+        "crates/termivar-scanner/src/authorization_review.rs",
+        "crates/termivar-core/src/reasoning.rs",
+        "crates/termivar-core/src/outcome.rs",
+        "crates/termivar-core/src/run_report.rs",
+        "README.md",
+        "docs/RELEASE.md",
+        ".github/workflows/release.yml"
+      ],
+      "version_scope": "workspace_package_metadata"
+    },
+    {
+      "component_id": "termivar-reporting-comparison",
+      "root_id": "termivar",
+      "role": "reporting_comparison",
+      "manifest_path": "crates/termivar-cli/Cargo.toml",
+      "source_files": [
+        "Cargo.toml",
+        "crates/termivar-cli/Cargo.toml",
+        "crates/termivar-scanner/Cargo.toml",
+        "crates/termivar-cli/src/report_verify.rs",
+        "crates/termivar-cli/src/report_bundle.rs",
+        "crates/termivar-cli/src/report_compare.rs",
+        "crates/termivar-scanner/src/reporting/comparison.rs"
+      ],
+      "version_scope": "workspace_package_metadata"
+    },
+    {
+      "component_id": "commercial-handoff",
+      "root_id": "platform",
+      "role": "offline_support",
+      "manifest_path": "pyproject.toml",
+      "source_files": [
+        "tools/commercial_handoff/README.md",
+        "tools/commercial_handoff/__init__.py",
+        "tools/commercial_handoff/assemble.py",
+        "tools/commercial_handoff/input_loader.py",
+        "tools/commercial_handoff/manifest.py",
+        "tools/commercial_handoff/renderer.py",
+        "tools/commercial_handoff/review_rules.py",
+        "tools/commercial_handoff/schema.py",
+        "docs/commercial/PRODUCT_OFFERING.tr.md",
+        "docs/commercial/CAPABILITY_CLAIMS.tr.md",
+        "docs/commercial/PILOT_READINESS.tr.md"
+      ],
+      "version_scope": "project_metadata_not_tool_release"
+    },
+    {
+      "component_id": "commercial-intake",
+      "root_id": "platform",
+      "role": "offline_support",
+      "manifest_path": "pyproject.toml",
+      "source_files": [
+        "tools/commercial_intake/README.md",
+        "tools/commercial_intake/__init__.py",
+        "tools/commercial_intake/assemble_intake.py",
+        "tools/commercial_intake/assessment_reader.py",
+        "tools/commercial_intake/examples/README.md",
+        "tools/commercial_intake/handoff_adapter.py",
+        "tools/commercial_intake/provenance.py",
+        "tools/commercial_intake/source_mapping.py"
+      ],
+      "version_scope": "project_metadata_not_tool_release"
+    },
+    {
+      "component_id": "commercial-review",
+      "root_id": "platform",
+      "role": "offline_support",
+      "manifest_path": "pyproject.toml",
+      "source_files": [
+        "tools/commercial_review/README.md",
+        "tools/commercial_review/__init__.py",
+        "tools/commercial_review/decision_binding.py",
+        "tools/commercial_review/decision_overlay.py",
+        "tools/commercial_review/examples/README.md",
+        "tools/commercial_review/handoff_reconciler.py",
+        "tools/commercial_review/manifest.py",
+        "tools/commercial_review/packet_builder.py",
+        "tools/commercial_review/prepare_review.py",
+        "tools/commercial_review/reconcile_review.py",
+        "tools/commercial_review/review_contracts.py"
+      ],
+      "version_scope": "project_metadata_not_tool_release"
+    },
+    {
+      "component_id": "commercial-review-desk",
+      "root_id": "platform",
+      "role": "offline_support",
+      "manifest_path": "pyproject.toml",
+      "source_files": [
+        "tools/commercial_review_desk/README.md",
+        "tools/commercial_review_desk/__init__.py",
+        "tools/commercial_review_desk/desk_contracts.py",
+        "tools/commercial_review_desk/desk_projection.py",
+        "tools/commercial_review_desk/desk_renderer.py",
+        "tools/commercial_review_desk/finalize_desk.py",
+        "tools/commercial_review_desk/manifest.py",
+        "tools/commercial_review_desk/prepare_desk.py"
+      ],
+      "version_scope": "project_metadata_not_tool_release"
+    },
+    {
+      "component_id": "commercial-scope",
+      "root_id": "platform",
+      "role": "offline_support",
+      "manifest_path": "pyproject.toml",
+      "source_files": [
+        "tools/commercial_scope/README.md",
+        "tools/commercial_scope/__init__.py",
+        "tools/commercial_scope/assemble_scope.py",
+        "tools/commercial_scope/capability_catalog.py",
+        "tools/commercial_scope/plan_builder.py",
+        "tools/commercial_scope/publisher.py",
+        "tools/commercial_scope/scope_contracts.py",
+        "tools/commercial_scope/scope_validator.py",
+        "tools/commercial_scope/source_manifest.py"
+      ],
+      "version_scope": "project_metadata_not_tool_release"
+    },
+    {
+      "component_id": "commercial-traceability",
+      "root_id": "platform",
+      "role": "offline_support",
+      "manifest_path": "pyproject.toml",
+      "source_files": [
+        "tools/commercial_traceability/README.md",
+        "tools/commercial_traceability/__init__.py",
+        "tools/commercial_traceability/assemble_traceability.py",
+        "tools/commercial_traceability/assessment_reader.py",
+        "tools/commercial_traceability/capability_mapping.py",
+        "tools/commercial_traceability/contracts.py",
+        "tools/commercial_traceability/examples/README.md",
+        "tools/commercial_traceability/manifest.py",
+        "tools/commercial_traceability/plan_reader.py",
+        "tools/commercial_traceability/renderer.py",
+        "tools/commercial_traceability/source_binding.py",
+        "tools/commercial_traceability/traceability.py"
+      ],
+      "version_scope": "project_metadata_not_tool_release"
+    },
+    {
+      "component_id": "commercial-case",
+      "root_id": "platform",
+      "role": "offline_support",
+      "manifest_path": "pyproject.toml",
+      "source_files": [
+        "tools/commercial_case/README.md",
+        "tools/commercial_case/__init__.py",
+        "tools/commercial_case/artifact_reader.py",
+        "tools/commercial_case/assemble_case.py",
+        "tools/commercial_case/bundle_reader.py",
+        "tools/commercial_case/bundle_writer.py",
+        "tools/commercial_case/case_contracts.py",
+        "tools/commercial_case/case_map.py",
+        "tools/commercial_case/inspect_case.py",
+        "tools/commercial_case/relationship_graph.py",
+        "tools/commercial_case/safe_projection.py",
+        "tools/commercial_case/workflow_status.py"
+      ],
+      "version_scope": "project_metadata_not_tool_release"
+    },
+    {
+      "component_id": "commercial-portfolio",
+      "root_id": "platform",
+      "role": "offline_support",
+      "manifest_path": "pyproject.toml",
+      "source_files": [
+        "tools/commercial_portfolio/README.md",
+        "tools/commercial_portfolio/__init__.py",
+        "tools/commercial_portfolio/assemble_portfolio.py",
+        "tools/commercial_portfolio/case_bundle_adapter.py",
+        "tools/commercial_portfolio/inspect_portfolio.py",
+        "tools/commercial_portfolio/portfolio_contracts.py",
+        "tools/commercial_portfolio/portfolio_index.py",
+        "tools/commercial_portfolio/portfolio_manifest.py",
+        "tools/commercial_portfolio/portfolio_renderer.py",
+        "tools/commercial_portfolio/triage_projection.py"
+      ],
+      "version_scope": "project_metadata_not_tool_release"
+    }
+  ],
+  "excluded_components": [
+    {
+      "component_id": "hostbased-firewall",
+      "reason_code": "not_in_proposed_offline_pilot_source_composition"
+    },
+    {
+      "component_id": "altay",
+      "reason_code": "not_in_proposed_offline_pilot_source_composition"
+    },
+    {
+      "component_id": "platform-backend",
+      "reason_code": "not_in_proposed_offline_pilot_source_composition"
+    },
+    {
+      "component_id": "operator-console",
+      "reason_code": "not_in_proposed_offline_pilot_source_composition"
+    },
+    {
+      "component_id": "enterprise-idp",
+      "reason_code": "not_in_proposed_offline_pilot_source_composition"
+    },
+    {
+      "component_id": "central-management",
+      "reason_code": "not_in_proposed_offline_pilot_source_composition"
+    },
+    {
+      "component_id": "policy-execution",
+      "reason_code": "not_in_proposed_offline_pilot_source_composition"
+    },
+    {
+      "component_id": "signed-windows-installer",
+      "reason_code": "not_in_proposed_offline_pilot_source_composition"
+    },
+    {
+      "component_id": "realtime-antivirus",
+      "reason_code": "not_in_proposed_offline_pilot_source_composition"
+    }
+  ],
+  "dependency_manifests": [
+    {
+      "manifest_id": "termivar-workspace",
+      "root_id": "termivar",
+      "path": "Cargo.toml",
+      "format": "cargo_toml",
+      "context": "selected_source_metadata"
+    },
+    {
+      "manifest_id": "termivar-core",
+      "root_id": "termivar",
+      "path": "crates/termivar-core/Cargo.toml",
+      "format": "cargo_toml",
+      "context": "selected_source_metadata"
+    },
+    {
+      "manifest_id": "termivar-scanner",
+      "root_id": "termivar",
+      "path": "crates/termivar-scanner/Cargo.toml",
+      "format": "cargo_toml",
+      "context": "selected_source_metadata"
+    },
+    {
+      "manifest_id": "termivar-cli",
+      "root_id": "termivar",
+      "path": "crates/termivar-cli/Cargo.toml",
+      "format": "cargo_toml",
+      "context": "selected_source_metadata"
+    },
+    {
+      "manifest_id": "termivar-lock",
+      "root_id": "termivar",
+      "path": "Cargo.lock",
+      "format": "cargo_lock",
+      "context": "selected_source_metadata"
+    },
+    {
+      "manifest_id": "platform-project",
+      "root_id": "platform",
+      "path": "pyproject.toml",
+      "format": "pyproject_toml",
+      "context": "excluded_backend_context"
+    },
+    {
+      "manifest_id": "platform-lock",
+      "root_id": "platform",
+      "path": "requirements-lock.txt",
+      "format": "requirements_lock",
+      "context": "excluded_backend_context"
+    },
+    {
+      "manifest_id": "platform-build-lock",
+      "root_id": "platform",
+      "path": "requirements-build-lock.txt",
+      "format": "requirements_lock",
+      "context": "excluded_backend_context"
+    }
+  ],
+  "license_evidence_sources": [
+    {
+      "source_id": "termivar-license",
+      "root_id": "termivar",
+      "path": "LICENSE",
+      "kind": "local_license_file",
+      "applies_to": [
+        "termivar-assessment-core",
+        "termivar-reporting-comparison"
+      ]
+    },
+    {
+      "source_id": "termivar-workspace-license",
+      "root_id": "termivar",
+      "path": "Cargo.toml",
+      "kind": "source_manifest_declaration",
+      "applies_to": [
+        "termivar-assessment-core",
+        "termivar-reporting-comparison"
+      ]
+    },
+    {
+      "source_id": "platform-project-metadata",
+      "root_id": "platform",
+      "path": "pyproject.toml",
+      "kind": "source_manifest_declaration",
+      "applies_to": [
+        "commercial-handoff",
+        "commercial-intake",
+        "commercial-review",
+        "commercial-review-desk",
+        "commercial-scope",
+        "commercial-traceability",
+        "commercial-case",
+        "commercial-portfolio"
+      ]
+    }
+  ],
+  "inspection_constraints": {
+    "max_components": 64,
+    "max_files": 5000,
+    "max_file_bytes": 4194304,
+    "max_total_source_bytes": 33554432
+  }
+}
