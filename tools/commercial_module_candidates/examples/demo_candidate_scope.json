@@ -1,0 +1,261 @@
+{
+  "schema_version": "termivar-offline-rust-module-candidate-scope/v1",
+  "mode": "demo",
+  "source_reference": {
+    "candidate_reference": "DEMO-TERMIVAR-MODULE-CANDIDATES-030",
+    "composition_candidate_reference": "DEMO-TERMIVAR-COMPOSITION-024",
+    "source_commits": {
+      "platform": "e3b11d3101eafb3178868f391db713639c921c01",
+      "termivar": "6a2639348c2366d0bf71b9a34e5484d40aa393a3"
+    }
+  },
+  "reference_sources": {
+    "ledger": {
+      "path": "outputs/phase29-rust-source-graph-corrected/source-reference-ledger.json",
+      "schema_version": "termivar-offline-rust-source-reference-ledger/v1",
+      "bytes": 489090,
+      "sha256": "5848c517bc0dccd3a45914a7e8c4be28102f0f95f78a234ad57bc50006e2ab96"
+    },
+    "graph": {
+      "path": "outputs/phase29-rust-source-graph-corrected/source-evidence-graph.json",
+      "schema_version": "termivar-offline-rust-source-evidence-graph/v1",
+      "bytes": 264274,
+      "sha256": "37233e08acf08d4c67827b143e4fe26ba70a8c6d96b6fadcd6b517a1f8abf7ad"
+    },
+    "coverage": {
+      "path": "outputs/phase29-rust-source-graph-corrected/module-coverage-projection.json",
+      "schema_version": "termivar-offline-module-coverage-projection/v1",
+      "bytes": 107473,
+      "sha256": "a5f99f97ca36c61f4ea8cb79e942ce250ec1e3ec731982ad738d926443e49c7f"
+    },
+    "summary": {
+      "path": "outputs/phase29-rust-source-graph-corrected/source-graph-summary.md",
+      "schema_version": null,
+      "bytes": 186736,
+      "sha256": "b49643189458302ab416527ae3de3b19d8c1ff8c6441c37d87550be4983a5551"
+    },
+    "manifest": {
+      "path": "outputs/phase29-rust-source-graph-corrected/manifest.json",
+      "schema_version": "termivar-offline-rust-source-graph-manifest/v1",
+      "bytes": 10017,
+      "sha256": "2bf619674e90fb366d5f89a3b62b34fe9c3c0994bbc5e51b86bd3792370c6d4a"
+    }
+  },
+  "inventory_sources": {
+    "inventory": {
+      "path": "outputs/phase24-composition/composition-inventory.json",
+      "schema_version": "termivar-offline-composition/v1",
+      "bytes": 41016,
+      "sha256": "57858a6de13a3f0994f3d21cc4564ccb430ae15eb2e6e9c2f885365492ce1a4e"
+    },
+    "dependencies": {
+      "path": "outputs/phase24-composition/dependency-license-ledger.json",
+      "schema_version": "termivar-offline-dependency-license-ledger/v1",
+      "bytes": 481295,
+      "sha256": "e5cb40e42c46bf66b8721bf0f386b9be8112518e3cd5b4342e6b16682715cfe6"
+    },
+    "constraints": {
+      "path": "outputs/phase24-composition/release-constraints.json",
+      "schema_version": "termivar-offline-release-constraints/v1",
+      "bytes": 472825,
+      "sha256": "8997a93eb051ed2c0e72f59b92e17c129a3082135ba7044e6b33369202bbdd9d"
+    },
+    "summary": {
+      "path": "outputs/phase24-composition/composition-summary.md",
+      "schema_version": null,
+      "bytes": 15004,
+      "sha256": "64862044de910a9c183ee1d89faff1b8625ab77477501159053e37e5e46edfcd"
+    },
+    "manifest": {
+      "path": "outputs/phase24-composition/manifest.json",
+      "schema_version": "termivar-offline-composition-manifest/v1",
+      "bytes": 1814,
+      "sha256": "95c04d5c14f2b6d017154817aec968e453d4a2772ba750baaf0b0ad47796cc32"
+    }
+  },
+  "selected_references": [
+    {
+      "reference": {
+        "byte_end": 1053,
+        "condition_ids": [],
+        "context_reliability": "lexically_bounded",
+        "declared_module_name": "outcome",
+        "interpretation_status": "observed_static_reference",
+        "lexical_scope": [],
+        "literal_relative_path": null,
+        "nesting_depth": 0,
+        "parent_inline_reference": null,
+        "position": {
+          "byte_offset": 1041,
+          "column": 5,
+          "line": 32
+        },
+        "reason_codes": [
+          "module_file_resolution_not_performed"
+        ],
+        "reference_id": "rust-ref-dfd6b59f25de8346b72d86fedce91afe4e9ace4f55fac7986019ede3b1ecef81",
+        "reference_kind": "external_module_declaration",
+        "resolved_file": false,
+        "source_file_reference": "RSF0001",
+        "source_sha256": "294513eeb3d23d1989fcfe8e9e0f74b23f05f090b4263da611a6b019e998efd1"
+      },
+      "inspection_scope": "explicit_candidates_only_non_exhaustive",
+      "candidates": [
+        {
+          "candidate_id": "CAND0001",
+          "root_id": "termivar",
+          "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+          "path": "crates/termivar-core/src/outcome.rs",
+          "origin": "explicit_operator_candidate"
+        },
+        {
+          "candidate_id": "CAND0002",
+          "root_id": "termivar",
+          "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+          "path": "crates/termivar-core/src/outcome/mod.rs",
+          "origin": "explicit_operator_candidate"
+        }
+      ]
+    },
+    {
+      "reference": {
+        "byte_end": 3788,
+        "condition_ids": [
+          "rust-condition-778faa776528eaf7f81b66ff46db1928b805108da71833d0090076fa1c54ef9d"
+        ],
+        "context_reliability": "lexically_bounded",
+        "declared_module_name": "authorization_review",
+        "interpretation_status": "observed_static_reference",
+        "lexical_scope": [],
+        "literal_relative_path": null,
+        "nesting_depth": 0,
+        "parent_inline_reference": null,
+        "position": {
+          "byte_offset": 3763,
+          "column": 5,
+          "line": 120
+        },
+        "reason_codes": [
+          "module_file_resolution_not_performed",
+          "condition_evaluation_not_performed"
+        ],
+        "reference_id": "rust-ref-555f207606bbd8a43d836efed36f64587866e090fa212c2cadefb898c8c4ce1a",
+        "reference_kind": "external_module_declaration",
+        "resolved_file": false,
+        "source_file_reference": "RSF0002",
+        "source_sha256": "61f68b72ecd83580ce42ae9fbf8fc55a835b231333717f4a32bcf97fab976e40"
+      },
+      "inspection_scope": "explicit_candidates_only_non_exhaustive",
+      "candidates": [
+        {
+          "candidate_id": "CAND0003",
+          "root_id": "termivar",
+          "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+          "path": "crates/termivar-scanner/src/authorization_review.rs",
+          "origin": "explicit_operator_candidate"
+        },
+        {
+          "candidate_id": "CAND0004",
+          "root_id": "termivar",
+          "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+          "path": "crates/termivar-scanner/src/authorization_review/mod.rs",
+          "origin": "explicit_operator_candidate"
+        }
+      ]
+    },
+    {
+      "reference": {
+        "byte_end": 1300,
+        "condition_ids": [],
+        "context_reliability": "lexically_bounded",
+        "declared_module_name": "report_compare",
+        "interpretation_status": "observed_static_reference",
+        "lexical_scope": [],
+        "literal_relative_path": null,
+        "nesting_depth": 0,
+        "parent_inline_reference": null,
+        "position": {
+          "byte_offset": 1281,
+          "column": 1,
+          "line": 34
+        },
+        "reason_codes": [
+          "module_file_resolution_not_performed"
+        ],
+        "reference_id": "rust-ref-6bc3209001edb569d2477705369c3609f5befa7a0963dc53883935c1452d6c4a",
+        "reference_kind": "external_module_declaration",
+        "resolved_file": false,
+        "source_file_reference": "RSF0003",
+        "source_sha256": "c96f2e3a27be6f1ecbbbcaae539c3b9ec87253c25d0043b2891f9a6621ec0bff"
+      },
+      "inspection_scope": "explicit_candidates_only_non_exhaustive",
+      "candidates": [
+        {
+          "candidate_id": "CAND0005",
+          "root_id": "termivar",
+          "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+          "path": "crates/termivar-cli/src/report_compare.rs",
+          "origin": "explicit_operator_candidate"
+        }
+      ]
+    }
+  ],
+  "allowed_candidate_files": [
+    {
+      "candidate_id": "CAND0001",
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-core/src/outcome.rs",
+      "reference_id": "rust-ref-dfd6b59f25de8346b72d86fedce91afe4e9ace4f55fac7986019ede3b1ecef81",
+      "expected_sha256": "4f792bc297a614f700dadb65b66ff1087b4efc90df44383ed26e960aa055a942",
+      "max_bytes": 524288,
+      "read_kind": "hash_only"
+    },
+    {
+      "candidate_id": "CAND0002",
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-core/src/outcome/mod.rs",
+      "reference_id": "rust-ref-dfd6b59f25de8346b72d86fedce91afe4e9ace4f55fac7986019ede3b1ecef81",
+      "expected_sha256": null,
+      "max_bytes": 524288,
+      "read_kind": "hash_only"
+    },
+    {
+      "candidate_id": "CAND0003",
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-scanner/src/authorization_review.rs",
+      "reference_id": "rust-ref-555f207606bbd8a43d836efed36f64587866e090fa212c2cadefb898c8c4ce1a",
+      "expected_sha256": "c460167b1ce25c7b0dc71feabf23d6af10256e2af14981dedd7e5fe2597894ef",
+      "max_bytes": 524288,
+      "read_kind": "hash_only"
+    },
+    {
+      "candidate_id": "CAND0005",
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-cli/src/report_compare.rs",
+      "reference_id": "rust-ref-6bc3209001edb569d2477705369c3609f5befa7a0963dc53883935c1452d6c4a",
+      "expected_sha256": "af383732f8bdec2309b1e8d061e2cf347ea1226646a54cd131361fb0edc1945e",
+      "max_bytes": 524288,
+      "read_kind": "hash_only"
+    }
+  ],
+  "candidate_policy": {
+    "automatic_path_generation": false,
+    "automatic_discovery": false,
+    "condition_evaluation": "not_performed",
+    "alternatives_exhaustive": false,
+    "compiler_resolution_verified": false
+  },
+  "inspection_constraints": {
+    "max_selected_references": 32,
+    "max_candidates_per_reference": 2,
+    "max_candidate_files": 64,
+    "max_candidate_bytes": 524288,
+    "max_total_candidate_bytes": 4194304,
+    "chunk_bytes": 65536,
+    "metadata_total_bytes": 8388608
+  }
+}
