@@ -4,19 +4,23 @@
 
 Python 3.11+ standard-library tool. It consumes the corrected Phase29 reference metadata and the real Phase24 inventory contracts, then hashes only explicitly allowlisted candidate files. Candidate paths are explicit operator declarations, not inferred Rust module resolution. The candidate Rust bodies are neither decoded nor parsed; no compiler, Cargo, lexer, recursive discovery, package manager or network runs.
 
-Use the enclosing workspace containing `security-platform/` and `outputs/`; pass the preserved read-only Termivar root explicitly. The new-only source ZIP requires those old explicit artifacts and the original checkout. It is not a self-contained native release.
+The final local delivery is in `outputs/phase30-module-candidates/`. The commands below are the completed historical delivery invocations, not permission to repeat them. They used the enclosing workspace containing `security-platform/` and `outputs/`, with the preserved read-only Termivar root passed explicitly. The new-only source ZIP requires those old explicit artifacts and the original checkout. It is not a self-contained native release.
 
 ```powershell
 python -I -B security-platform/tools/commercial_module_candidates/assemble_candidates.py --scope security-platform/tools/commercial_module_candidates/examples/demo_candidate_scope.json --termivar-root ../../2026-07-31/github-plugin-github-openai-curated-remote/termivar --output-dir outputs/phase30-module-candidates
 ```
 
-Only after assembly succeeds and its five actual files have been manually reviewed:
+The inspector ran only after assembly exited 0 and its five actual files had been manually reviewed:
 
 ```powershell
 python -I -B security-platform/tools/commercial_module_candidates/inspect_candidates.py --evidence outputs/phase30-module-candidates/module-candidate-evidence.json --triage outputs/phase30-module-candidates/candidate-triage.json --coverage outputs/phase30-module-candidates/candidate-coverage.json --summary outputs/phase30-module-candidates/candidate-summary.md --manifest outputs/phase30-module-candidates/manifest.json --output outputs/phase30-module-candidates/inspection-summary.json
 ```
 
-These document the maximum two Phase30 delivery calls; the source preparation itself does not claim that either has run. Actual exits and measured artifacts belong in [DEMO_DELIVERY.tr.md](../../docs/commercial/operations/phase30/DEMO_DELIVERY.tr.md). Output must be a new directory. An unsuccessful assembly does not authorize a retry or inspector. No automatic repeat or third call is authorized; all previous phase budgets, including the closed Phase24 and Phase29 human exceptions, remain closed.
+Both actual exits were 0; inspection reports `content_consistent`. Phase30 has consumed 2/2 calls and the budget is closed, with no further call, automatic retry or third invocation authorized. All previous phase budgets, including the Phase24 and Phase29 human exceptions, remain closed. New output directories are required; existing outputs are never overwritten. Measured artifacts, exact commands and NOT_RUN gates are in [DEMO_DELIVERY.tr.md](../../docs/commercial/operations/phase30/DEMO_DELIVERY.tr.md).
+
+The actual demo retains 95 external references, selects 3 and leaves 92 not examined. Five candidate declarations produce four authorized observations: three present/hash matches, one missing; one unallowlisted candidate remains unread with unknown presence/hash. The three present files total 45,969 bytes and match existing F0096/F0101/F0093 byte identities. Every path remains an explicit operator candidate; static path proof and compiler resolution are not established. Missing and unread alternatives remain visible alongside the primary `candidate_present_unresolved` states.
+
+The generation-source commit was `aed807460b2022bce5894c984932fe6d2aea8b1b`, tree `be58c64d93bef52e540496de9805e94b7b0b17c3`. The declared platform pin `e3b11d3101eafb3178868f391db713639c921c01` in `source_reference` is inherited Phase24 metadata, separate from the frozen runtime pin `aa643d40797998d5f615cb5ba5b71b972596abc9`; neither is producer/build attestation. Final ZIP size, members, SHA256 and documentation identity are measured in the external `outputs/phase30-module-candidates-delivery-manifest.json` after packaging, not invented here.
 
 Scope separates candidate declarations from read authorization. An unallowlisted candidate is never checked with exists/stat/open; its presence, size and hash remain unknown. Missing means a safely observed absence at an authorized path, never permission denial or source-identity failure. Unsafe path/type/hash/race/alias conditions fail closed. Same logical root/pin/path can support several reference bindings through one file observation; conflicting read identities are rejected. Unique observed files, candidate relations and external references use separate counts.
 
