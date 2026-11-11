@@ -1,0 +1,17 @@
+{
+  "schema_version": "termivar-offline-portfolio-map/v1",
+  "mode": "demo",
+  "portfolio_reference": "DEMO-TERMIVAR-PORTFOLIO-023",
+  "case_bundles": [
+    {
+      "path": "outputs/phase22-case/termivar-demo-case.zip",
+      "display_label": "DEMO-CASE-022",
+      "expected_contract": "termivar-offline-case-bundle/v1",
+      "expected_sha256": "f150095500e73d85dd741ef7bb92b4bd96893d5f8011a3a7668f4035cb2624be"
+    }
+  ],
+  "display_preferences": {
+    "show_source_hashes": false,
+    "expand_case_details": false
+  }
+}
