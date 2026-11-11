@@ -1,0 +1,111 @@
+{
+  "schema_version": "termivar-offline-pilot-variant-scope/v1",
+  "mode": "demo",
+  "candidate_reference": "DEMO-TERMIVAR-PILOT-VARIANTS-026",
+  "composition_sources": {
+    "inventory": {
+      "schema_version": "termivar-offline-composition/v1",
+      "bytes": 41016,
+      "sha256": "57858a6de13a3f0994f3d21cc4564ccb430ae15eb2e6e9c2f885365492ce1a4e"
+    },
+    "dependencies": {
+      "schema_version": "termivar-offline-dependency-license-ledger/v1",
+      "bytes": 481295,
+      "sha256": "e5cb40e42c46bf66b8721bf0f386b9be8112518e3cd5b4342e6b16682715cfe6"
+    },
+    "constraints": {
+      "schema_version": "termivar-offline-release-constraints/v1",
+      "bytes": 472825,
+      "sha256": "8997a93eb051ed2c0e72f59b92e17c129a3082135ba7044e6b33369202bbdd9d"
+    },
+    "summary": {
+      "schema_version": null,
+      "bytes": 15004,
+      "sha256": "64862044de910a9c183ee1d89faff1b8625ab77477501159053e37e5e46edfcd"
+    },
+    "manifest": {
+      "schema_version": "termivar-offline-composition-manifest/v1",
+      "bytes": 1814,
+      "sha256": "95c04d5c14f2b6d017154817aec968e453d4a2772ba750baaf0b0ad47796cc32"
+    }
+  },
+  "evidence_sources": {
+    "ledger": {
+      "schema_version": "termivar-license-evidence-ledger/v1",
+      "bytes": 726760,
+      "sha256": "fa48a94625201dc2f15c0ebd380592ada10d9891bf7de82cb63dab84dea52a95"
+    },
+    "queue": {
+      "schema_version": "termivar-license-review-queue/v1",
+      "bytes": 247097,
+      "sha256": "de4f82b7e990c276daeb66aeb943589a37b5dcc843f1b772c3c51c7f1bc22a45"
+    },
+    "conflicts": {
+      "schema_version": "termivar-license-binding-conflicts/v1",
+      "bytes": 1852,
+      "sha256": "7a60b3f594d97415f0af647823848e55d61d53d1d2151396b0fa4251fd5eceb6"
+    },
+    "summary": {
+      "schema_version": null,
+      "bytes": 189988,
+      "sha256": "629dd5458b727e492afe6c604581ae646f323fef621efe76f73fdc26905fb434"
+    },
+    "manifest": {
+      "schema_version": "termivar-license-evidence-manifest/v1",
+      "bytes": 2386,
+      "sha256": "60fb9e95188d4148ec5a3bc0cc8b631c979a6ee5a16eaf54a993cebdc602b27b"
+    }
+  },
+  "variants": [
+    {
+      "variant_id": "native-assessment",
+      "label": "Native Assessment Candidate",
+      "description": "Two native source components selected as a non-executable pilot scope draft.",
+      "selected_component_ids": [
+        "termivar-assessment-core",
+        "termivar-reporting-comparison"
+      ],
+      "not_selected_component_ids": [
+        "commercial-handoff",
+        "commercial-intake",
+        "commercial-review",
+        "commercial-review-desk",
+        "commercial-scope",
+        "commercial-traceability",
+        "commercial-case",
+        "commercial-portfolio"
+      ]
+    },
+    {
+      "variant_id": "native-offline-support",
+      "label": "Native + Offline Support Candidate",
+      "description": "The same two native source components and eight independent offline support tools; no distribution authorized.",
+      "selected_component_ids": [
+        "termivar-assessment-core",
+        "termivar-reporting-comparison",
+        "commercial-handoff",
+        "commercial-intake",
+        "commercial-review",
+        "commercial-review-desk",
+        "commercial-scope",
+        "commercial-traceability",
+        "commercial-case",
+        "commercial-portfolio"
+      ],
+      "not_selected_component_ids": []
+    }
+  ],
+  "comparison_pairs": [
+    {
+      "left": "native-assessment",
+      "right": "native-offline-support"
+    }
+  ],
+  "inspection_constraints": {
+    "max_source_bytes": 6291456,
+    "max_components": 64,
+    "max_records": 2000,
+    "max_variants": 4,
+    "max_comparison_pairs": 6
+  }
+}
