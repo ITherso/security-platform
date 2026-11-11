@@ -1,0 +1,198 @@
+{
+  "schema_version": "termivar-offline-rust-source-graph-scope/v1",
+  "mode": "demo",
+  "source_reference": {
+    "candidate_reference": "DEMO-TERMIVAR-RUST-SOURCE-GRAPH-029",
+    "composition_candidate_reference": "DEMO-TERMIVAR-COMPOSITION-024",
+    "source_commits": {
+      "platform": "e3b11d3101eafb3178868f391db713639c921c01",
+      "termivar": "6a2639348c2366d0bf71b9a34e5484d40aa393a3"
+    }
+  },
+  "entrypoint_sources": [
+    {
+      "entrypoint_reference": "EPF0001",
+      "source_file_reference": "RSF0001",
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-core/src/lib.rs",
+      "bytes": 3156,
+      "sha256": "294513eeb3d23d1989fcfe8e9e0f74b23f05f090b4263da611a6b019e998efd1",
+      "target_reference": "target-c141c8fb0c5cee58d8995349422fd3ec2bfdcaddbe4c254a3fff23befe7e8428",
+      "manifest_reference": "termivar-core"
+    },
+    {
+      "entrypoint_reference": "EPF0002",
+      "source_file_reference": "RSF0002",
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-scanner/src/lib.rs",
+      "bytes": 21450,
+      "sha256": "61f68b72ecd83580ce42ae9fbf8fc55a835b231333717f4a32bcf97fab976e40",
+      "target_reference": "target-c55a8b23e65afff198732f7847a0504691ced97b993ef782300189064ca66f24",
+      "manifest_reference": "termivar-scanner"
+    },
+    {
+      "entrypoint_reference": "EPF0003",
+      "source_file_reference": "RSF0003",
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-cli/src/main.rs",
+      "bytes": 279631,
+      "sha256": "c96f2e3a27be6f1ecbbbcaae539c3b9ec87253c25d0043b2891f9a6621ec0bff",
+      "target_reference": "target-795d189aa82a81be3ae4c492dc35560a155e6467765cb3db0994bd1aa48d2ef2",
+      "manifest_reference": "termivar-cli"
+    }
+  ],
+  "coverage_sources": {
+    "composition_sources": {
+      "inventory": {
+        "path": "outputs/phase24-composition/composition-inventory.json",
+        "schema_version": "termivar-offline-composition/v1",
+        "bytes": 41016,
+        "sha256": "57858a6de13a3f0994f3d21cc4564ccb430ae15eb2e6e9c2f885365492ce1a4e"
+      },
+      "dependencies": {
+        "path": "outputs/phase24-composition/dependency-license-ledger.json",
+        "schema_version": "termivar-offline-dependency-license-ledger/v1",
+        "bytes": 481295,
+        "sha256": "e5cb40e42c46bf66b8721bf0f386b9be8112518e3cd5b4342e6b16682715cfe6"
+      },
+      "constraints": {
+        "path": "outputs/phase24-composition/release-constraints.json",
+        "schema_version": "termivar-offline-release-constraints/v1",
+        "bytes": 472825,
+        "sha256": "8997a93eb051ed2c0e72f59b92e17c129a3082135ba7044e6b33369202bbdd9d"
+      },
+      "summary": {
+        "path": "outputs/phase24-composition/composition-summary.md",
+        "schema_version": null,
+        "bytes": 15004,
+        "sha256": "64862044de910a9c183ee1d89faff1b8625ab77477501159053e37e5e46edfcd"
+      },
+      "manifest": {
+        "path": "outputs/phase24-composition/manifest.json",
+        "schema_version": "termivar-offline-composition-manifest/v1",
+        "bytes": 1814,
+        "sha256": "95c04d5c14f2b6d017154817aec968e453d4a2772ba750baaf0b0ad47796cc32"
+      }
+    },
+    "dependency_evidence_sources": {
+      "evidence": {
+        "path": "outputs/phase27-dependency-evidence/direct-dependency-evidence.json",
+        "schema_version": "termivar-offline-direct-dependency-evidence/v1",
+        "bytes": 781353,
+        "sha256": "112c459a33d7b4181411ea527fef1373a9bc8360a5f44d01ce7559bf2e916813"
+      },
+      "graph": {
+        "path": "outputs/phase27-dependency-evidence/source-evidence-graph.json",
+        "schema_version": "termivar-offline-direct-dependency-graph/v1",
+        "bytes": 414825,
+        "sha256": "13693e7b5c5423a47846d7c5f3598883232a6bca2234b74ebe525d6828dbd042"
+      },
+      "variants": {
+        "path": "outputs/phase27-dependency-evidence/variant-dependency-evidence.json",
+        "schema_version": "termivar-offline-variant-dependency-evidence/v1",
+        "bytes": 463952,
+        "sha256": "5b2528b9b2bdfbabba93ec1d710900f31e26352fd1bca34f21c352f680767a1d"
+      },
+      "summary": {
+        "path": "outputs/phase27-dependency-evidence/dependency-evidence-summary.md",
+        "schema_version": null,
+        "bytes": 119620,
+        "sha256": "eeea3e40006eda7c2b6fda6afe4453ecc98b51ca048be45484618395fa3fb946"
+      },
+      "manifest": {
+        "path": "outputs/phase27-dependency-evidence/manifest.json",
+        "schema_version": "termivar-offline-direct-dependency-manifest/v1",
+        "bytes": 4165,
+        "sha256": "6d23970109da92c2b6ec88fb42ea77bba46ecccbb1dece2c5e6069e500147948"
+      }
+    },
+    "entrypoint_sources": {
+      "coverage": {
+        "path": "outputs/phase28-entrypoint-coverage/entrypoint-coverage.json",
+        "schema_version": "termivar-offline-entrypoint-coverage/v1",
+        "bytes": 63930,
+        "sha256": "f75e0e61789d90da544a05a09eb6452bb293e575670f72c311241d8ec3ec832b"
+      },
+      "delta": {
+        "path": "outputs/phase28-entrypoint-coverage/source-scope-delta.json",
+        "schema_version": "termivar-offline-source-scope-delta/v1",
+        "bytes": 10288,
+        "sha256": "24d56afe089636d34a9ffdae511b4fd807bafe6f854794f3b4cf85a577bdd2ac"
+      },
+      "variants": {
+        "path": "outputs/phase28-entrypoint-coverage/variant-entrypoint-projection.json",
+        "schema_version": "termivar-offline-variant-entrypoint-projection/v1",
+        "bytes": 15053,
+        "sha256": "224fab9939be9c503b02c86a76ef90692829072a9afc70f739d5ea4f8ab0dba8"
+      },
+      "summary": {
+        "path": "outputs/phase28-entrypoint-coverage/entrypoint-summary.md",
+        "schema_version": null,
+        "bytes": 31703,
+        "sha256": "1e85b293ec46e8a9058d060aa337d057c6f33ac95d25ba61cba7a90b5a705912"
+      },
+      "manifest": {
+        "path": "outputs/phase28-entrypoint-coverage/manifest.json",
+        "schema_version": "termivar-offline-entrypoint-coverage-manifest/v1",
+        "bytes": 6465,
+        "sha256": "8e3ffcc2c408c58aa0ad9944c4b726902631e9c4207ccd3eb87e7f385f0eba51"
+      }
+    }
+  },
+  "allowed_source_files": [
+    {
+      "source_file_reference": "RSF0001",
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-core/src/lib.rs",
+      "expected_bytes": 3156,
+      "expected_sha256": "294513eeb3d23d1989fcfe8e9e0f74b23f05f090b4263da611a6b019e998efd1",
+      "max_bytes": 524288,
+      "read_kind": "bounded_sha256"
+    },
+    {
+      "source_file_reference": "RSF0002",
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-scanner/src/lib.rs",
+      "expected_bytes": 21450,
+      "expected_sha256": "61f68b72ecd83580ce42ae9fbf8fc55a835b231333717f4a32bcf97fab976e40",
+      "max_bytes": 524288,
+      "read_kind": "bounded_sha256"
+    },
+    {
+      "source_file_reference": "RSF0003",
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-cli/src/main.rs",
+      "expected_bytes": 279631,
+      "expected_sha256": "c96f2e3a27be6f1ecbbbcaae539c3b9ec87253c25d0043b2891f9a6621ec0bff",
+      "max_bytes": 524288,
+      "read_kind": "bounded_sha256"
+    }
+  ],
+  "reference_policy": {
+    "supported_forms": [
+      "external_mod",
+      "explicit_path_mod",
+      "literal_include",
+      "inline_mod",
+      "dynamic_include_unresolved",
+      "conditional_reference",
+      "unsupported_reference"
+    ],
+    "macro_expansion_performed": false,
+    "feature_evaluation_performed": false,
+    "target_evaluation_performed": false,
+    "module_resolution_performed": false
+  },
+  "inspection_constraints": {
+    "projected_metadata_only": true,
+    "original_sources_read": false,
+    "lexer_reexecuted": false,
+    "source_attestation_performed": false
+  }
+}
