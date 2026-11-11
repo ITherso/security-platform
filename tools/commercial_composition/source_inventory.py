@@ -17,7 +17,13 @@ from .composition_contracts import (
 
 def _identity(info):
     return (info.st_dev, info.st_ino, info.st_size, info.st_mtime_ns,
-            info.st_ctime_ns, info.st_nlink)
+            info.st_nlink)
+
+
+def _same_api_identity(info):
+    # Windows lstat and fstat can expose different ctime meanings. Keep ctime
+    # checks within each API family rather than treating the two as equal.
+    return (*_identity(info), info.st_ctime_ns)
 
 
 def read_explicit_text(path: Path, maximum: int) -> tuple[bytes, tuple]:
@@ -37,13 +43,13 @@ def read_explicit_text(path: Path, maximum: int) -> tuple[bytes, tuple]:
         after_open = os.fstat(stream.fileno())
     after_path = check_existing_path(path, directory=False)
     if (len(raw) != checked.st_size or len(raw) > maximum
-            or _identity(after_open) != _identity(checked)
-            or _identity(after_path) != _identity(checked)):
+            or _same_api_identity(after_open) != _same_api_identity(opened)
+            or _same_api_identity(after_path) != _same_api_identity(checked)):
         raise InputError("composition_source_changed_during_read")
     text = raw.decode("utf-8", "strict")
     if text.startswith("\ufeff"):
         raise InputError("composition_utf8_bom_not_supported")
-    return raw, _identity(checked)
+    return raw, _same_api_identity(checked)
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,7 +77,7 @@ class SourceContext:
     def check_stability(self) -> None:
         for key, path in self._paths.items():
             current = check_existing_path(path, directory=False)
-            if _identity(current) != self._identities[key]:
+            if _same_api_identity(current) != self._identities[key]:
                 raise InputError("composition_source_changed_before_publication")
 
 
