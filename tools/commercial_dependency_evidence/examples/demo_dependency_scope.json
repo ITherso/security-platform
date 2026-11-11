@@ -1,0 +1,161 @@
+{
+  "schema_version": "termivar-offline-direct-dependency-scope/v1",
+  "mode": "demo",
+  "source_reference": {
+    "candidate_reference": "DEMO-TERMIVAR-DIRECT-DEPENDENCY-027",
+    "composition_candidate_reference": "DEMO-TERMIVAR-COMPOSITION-024",
+    "source_commits": {
+      "platform": "e3b11d3101eafb3178868f391db713639c921c01",
+      "termivar": "6a2639348c2366d0bf71b9a34e5484d40aa393a3"
+    }
+  },
+  "composition_sources": {
+    "inventory": {
+      "schema_version": "termivar-offline-composition/v1",
+      "bytes": 41016,
+      "sha256": "57858a6de13a3f0994f3d21cc4564ccb430ae15eb2e6e9c2f885365492ce1a4e"
+    },
+    "dependencies": {
+      "schema_version": "termivar-offline-dependency-license-ledger/v1",
+      "bytes": 481295,
+      "sha256": "e5cb40e42c46bf66b8721bf0f386b9be8112518e3cd5b4342e6b16682715cfe6"
+    },
+    "constraints": {
+      "schema_version": "termivar-offline-release-constraints/v1",
+      "bytes": 472825,
+      "sha256": "8997a93eb051ed2c0e72f59b92e17c129a3082135ba7044e6b33369202bbdd9d"
+    },
+    "summary": {
+      "schema_version": null,
+      "bytes": 15004,
+      "sha256": "64862044de910a9c183ee1d89faff1b8625ab77477501159053e37e5e46edfcd"
+    },
+    "manifest": {
+      "schema_version": "termivar-offline-composition-manifest/v1",
+      "bytes": 1814,
+      "sha256": "95c04d5c14f2b6d017154817aec968e453d4a2772ba750baaf0b0ad47796cc32"
+    }
+  },
+  "variant_sources": {
+    "analysis": {
+      "schema_version": "termivar-offline-pilot-variant-analysis/v1",
+      "bytes": 48267,
+      "sha256": "16ec8d8d509e3bfc6dc689a00262e0e0d6bb9d3e71d3dee859a8f9fb06aa44ce"
+    },
+    "dependencies": {
+      "schema_version": "termivar-offline-dependency-exposure/v1",
+      "bytes": 718170,
+      "sha256": "f873a031237111fd63047eb4ecea8dff83c28e2afdf51802560e89bf81ee502e"
+    },
+    "licenses": {
+      "schema_version": "termivar-offline-pilot-license-readiness/v1",
+      "bytes": 942012,
+      "sha256": "94dbe23914c43a735bd9374aa3d389c985a68c97caccd1da16f3fac52caa89d2"
+    },
+    "summary": {
+      "schema_version": null,
+      "bytes": 244998,
+      "sha256": "cb8a2c9ae08cd4da02ac3dd1f94f64f5566c89e88ad15dab49485efe3e6f4a4b"
+    },
+    "manifest": {
+      "schema_version": "termivar-offline-pilot-variant-manifest/v1",
+      "bytes": 4131,
+      "sha256": "9db501cf6fb091a3b1aebc21a22726c839760b37c9ff1b3b212feb98c7c4883f"
+    }
+  },
+  "manifest_sources": [
+    {
+      "manifest_id": "termivar-workspace",
+      "root_id": "termivar",
+      "path": "Cargo.toml",
+      "format": "cargo_toml",
+      "phase24_file_ref": "F0087",
+      "bytes": 2141,
+      "sha256": "bd99cc4f708ccaf3368001fb1203d640b70e665cc515b6802624c0c4554fc299",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3"
+    },
+    {
+      "manifest_id": "termivar-core",
+      "root_id": "termivar",
+      "path": "crates/termivar-core/Cargo.toml",
+      "format": "cargo_toml",
+      "phase24_file_ref": "F0095",
+      "bytes": 1305,
+      "sha256": "5a230741de40010ab9597321ea3219ee1bcddcc9569320230aa4c1fa2ee2da43",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3"
+    },
+    {
+      "manifest_id": "termivar-scanner",
+      "root_id": "termivar",
+      "path": "crates/termivar-scanner/Cargo.toml",
+      "format": "cargo_toml",
+      "phase24_file_ref": "F0099",
+      "bytes": 11848,
+      "sha256": "a51309fca54b8a4585072ed1c022a363e30cf25ff8042a08430d66081de646ff",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3"
+    },
+    {
+      "manifest_id": "termivar-cli",
+      "root_id": "termivar",
+      "path": "crates/termivar-cli/Cargo.toml",
+      "format": "cargo_toml",
+      "phase24_file_ref": "F0090",
+      "bytes": 4774,
+      "sha256": "7a6205bb33518ffc984a378a860fb22436b410b1e0e879c5f1bc1be90ffb59e4",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3"
+    }
+  ],
+  "component_ownership_sources": [
+    {
+      "component_id": "termivar-assessment-core",
+      "source_record_sha256": "9df90c1cccd812d54a09a27c8c1a078d4f8ac4da37b0d379021e3029ee7d5577"
+    },
+    {
+      "component_id": "termivar-reporting-comparison",
+      "source_record_sha256": "bb859e089578b2eda9a7c7886102086c830eff370e2bd992fe6e2075461bda25"
+    },
+    {
+      "component_id": "commercial-handoff",
+      "source_record_sha256": "6df9359d009651b7e5d7ac5f7e2860aca4a32a961b922b1722a726f320bfd345"
+    },
+    {
+      "component_id": "commercial-intake",
+      "source_record_sha256": "5687b36bf4a8e6c423381841f7029df8c4ade86a0d052f922f0a79cce20e4481"
+    },
+    {
+      "component_id": "commercial-review",
+      "source_record_sha256": "4ee5a5cb2d5cd0975e157c149e5c0699e33753b84deb86c7c1bb5a98a3a24108"
+    },
+    {
+      "component_id": "commercial-review-desk",
+      "source_record_sha256": "029d6c8ac430c0de3372bc8218f3237ef83c8db10cc8ae7f33505cc3108ead2c"
+    },
+    {
+      "component_id": "commercial-scope",
+      "source_record_sha256": "2eaab3ffc0fcd3f214420c9dca4afb34919e17dbda6113a852fb598fadd9ddb5"
+    },
+    {
+      "component_id": "commercial-traceability",
+      "source_record_sha256": "a6dbfce24edcc25834c14bb21234a79b6ab21fc9dc5d42265f7714c962fda490"
+    },
+    {
+      "component_id": "commercial-case",
+      "source_record_sha256": "046ea629122b91c321f3f96e6c21e62aecbaf6647c1c8b73a6c52e08c1315602"
+    },
+    {
+      "component_id": "commercial-portfolio",
+      "source_record_sha256": "33d5c9e971c8e5eabea806bbb89f6c7e1361c904ff277aba5dcee20388779592"
+    }
+  ],
+  "inspection_constraints": {
+    "max_json_source_bytes": 12582912,
+    "max_manifest_bytes": 262144,
+    "max_manifests": 16,
+    "max_components": 64,
+    "max_phase24_records": 1024,
+    "max_declarations": 512,
+    "max_variants": 4,
+    "max_graph_nodes": 4096,
+    "max_graph_edges": 8192
+  }
+}
