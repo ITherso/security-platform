@@ -1,0 +1,37 @@
+{
+  "schema_version": "termivar-assessment-scope-proposal/v1",
+  "mode": "demo",
+  "proposal_id": "DEMO-TERMIVAR-SCOPE-020",
+  "assessment_profile": "web-review",
+  "scope": {
+    "origin": "https://assessment.example.invalid",
+    "root_url": "https://assessment.example.invalid/",
+    "requested_methods": ["GET", "HEAD"],
+    "authenticated_context": "not_provided",
+    "context_markers": []
+  },
+  "requested_capabilities": [
+    "web.passive.referrer-policy.missing@1",
+    "web.passive.x-content-type-options.missing@1",
+    "web.passive.permissions-policy.missing@1",
+    "web.passive.csp.missing@1"
+  ],
+  "budgets": {
+    "max_total_requests": 256,
+    "max_wall_time_ms": 300000,
+    "max_subjects": 64,
+    "max_discovery_depth": 2,
+    "max_active_verifications": 10,
+    "max_response_body_bytes": 262144,
+    "max_total_response_bytes": 16777216
+  },
+  "authorization_status": "not_provided",
+  "data_handling_status": "pending_decision",
+  "review_requirements": [
+    "scope_owner",
+    "authorization",
+    "data_handling",
+    "human_review",
+    "runtime_qualification"
+  ]
+}
