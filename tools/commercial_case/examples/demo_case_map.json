@@ -1,0 +1,41 @@
+{
+  "schema_version": "termivar-offline-case-map/v1",
+  "mode": "demo",
+  "case_reference": "DEMO-TERMIVAR-CASE-022",
+  "artifact_roles": [
+    {"role": "plan", "path": "outputs/phase20-scope/assessment-plan-proposal.json", "expected_contract": "termivar-assessment-plan-proposal/v1", "status": "artifact_present", "source_manifest": "plan_manifest", "relationship_id": "plan_files"},
+    {"role": "preflight", "path": "outputs/phase20-scope/scope-preflight.json", "expected_contract": "termivar-assessment-scope-preflight/v1", "status": "artifact_present", "source_manifest": "plan_manifest", "relationship_id": "plan_files"},
+    {"role": "catalog", "path": "outputs/phase20-scope/capability-catalog.json", "expected_contract": "termivar-assessment-capability-catalog/v1", "status": "artifact_present", "source_manifest": "plan_manifest", "relationship_id": "plan_files"},
+    {"role": "plan_manifest", "path": "outputs/phase20-scope/manifest.json", "expected_contract": "termivar-assessment-scope-output-manifest/v1", "status": "artifact_present", "source_manifest": null, "relationship_id": "plan_files"},
+    {"role": "assessment", "path": "security-platform/docs/commercial/examples/assessment.json", "expected_contract": "venom-rendered-assessment/v1", "status": "artifact_present", "source_manifest": "assessment_manifest", "relationship_id": "assessment_file"},
+    {"role": "assessment_manifest", "path": "security-platform/docs/commercial/examples/manifest.json", "expected_contract": "termivar-report-bundle/v1", "status": "artifact_present", "source_manifest": null, "relationship_id": "assessment_file"},
+    {"role": "handoff_input", "path": "outputs/phase17-intake/handoff-input.json", "expected_contract": "termivar-handoff-draft/v1", "status": "artifact_present", "source_manifest": "intake_manifest", "relationship_id": "intake_files"},
+    {"role": "source_mapping", "path": "outputs/phase17-intake/source-mapping.json", "expected_contract": "termivar-assessment-intake/v1", "status": "artifact_present", "source_manifest": "intake_manifest", "relationship_id": "intake_files"},
+    {"role": "intake_manifest", "path": "outputs/phase17-intake/intake-manifest.json", "expected_contract": "termivar-assessment-intake-manifest/v1", "status": "artifact_present", "source_manifest": null, "relationship_id": "intake_files"},
+    {"role": "review_packet", "path": "outputs/phase18-review-packet/review-packet.json", "expected_contract": "termivar-analyst-review-packet/v1", "status": "artifact_present", "source_manifest": "review_packet_manifest", "relationship_id": "review_packet_files"},
+    {"role": "review_packet_manifest", "path": "outputs/phase18-review-packet/review-packet-manifest.json", "expected_contract": "termivar-analyst-review-packet-manifest/v1", "status": "artifact_present", "source_manifest": null, "relationship_id": "review_packet_files"},
+    {"role": "overlay_template", "path": "outputs/phase18-review-packet/decision-overlay.template.json", "expected_contract": "termivar-analyst-decision-overlay/v1", "status": "artifact_present", "source_manifest": "review_packet_manifest", "relationship_id": "review_packet_files"},
+    {"role": "decision_overlay", "path": "outputs/phase19-finalized-overlay/decision-overlay.json", "expected_contract": "termivar-analyst-decision-overlay/v1", "status": "artifact_present", "source_manifest": null, "relationship_id": "review_binding"},
+    {"role": "reconciled_handoff", "path": "outputs/phase19-reconciled/handoff-input.json", "expected_contract": "termivar-handoff-draft/v1", "status": "artifact_present", "source_manifest": "reconciliation_manifest", "relationship_id": "reconciliation_files"},
+    {"role": "reconciliation_manifest", "path": "outputs/phase19-reconciled/reconciliation-manifest.json", "expected_contract": "termivar-analyst-reconciliation-manifest/v1", "status": "artifact_present", "source_manifest": null, "relationship_id": "reconciliation_files"},
+    {"role": "traceability_ledger", "path": "outputs/phase21-traceability/traceability-ledger.json", "expected_contract": "termivar-assessment-traceability/v1", "status": "artifact_present", "source_manifest": "traceability_manifest", "relationship_id": "traceability_files"},
+    {"role": "traceability_manifest", "path": "outputs/phase21-traceability/manifest.json", "expected_contract": "termivar-assessment-traceability-manifest/v1", "status": "artifact_present", "source_manifest": null, "relationship_id": "traceability_files"},
+    {"role": "handoff_internal_markdown", "path": "outputs/phase18-handoff/internal-review-summary.md", "expected_contract": "text/markdown", "status": "artifact_present", "source_manifest": "handoff_manifest", "relationship_id": "handoff_files"},
+    {"role": "handoff_client_markdown", "path": "outputs/phase18-handoff/client-handoff-draft.md", "expected_contract": "text/markdown", "status": "artifact_present", "source_manifest": "handoff_manifest", "relationship_id": "handoff_files"},
+    {"role": "handoff_manifest", "path": "outputs/phase18-handoff/manifest.json", "expected_contract": "termivar-handoff-output-manifest/v1", "status": "artifact_present", "source_manifest": null, "relationship_id": "handoff_files"}
+  ],
+  "source_constraints": {"max_artifacts": 20, "max_total_input_bytes": 16777216, "allow_symlinks": false, "demo_only": true},
+  "expected_relationships": [
+    {"relationship_id": "plan_files", "kind": "file_content_binding", "source_roles": ["plan", "preflight", "catalog", "plan_manifest"]},
+    {"relationship_id": "assessment_file", "kind": "file_content_binding", "source_roles": ["assessment", "assessment_manifest"]},
+    {"relationship_id": "intake_files", "kind": "file_content_binding", "source_roles": ["handoff_input", "source_mapping", "intake_manifest"]},
+    {"relationship_id": "observation_binding", "kind": "assessment_observation_binding", "source_roles": ["assessment", "source_mapping", "handoff_input", "intake_manifest"]},
+    {"relationship_id": "review_packet_files", "kind": "file_content_binding", "source_roles": ["review_packet", "review_packet_manifest", "overlay_template"]},
+    {"relationship_id": "review_binding", "kind": "review_packet_binding", "source_roles": ["review_packet", "decision_overlay", "handoff_input"]},
+    {"relationship_id": "reconciliation_files", "kind": "file_content_binding", "source_roles": ["reconciled_handoff", "reconciliation_manifest"]},
+    {"relationship_id": "reconciliation_binding", "kind": "review_packet_binding", "source_roles": ["review_packet", "review_packet_manifest", "decision_overlay", "handoff_input", "reconciled_handoff", "reconciliation_manifest"]},
+    {"relationship_id": "traceability_files", "kind": "file_content_binding", "source_roles": ["plan", "preflight", "catalog", "plan_manifest", "assessment", "assessment_manifest", "handoff_input", "source_mapping", "intake_manifest", "traceability_ledger", "traceability_manifest"]},
+    {"relationship_id": "handoff_files", "kind": "file_content_binding", "source_roles": ["handoff_internal_markdown", "handoff_client_markdown", "handoff_manifest", "reconciled_handoff"]},
+    {"relationship_id": "plan_execution", "kind": "plan_to_assessment_execution_binding", "source_roles": ["plan", "assessment"]}
+  ]
+}
