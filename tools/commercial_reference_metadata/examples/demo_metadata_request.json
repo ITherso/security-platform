@@ -1,0 +1,12 @@
+{
+  "schema_version": "termivar-offline-reference-metadata-request/v1",
+  "mode": "demo",
+  "request_id": "DEMO-TERMIVAR-REFERENCE-METADATA-032",
+  "expected_ledger_sha256": "d2076a23f56ba19181cd792ce762b65aaae54e4dc83ac412a7e0cec5e382db76",
+  "expected_reuse_sha256": "6cd38b27d8734897a236f92986d382da0e37746a9b321a4534d56f768fc5350d",
+  "reference_ids": [
+    "rust-ref-dfd6b59f25de8346b72d86fedce91afe4e9ace4f55fac7986019ede3b1ecef81",
+    "rust-ref-555f207606bbd8a43d836efed36f64587866e090fa212c2cadefb898c8c4ce1a",
+    "rust-ref-6bc3209001edb569d2477705369c3609f5befa7a0963dc53883935c1452d6c4a"
+  ]
+}
