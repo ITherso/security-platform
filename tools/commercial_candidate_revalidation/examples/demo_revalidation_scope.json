@@ -1,0 +1,113 @@
+{
+  "schema_version": "termivar-offline-candidate-revalidation-scope/v1",
+  "mode": "demo",
+  "source_reference": {
+    "review_reference": "DEMO-TERMIVAR-CANDIDATE-REVALIDATION-031",
+    "phase30_candidate_reference": "DEMO-TERMIVAR-MODULE-CANDIDATES-030",
+    "source_commits": {
+      "platform": "e3b11d3101eafb3178868f391db713639c921c01",
+      "termivar": "6a2639348c2366d0bf71b9a34e5484d40aa393a3"
+    }
+  },
+  "baseline_sources": {
+    "evidence": {
+      "path": "outputs/phase30-module-candidates/module-candidate-evidence.json",
+      "schema_version": "termivar-offline-rust-module-candidate-evidence/v1",
+      "bytes": 220041,
+      "sha256": "81be491582f1163b7fbf7bc0520825df156db7abf0f543a23c99e6ae0058ab1e"
+    },
+    "triage": {
+      "path": "outputs/phase30-module-candidates/candidate-triage.json",
+      "schema_version": "termivar-offline-module-candidate-triage/v1",
+      "bytes": 211829,
+      "sha256": "46590bff728d62c2e5c1989d673a5b46c3de3741fd0458f016e8328b269e7cf8"
+    },
+    "coverage": {
+      "path": "outputs/phase30-module-candidates/candidate-coverage.json",
+      "schema_version": "termivar-offline-module-candidate-coverage/v1",
+      "bytes": 11625,
+      "sha256": "da0d5c62605c7a3c89162d2886275741505d8e967721fc13270f0e42caeca7d6"
+    },
+    "summary": {
+      "path": "outputs/phase30-module-candidates/candidate-summary.md",
+      "schema_version": null,
+      "bytes": 37221,
+      "sha256": "91a9813a12e5f81937d355d753604afcd00d0bc0d13daab1ebaa6c3503cf3d0e"
+    },
+    "manifest": {
+      "path": "outputs/phase30-module-candidates/manifest.json",
+      "schema_version": "termivar-offline-module-candidate-manifest/v1",
+      "bytes": 7480,
+      "sha256": "af4202db09ac16c5cde57392d29207fd862980d952659d4a0ff035ba1772bd3e"
+    }
+  },
+  "source_package": {
+    "path": "outputs/Termivar-Offline-Module-Candidates-phase30-2026-11-12.zip",
+    "bytes": 129296,
+    "sha256": "aab4d89f3fbf95992675ce08b095468680ba29fb07e2b85dea7ed1dbd3742485"
+  },
+  "selected_files": [
+    {
+      "file_id": "candidate-file-5e98656cb6bbf1a47d41b5702473d4cd14d11e36fe1a4a45ad9783b93b1de12c",
+      "candidate_ids": [
+        "CAND0005"
+      ],
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-cli/src/report_compare.rs",
+      "max_bytes": 524288,
+      "current_expected_sha256": null,
+      "read_kind": "hash_only"
+    },
+    {
+      "file_id": "candidate-file-8fd84b62a68326eb35d766fff6111b43decf5dfd24547cd6d98a7dfb8abdb0e3",
+      "candidate_ids": [
+        "CAND0003"
+      ],
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-scanner/src/authorization_review.rs",
+      "max_bytes": 524288,
+      "current_expected_sha256": null,
+      "read_kind": "hash_only"
+    },
+    {
+      "file_id": "candidate-file-9230e44e0642dff1b64663ebd9e20da0c589d22ca1cd224f09b8c954b4328370",
+      "candidate_ids": [
+        "CAND0001"
+      ],
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-core/src/outcome.rs",
+      "max_bytes": 524288,
+      "current_expected_sha256": null,
+      "read_kind": "hash_only"
+    },
+    {
+      "file_id": "candidate-file-9a67f54741d040e044cb2e94b227515bd0c9b595e8f6eae0d896e70ea664ec9a",
+      "candidate_ids": [
+        "CAND0002"
+      ],
+      "root_id": "termivar",
+      "pinned_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+      "path": "crates/termivar-core/src/outcome/mod.rs",
+      "max_bytes": 524288,
+      "current_expected_sha256": null,
+      "read_kind": "hash_only"
+    }
+  ],
+  "read_constraints": {
+    "candidate_file_max_bytes": 524288,
+    "candidate_total_max_bytes": 4194304,
+    "chunk_max_bytes": 65536,
+    "metadata_total_max_bytes": 8388608,
+    "allowlist_expansion": false
+  },
+  "reuse_policy": {
+    "equal_bytes": "fresh_candidate_byte_metadata_only",
+    "equal_absence": "fresh_absence_metadata_only",
+    "otherwise": "block_without_historical_fallback",
+    "reference_context_revalidated": false,
+    "ttl": "not_defined"
+  }
+}
