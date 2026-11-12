@@ -20,9 +20,9 @@ Referans `candidate_reuse_blocked` veya `candidate_change_observed` ise `project
 
 Request 32 KiB; Phase31 JSON başına 1 MiB, Markdown 256 KiB, manifest 128 KiB; tüm açık girdiler 4 MiB. Yeni JSON başına 512 KiB, Markdown 128 KiB, manifest 128 KiB. Yeni model ağacı depth 12 / 20.000 node / genel string 512 karakter, ID ve kod alanları 128 karakter, SHA256 64 karakter sınırındadır. Strict UTF-8; duplicate/unknown key ve sürüm reddi; float/NaN/Infinity/bool-as-int reddi; integer en fazla 2^53−1. Eski gömülü modellerin owning sınırları korunur. Limit aşımında truncation yoktur.
 
-## İki komutluk sınırlı çalışma
+## Tamamlanan iki komut
 
-Kaynak hazırlığı sırasında yeni ürün çağrısı **0**; aşağıdaki komutların sonucu henüz bu README'de iddia edilmez. Root bütçesi en fazla iki çağrıdır. İkinci çağrı yalnız ilk assembly exit 0 ve eksiksiz dört gerçek çıktı sonrası çalıştırılır. Başarısız çağrı tüketilir; retry veya üçüncü çağrı yoktur. Phase20–31 ve eski insan istisnaları kapalıdır.
+2026-11-12 tarihinde aşağıdaki iki çağrı gerçekten tamamlandı: assembly **exit 0**, inspector **exit 0**. Assembly'nin dört gerçek çıktısı manuel incelendikten sonra inspector çalıştırıldı. **2/2 bütçe tüketildi ve kapandı; kalan çağrı 0**. Komutlar tarihsel kayıttır; yeniden çalıştırma izni değildir. Retry, inspector hakkını assembly tekrarına çevirme veya üçüncü çağrı yoktur. Phase20–31 ve eski insan istisnaları da kapalıdır.
 
 ```text
 python -I -B security-platform/tools/commercial_reference_metadata/assemble_metadata.py --ledger outputs/phase31-candidate-revalidation/revalidation-ledger.json --reuse outputs/phase31-candidate-revalidation/evidence-reuse.json --source-summary outputs/phase31-candidate-revalidation/revalidation-summary.md --source-manifest outputs/phase31-candidate-revalidation/manifest.json --request security-platform/tools/commercial_reference_metadata/examples/demo_metadata_request.json --output-dir outputs/phase32-reference-metadata
@@ -32,7 +32,11 @@ python -I -B security-platform/tools/commercial_reference_metadata/assemble_meta
 python -I -B security-platform/tools/commercial_reference_metadata/inspect_metadata.py --response outputs/phase32-reference-metadata/reference-metadata-response.json --selection outputs/phase32-reference-metadata/metadata-selection-ledger.json --summary outputs/phase32-reference-metadata/metadata-summary.md --manifest outputs/phase32-reference-metadata/manifest.json --output outputs/phase32-reference-metadata/inspection-summary.json
 ```
 
-Output yeni ve boş bir dizin olmalıdır; overwrite veya otomatik silme yoktur. Assembly üç payload (`reference-metadata-response.json`, `metadata-selection-ledger.json`, `metadata-summary.md`) ve en son manifest üretir. Inspector dört yeni açık dosyayı okur, `inspection-summary.json` üretir. Manifest kendisini ve inspector çıktısını kapsamaz.
+Gerçek çıktı dizini `outputs/phase32-reference-metadata/`. Assembly üç payload (`reference-metadata-response.json`, `metadata-selection-ledger.json`, `metadata-summary.md`) ve en son manifest üretti; inspector `inspection-summary.json` üretti. Manifest kendisini ve inspection çıktısını kapsamaz. Yeni/boş output dizini koşulu korunur; overwrite veya otomatik silme yoktur.
+
+Üç istenen reference'tan ikisine sınırlı metadata sağlandı, biri bütün referans düzeyinde withheld kaldı. Üç projection ilişkisi / üç benzersiz candidate / üç file kimliği vardır: iki kayıtlı present ve bir kayıtlı absence. `outcome` iki, `report_compare` bir projection aldı. `authorization_review` için `projections=[]`; referans engeli olumlu CAND0003 alt kaydını da dışarı vermedi. Bu örnek davranışı genel negatif kabul değildir. Diğer reference ID'leri yeni çıktılara kopyalanmadı veya gözlenmiş gibi sunulmadı.
+
+Üretim source commit'i `66a644175a23df913b1303fbdec20c5303b6a52d`, tree `be5f2f9ea9af73470fc0e6650263066d4d547b0d`. Üretim sonrası yalnız README ve teslim kaydı actual sonuçlara göre güncellendi; ürün kodu ve eski kaynak/runtime değişmedi. Beş gerçek çıktı boyutu/tam SHA256 ve üç tam reference ID için [teslim kaydına](../../docs/commercial/operations/phase32/DEMO_DELIVERY.tr.md) bak. Kaynak paketi adı `Termivar-Offline-Guarded-Reference-Metadata-phase32-2026-11-12.zip`; henüz ölçülmemiş paket kimliği bu README'ye yazılmaz, final kimlik ayrı dış teslim manifestinde tutulur.
 
 ## Güven, mahremiyet ve bağımlılıklar
 
