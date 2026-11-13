@@ -1,0 +1,20 @@
+{
+  "schema_version": "termivar-offline-capsule-tabular-scope/v1",
+  "mode": "demo",
+  "source_capsule_sha256": "d3eea4c7946d45290c4876ac8b6d8ca5172297933b7681812863158bf845c01d",
+  "export_reference_ids": [
+    "rust-ref-dfd6b59f25de8346b72d86fedce91afe4e9ace4f55fac7986019ede3b1ecef81",
+    "rust-ref-555f207606bbd8a43d836efed36f64587866e090fa212c2cadefb898c8c4ce1a"
+  ],
+  "export_constraints": {
+    "max_source_zip_bytes": 262144,
+    "max_dataset_bytes": 131072,
+    "max_csv_bytes": 131072,
+    "max_summary_bytes": 131072,
+    "max_reference_records": 8,
+    "max_projection_records": 64,
+    "max_cell_bytes": 4096,
+    "max_row_bytes": 65536,
+    "max_total_input_bytes": 1048576
+  }
+}
