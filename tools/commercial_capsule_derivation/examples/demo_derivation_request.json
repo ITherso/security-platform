@@ -1,0 +1,21 @@
+{
+  "schema_version": "termivar-offline-capsule-derivation-request/v1",
+  "mode": "demo",
+  "derivation_reference": "DEMO-TERMIVAR-DERIVATION-034",
+  "source_capsule_sha256": "19e61b261d63863f10b4147daf6dc5b2199faedcda41b03acb20322d30cb3388",
+  "selected_reference_ids": [
+    "rust-ref-dfd6b59f25de8346b72d86fedce91afe4e9ace4f55fac7986019ede3b1ecef81",
+    "rust-ref-555f207606bbd8a43d836efed36f64587866e090fa212c2cadefb898c8c4ce1a"
+  ],
+  "derivation_constraints": {
+    "max_request_bytes": 32768,
+    "max_source_zip_bytes": 262144,
+    "max_derived_zip_bytes": 262144,
+    "max_ledger_bytes": 65536,
+    "max_summary_bytes": 131072,
+    "max_total_input_bytes": 1048576,
+    "max_selected_references": 8,
+    "preserve_selected_results_exactly": true,
+    "require_proper_reference_subset": true
+  }
+}
