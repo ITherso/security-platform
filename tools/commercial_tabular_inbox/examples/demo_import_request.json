@@ -1,0 +1,10 @@
+{
+  "schema_version": "termivar-offline-tabular-inbox-request/v1",
+  "mode": "demo",
+  "request_reference": "DEMO-TERMIVAR-INBOX-036",
+  "source_manifest_sha256": "22c5600604ce604a041fe976593fb99b6db2c111364f9268f29936277e0f389a",
+  "requested_reference_ids": [
+    "rust-ref-dfd6b59f25de8346b72d86fedce91afe4e9ace4f55fac7986019ede3b1ecef81",
+    "rust-ref-555f207606bbd8a43d836efed36f64587866e090fa212c2cadefb898c8c4ce1a"
+  ]
+}
