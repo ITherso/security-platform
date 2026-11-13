@@ -1,0 +1,23 @@
+{
+  "schema_version": "termivar-offline-guarded-reference-capsule-request/v1",
+  "mode": "demo",
+  "capsule_reference": "DEMO-TERMIVAR-CAPSULE-033",
+  "source_response_sha256": "98d1a5409ccc12a4f504d209844b9f95b89b4452e278ba953add2aff508e89c5",
+  "source_selection_sha256": "2bef037c617ab120cb925eaffa1ef5bde8100b69204b98603a528ee77c4cf5e4",
+  "requested_reference_ids": [
+    "rust-ref-dfd6b59f25de8346b72d86fedce91afe4e9ace4f55fac7986019ede3b1ecef81",
+    "rust-ref-555f207606bbd8a43d836efed36f64587866e090fa212c2cadefb898c8c4ce1a",
+    "rust-ref-6bc3209001edb569d2477705369c3609f5befa7a0963dc53883935c1452d6c4a"
+  ],
+  "inspection_constraints": {
+    "max_archive_bytes": 262144,
+    "max_member_bytes": 131072,
+    "max_expanded_bytes": 262144,
+    "max_compression_ratio": 20,
+    "max_references": 8,
+    "max_projections": 64,
+    "max_json_depth": 12,
+    "max_json_nodes": 20000,
+    "max_text_chars": 512
+  }
+}
