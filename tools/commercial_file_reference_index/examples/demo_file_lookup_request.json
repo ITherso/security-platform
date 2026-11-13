@@ -1,0 +1,11 @@
+{
+  "schema_version": "termivar-offline-disclosed-file-lookup-request/v1",
+  "mode": "demo",
+  "request_reference": "DEMO-TERMIVAR-FILE-INDEX-037",
+  "source_inbox_sha256": "8f42ae940dfe34b73065a365be753c7f424850268f0d7981ead20365107aaea2",
+  "source_manifest_sha256": "671a192258c0a52eab3bf5fc0de3f0aa2a53346e782c18eb81d3459708c9d0ad",
+  "requested_file_ids": [
+    "candidate-file-9230e44e0642dff1b64663ebd9e20da0c589d22ca1cd224f09b8c954b4328370",
+    "candidate-file-9a67f54741d040e044cb2e94b227515bd0c9b595e8f6eae0d896e70ea664ec9a"
+  ]
+}
