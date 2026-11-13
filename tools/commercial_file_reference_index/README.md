@@ -4,7 +4,9 @@
 
 Bu yeni offline araç doğrulanmış Phase36 typed inbox'taki yalnız provided referansların mevcut File ID ilişkilerini indeksler. Yeni yetenek File ID → görünür referanslar → her eşleşen referansın bütün izinli projection paketidir. `lookup_disclosure ⊆ validated_inbox_disclosure`. Aynı referans birden fazla istenen File ID ile eşleşse bile bir kez döner; hangi File ID'lerle eşleştiği ayrı kaydedilir.
 
-Kaynak hazırlığında Phase37 ürün çağrısı **0**. Henüz indeks/lookup/receipt/inspector başarısı, yeni output veya ZIP boyutu/SHA256 iddia edilmez. Source beklentisi yeni ürün sonucu değildir. Tarih ve kaynak ZIP etiketi **2026-11-14**.
+**2026-11-14** tarihinde iki izinli Phase37 ürün çağrısı tamamlandı: index/lookup assembly **exit 0**, içerik inspector'ı **exit 0**. Bütçe **2/2 tüketildi ve kapandı; kalan 0**. Gerçek görünür indeks **2 File ID / 1 provided referans / 2 candidate / 2 projection (1 kayıtlı present/1 absence)** içerir. İki File ID birlikte sorgulandığında aynı referans **bir kez**, bütün iki projection'ı ve iki matched File ID'siyle döndü. Bloke referans kimliği ve olumlu child metadata yeni file disclosure kayıtlarına alınmadı; yalnız source aggregate withheld sayısı 1 kaldı.
+
+Altı gerçek output `outputs/phase37-file-reference-index/` altında üretildi; tam byte/SHA256 kimlikleri [teslim kaydındadır](../../docs/commercial/operations/phase37/DEMO_DELIVERY.tr.md). Üretim source commit'i `b2276a5d7a5d3999a0d58b91ed93297e1796b609`, tree `b761bbf6442058af8ebf02fb8cc8d85ba29d7660`. Üretim sonrası yalnız README ve teslim belgesi actual sonuçlarla güncellendi; kod ve diğer üç belge değişmedi.
 
 ## Gerçek source grubu ve saf API
 
@@ -24,9 +26,9 @@ Lookup eşleşen referansı bütün mevcut 11-alan projection'larıyla tekilleş
 
 Yeni common wire `schema_version`, `demo_label`, `demo_only=true`, kapalı `trust_flags` nesnesidir. **18 false alan nested trust_flags içinde korunur**; top-level ikinci kopya/pozitif yükseltme yoktur. Receipt beş Phase36 identity/schema ve aggregate scope taşır; projection audit kopyası veya producer authentication değildir. Hash imza, source freshness, ownership veya release yetkisi değildir.
 
-## Planlanan exact iki ürün çağrısı
+## Tamamlanan exact iki ürün çağrısı
 
-Aşağıdakiler henüz çalışmış başarı kaydı değildir. İlk çağrı exit 0, eksiksiz beş output ve gerçek index/lookup/receipt/MD manuel incelemesi sonrası ikinci çalışır. Phase37 en fazla iki yeni çağrı; başarısız çağrı tüketilir, retry/üçüncü/preflight helper/test runner/eski CLI yoktur. Phase20–36 ve Phase24/29 insan istisnaları kapalıdır.
+Aşağıdakiler gerçek generation kaydındaki tamamlanmış iki çağrıdır; yeniden çalıştırma izni değildir. İkinci çağrı ilk exit 0, eksiksiz beş output ve gerçek index/lookup/receipt/MD manuel incelemesinden sonra çalıştı. Actual exit kodları **[0,0]**, kapalı **2/2 bütçe**, kalan çağrı **0**. Retry/üçüncü/preflight helper/test runner/eski CLI yoktur. Phase20–36 ve Phase24/29 insan istisnaları kapalıdır.
 
 ```text
 python -I -B security-platform/tools/commercial_file_reference_index/assemble_file_index.py --inbox outputs/phase36-tabular-inbox/typed-inbox.json --source-query outputs/phase36-tabular-inbox/reference-query.json --receipt outputs/phase36-tabular-inbox/import-receipt.json --source-summary outputs/phase36-tabular-inbox/inbox-summary.md --source-manifest outputs/phase36-tabular-inbox/manifest.json --request security-platform/tools/commercial_file_reference_index/examples/demo_file_lookup_request.json --output-dir outputs/phase37-file-reference-index
@@ -36,7 +38,9 @@ python -I -B security-platform/tools/commercial_file_reference_index/assemble_fi
 python -I -B security-platform/tools/commercial_file_reference_index/inspect_file_index.py --index outputs/phase37-file-reference-index/file-reference-index.json --lookup outputs/phase37-file-reference-index/file-reference-lookup.json --receipt outputs/phase37-file-reference-index/index-source-receipt.json --summary outputs/phase37-file-reference-index/file-index-summary.md --manifest outputs/phase37-file-reference-index/manifest.json --output outputs/phase37-file-reference-index/inspection-summary.json
 ```
 
-Assembly ilk beş output'u üretir: index, lookup, source receipt, summary, manifest. Manifest gerçek ilk dört payload'ı bağlar; kendisini kapsamaz. Inspector yalnız beş yeni açık dosyanın model/bağ/whole-reference/count/receipt/MD/manifest iç tutarlılığını değerlendirir. Phase36 dosyalarını tekrar açmaz, source import davranışını veya eski guard/kapsül doğruluğunu bağımsız kabul etmez. `content_consistent` yalnız bu yeni çıktılardır.
+Assembly ilk beş output'u üretti: index, lookup, source receipt, summary, manifest. Manifest gerçek ilk dört payload'ı bağlar; kendisini/inspection çıktısını kapsamaz. Inspector `internal_content_status=content_consistent`, kapsam `five_new_file_index_outputs_internal_correspondence_only` raporladı. `original_Phase36_files_read=false`, `source_import_independently_verified=false`, `source_capsule_read=false`; yalnız beş yeni dosyanın iç tutarlılığıdır. Source import, guard, kapsül veya producer bağımsız doğrulanmış değildir.
+
+Absence projection'ında byte/hash JSON null kaldı. Görünür absence File ID'sinin eşleşmesi fiziksel dosya varlığı değildir; integer count sıfırı da sıfır-byte source dosyası değildir. Nested `trust_flags` aynı 18 false değeri ve top-level `demo_only=true` korudu. Gerçek demo iki File ID'yi birlikte sorguladı; ayrı single-file, shared-file multiple-reference, unknown/nonvisible veya adversarial runtime varyantı çalıştırılmadı.
 
 ## Sınırlar, bağımlılık ve NOT_RUN
 
@@ -48,4 +52,4 @@ NOT_RUN: hostile/duplicate JSON/UTF-8, wrong digest, unknown/nonvisible File ID,
 
 Belgeler: [v1 sözleşmeleri](../../docs/commercial/operations/phase37/REVERSE_INDEX_CONTRACT.tr.md), [disclosure](../../docs/commercial/operations/phase37/DISCLOSURE_INTEGRITY.tr.md), [source/trust sınırı](../../docs/commercial/operations/phase37/SOURCE_AND_TRUST_BOUNDARY.tr.md), [teslim kaydı](../../docs/commercial/operations/phase37/DEMO_DELIVERY.tr.md).
 
-Kaynak teslim adı `Termivar-Offline-File-Reference-Index-phase37-2026-11-14.zip`. Ölçülmemiş boyut/üye/SHA256 uydurulmaz; final ZIP kimliği ayrı dış delivery manifestinde tutulur. Phase7–36, backend/operator-console/native/HBF/Altay/auth/DB/roller/wheel/lock/lisans korunur. İzinli iki çağrı, dar inceleme ve ölçülmüş teslim sonrası durulur; Phase38/yeni mikro özellik/native/otomatik test/release başlatılmaz.
+Kaynak teslim adı `Termivar-Offline-File-Reference-Index-phase37-2026-11-14.zip`. Final boyut/üye/SHA256 root paketlemesinde ayrıca ölçülüp ayrı dış delivery manifestinde tutulur; burada ölçülmemiş kimlik uydurulmaz veya öz hash döngüsü oluşturulmaz. Phase7–36, backend/operator-console/native/HBF/Altay/auth/DB/roller/wheel/lock/lisans korunur. İzinli iki çağrı tamamlandı; ölçülmüş teslim kapanınca Phase38/yeni mikro özellik/native/otomatik test/release başlatılmaz.
