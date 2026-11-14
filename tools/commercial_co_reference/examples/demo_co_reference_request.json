@@ -1,0 +1,11 @@
+{
+  "schema_version": "termivar-offline-co-reference-request/v1",
+  "mode": "demo",
+  "request_reference": "DEMO-TERMIVAR-CO-REFERENCE-038",
+  "source_index_sha256": "5a36725b572f7e8cef59b20ff2633c292fb608ecd7e3b766a6b8f30f8c2e60e0",
+  "source_manifest_sha256": "943fe3c3eaffc0336d32264fe5220095b9ecfe87e3e8f6fd97c9dc1b87661f91",
+  "requested_file_ids": [
+    "candidate-file-9230e44e0642dff1b64663ebd9e20da0c589d22ca1cd224f09b8c954b4328370",
+    "candidate-file-9a67f54741d040e044cb2e94b227515bd0c9b595e8f6eae0d896e70ea664ec9a"
+  ]
+}
