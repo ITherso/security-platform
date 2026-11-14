@@ -4,7 +4,9 @@
 
 Bu yeni offline araç açık 2–8 metadata File ID'nin görünür referans kümelerinden her benzersiz çift için kesişim ve gerçek supporting projection binding'leri üretir. Ortak provided referansların bütün izinli projection'ları tekilleştirilmiş lookup'ta birlikte döner. Mevcut ters indeksi yeniden üretmez, yeni graph/guard/evaluator/resolver veya risk skoru oluşturmaz.
 
-Kaynak hazırlığında Phase38 ürün çağrısı **0**. Henüz join/lookup/receipt/inspector başarısı, yeni output veya kaynak ZIP boyutu/SHA256 iddia edilmez. Phase37 beklentisi yeni ürün sonucu değildir. Tarih ve ZIP etiketi **2026-11-14**.
+**2026-11-14** tarihinde iki izinli Phase38 çağrısı tamamlandı: co-reference assembly **exit 0**, içerik inspector'ı **exit 0**. Bütçe **2/2 tüketildi ve kapandı; kalan 0**. Gerçek iki visible File ID **1 shared pair / 1 shared provided referans / 2 supporting binding (2 unique)** üretti. Lookup aynı referansı bir kez ve bütün **2 projection (1 kayıtlı present/1 absence)** ile döndürdü. Bu yalnız mevcut görünür metadata co-reference ilişkisidir; fiziksel/content/security/causal/source/compiler ilişkisi kanıtı değildir.
+
+Altı gerçek çıktı `outputs/phase38-co-reference/` altında üretildi; tam byte/SHA256 kimlikleri, gerçek supporting üçlüler ve gözlemler [teslim kaydındadır](../../docs/commercial/operations/phase38/DEMO_DELIVERY.tr.md). Üretim source commit'i `1f6b6f57ee9151769dac5cc7181a6a8fa887de6a`, tree `51e2427ba2b4093d17e54d25940809f723fda86d`. Üretim sonrası yalnız README ve teslim belgesi actual sonuçlarla güncellendi; dokuz kod/örnek dosyası ve diğer üç belge değişmedi.
 
 ## Gerçek source bağı ve saf API
 
@@ -26,9 +28,9 @@ File sonucu matched veya ortak `not_in_disclosed_index`. Pair sonucu `shared_dis
 
 Supporting binding gerçek `(reference_id,candidate_id,file_id)` üçlüsüdür. Bir çift içinde duplicate reddedilir. Aynı üçlü farklı gerçek çiftleri destekleyebilir; occurrence sayımı ile unique binding sayımı ayrıdır. Lookup result tam dört alan taşır: reference ID/disclosure status/matched file ID'ler/bütün 11-alan projection listesi. Null/absence ve kaynak tür/değerler korunur; sayısal count sıfırı sıfır-byte dosya veya null değildir.
 
-## Planlanan exact iki ürün çağrısı
+## Tamamlanan exact iki ürün çağrısı
 
-Aşağıdakiler henüz çalışmış başarı kaydı değildir. İlk exit 0 ve eksiksiz beş output sonrası gerçek join/lookup/receipt/MD manuel incelenir; ancak sonra ikinci çalışır. Phase38 en fazla iki yeni CLI; başarısız çağrı tüketilir, retry/üçüncü/preflight helper/test runner/eski CLI tekrarı yoktur. Phase20–37 ve Phase24/29 insan istisnaları kapalıdır.
+Aşağıdakiler gerçek generation kaydındaki tamamlanmış iki çağrıdır; yeniden çalıştırma izni değildir. İkinci, ilk exit 0 ve eksiksiz beş output'un gerçek join/lookup/receipt/MD manuel incelemesinden sonra çalıştı. Actual exit kodları **[0,0]**, kapalı **2/2 bütçe**, kalan çağrı **0**. Retry/üçüncü/preflight helper/test runner/eski CLI tekrarı yoktur. Phase20–37 ve Phase24/29 insan istisnaları kapalıdır.
 
 ```text
 python -I -B security-platform/tools/commercial_co_reference/assemble_co_reference.py --index outputs/phase37-file-reference-index/file-reference-index.json --source-lookup outputs/phase37-file-reference-index/file-reference-lookup.json --receipt outputs/phase37-file-reference-index/index-source-receipt.json --source-summary outputs/phase37-file-reference-index/file-index-summary.md --source-manifest outputs/phase37-file-reference-index/manifest.json --request security-platform/tools/commercial_co_reference/examples/demo_co_reference_request.json --output-dir outputs/phase38-co-reference
@@ -38,7 +40,9 @@ python -I -B security-platform/tools/commercial_co_reference/assemble_co_referen
 python -I -B security-platform/tools/commercial_co_reference/inspect_co_reference.py --join outputs/phase38-co-reference/co-reference-join.json --lookup outputs/phase38-co-reference/co-reference-lookup.json --receipt outputs/phase38-co-reference/co-reference-source-receipt.json --summary outputs/phase38-co-reference/co-reference-summary.md --manifest outputs/phase38-co-reference/manifest.json --output outputs/phase38-co-reference/inspection-summary.json
 ```
 
-Assembly ilk beş output'u üretir. Manifest gerçek ilk dört payload'ı ve tam request'i bağlar; kendi hash'ini içermez. Inspector yalnız beş yeni join/lookup/receipt/summary/manifest dosyasının internal model/pair/supporting binding/full packet/MD/manifest ilişkisini değerlendirir. Phase37 inputlarını yeniden açmaz; `content_consistent` source co-reference, import, producer veya fiziksel/source/compiler ilişkisinin bağımsız doğruluğu değildir.
+Assembly ilk beş output'u üretti. Manifest gerçek ilk dört payload'ı ve tam request'i bağlar; kendisini/inspection çıktısını kapsamaz. Inspector `internal_content_status=content_consistent`, kapsam `five_new_co_reference_outputs_internal_correspondence_only` raporladı. `original_Phase37_files_read=false`, `source_co_reference_independently_verified=false`, `source_import_independently_verified=false`, `source_capsule_read=false`; yalnız beş yeni dosyanın internal model/pair/binding/full-packet/MD/manifest ilişkisidir. Source co-reference, import, producer veya fiziksel/source/compiler ilişkisinin bağımsız doğruluğu değildir.
+
+Gerçek source sayımları yalnız görünür altı paydaydı: 2 file / 1 reference / 2 candidate / 2 projection / 1 present / 1 absence. Bloke ID/metadata veya eski global bloke sayımları yeni ürün kayıtlarına taşınmadı. Lookup'un bütün projection listesi join'deki shared source paketiyle eşleşti; absence byte/hash JSON null kaldı. Nested 18 false flag ve demo-only true korundu. No-shared, unknown/nonvisible, multi-reference veya adversarial runtime varyantı çalıştırılmadı.
 
 ## Limitler, bağımlılıklar ve NOT_RUN
 
@@ -52,4 +56,4 @@ NOT_RUN: hostile/duplicate JSON/UTF-8, wrong digest, unknown/nonvisible File ID,
 
 Belgeler: [sözleşmeler](../../docs/commercial/operations/phase38/CO_REFERENCE_CONTRACT.tr.md), [join ve disclosure](../../docs/commercial/operations/phase38/JOIN_AND_DISCLOSURE.tr.md), [güven sınırı](../../docs/commercial/operations/phase38/TRUST_BOUNDARY.tr.md), [teslim kaydı](../../docs/commercial/operations/phase38/DEMO_DELIVERY.tr.md).
 
-Kaynak teslim adı `Termivar-Offline-Co-Reference-phase38-2026-11-14.zip`. Ölçülmemiş boyut/üye/SHA256 uydurulmaz; final kimlik ayrı dış delivery manifestinde tutulur. Phase7–37, backend/operator-console/native/HBF/Altay/auth/DB/roller/wheel/lock/lisans korunur. İzinli iki çağrı, dar inceleme ve ölçülmüş teslim bitince durulur; Phase39/yeni mikro özellik/native/otomatik test/release başlatılmaz.
+Kaynak teslim adı `Termivar-Offline-Co-Reference-phase38-2026-11-14.zip`. Ölçülen ZIP boyut/üye/SHA256 kimliği [delivery manifestinde](../../../outputs/phase38-co-reference-delivery-manifest.json); kaynak kimlikleri [source manifestte](../../../outputs/phase38-co-reference-source-manifest.json), nihai durum [closure kaydında](../../../outputs/phase38-delivery-closure.json) tutulur. Bu dış kayıtlar öz hash döngüsünü önler. Phase7–37, backend/operator-console/native/HBF/Altay/auth/DB/roller/wheel/lock/lisans korunur. İzinli iki çağrı tamamlandı; Phase39/yeni mikro özellik/native/otomatik test/release başlatılmaz.
