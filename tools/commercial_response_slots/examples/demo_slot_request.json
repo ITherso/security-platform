@@ -1,0 +1,8 @@
+{
+  "schema_version": "termivar-offline-response-slot-request/v1",
+  "mode": "demo",
+  "request_reference": "PHASE41_DEMO_F0001",
+  "source_phase40_queue_sha256": "fd86dda8259efe31c661cd8f4ca4732e1a000f65854ff66c69fa346ae0ba71ec",
+  "source_phase40_manifest_sha256": "e611c540022cb268550bb2a2b21cd591a89f12557a3786ddde3cdfdd410819dd",
+  "selected_task_ids": ["F0001"]
+}
