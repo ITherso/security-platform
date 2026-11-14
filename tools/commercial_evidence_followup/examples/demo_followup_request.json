@@ -1,0 +1,10 @@
+{
+  "schema_version": "termivar-offline-evidence-followup-request/v1",
+  "mode": "demo",
+  "request_reference": "DEMO-TERMIVAR-FOLLOWUP-040",
+  "source_phase39_witnesses_sha256": "97d96202926e6fff9038f51ea96dfde50abdbc761512e92d1d7cd9329179d8a3",
+  "source_phase39_manifest_sha256": "aaab43b75be22e31797b5ecd16224283fdc6aa59a070744a7f725698c5ff1eeb",
+  "requested_reference_ids": [
+    "rust-ref-dfd6b59f25de8346b72d86fedce91afe4e9ace4f55fac7986019ede3b1ecef81"
+  ]
+}
