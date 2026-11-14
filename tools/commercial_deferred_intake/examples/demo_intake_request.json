@@ -1,0 +1,9 @@
+{
+  "schema_version": "termivar-offline-deferred-intake-request/v1",
+  "mode": "demo",
+  "request_reference": "PHASE42_DEMO_F0001",
+  "source_phase41_slots_sha256": "291caf1d486ad50bab53a784adffa5b7b4bebd02e0ced53c85ae310f7eee9173",
+  "source_phase41_manifest_sha256": "0d67de7226e61efa9c1af7236e8f01d7458df9adab13e0217e8150af2565c0e4",
+  "selected_task_ids": ["F0001"],
+  "candidate_source": "existing_unsubmitted_template"
+}
