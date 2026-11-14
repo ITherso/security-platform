@@ -1,0 +1,8 @@
+{
+  "schema_version": "termivar-offline-task-exchange-request/v1",
+  "mode": "demo",
+  "request_reference": "PHASE43_DEMO_F0001",
+  "source_phase42_register_sha256": "6465bab021f525b47d4fafd5a0ddc68020989b60e82bce3ec70f6bfaa4f8ff16",
+  "source_phase42_manifest_sha256": "fbe94605564f06a11165cc9fb71229100b609e2c7d0248e4772af53ddb81b6cc",
+  "selected_task_ids": ["F0001"]
+}
