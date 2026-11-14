@@ -1,0 +1,17 @@
+{
+  "schema_version": "termivar-offline-disclosed-cohort-query-request/v1",
+  "mode": "demo",
+  "request_reference": "DEMO-TERMIVAR-COHORT-039",
+  "source_phase38_join_sha256": "fd90a2c53abf1d09c5f902f33a379b6865b2f70adb51bdb821f1bd12092e67f2",
+  "source_phase38_manifest_sha256": "f00b8b7798ad4b6c578c093ab232fa3b80c640747e4c9d40b5e9db1e6b888407",
+  "required_file_assertions": [
+    {
+      "file_id": "candidate-file-9230e44e0642dff1b64663ebd9e20da0c589d22ca1cd224f09b8c954b4328370",
+      "expected_source_file_presence": "present"
+    },
+    {
+      "file_id": "candidate-file-9a67f54741d040e044cb2e94b227515bd0c9b595e8f6eae0d896e70ea664ec9a",
+      "expected_source_file_presence": "missing"
+    }
+  ]
+}
