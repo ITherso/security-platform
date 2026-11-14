@@ -31,6 +31,14 @@ _COUNT_LABELS = {
     "assigned_task_count": "Atanmış task",
     "observed_task_count": "Gözlemlenmiş task",
 }
+_SLOT_DEFINITION_ORDER = (
+    "binding_digest", "evidence_sha256_if_available", "observation_method",
+    "observation_recorded_at", "reported_presence", "source_locator_description", "task_id",
+)
+_TEMPLATE_DEFINITION_ORDER = (
+    "task_id", "binding_digest", "reported_presence", "observation_recorded_at",
+    "observation_method", "source_locator_description", "evidence_sha256_if_available",
+)
 
 
 def _md(value: object) -> str:
@@ -61,10 +69,10 @@ def _counts(lines: list[str], labels: dict, counts: dict) -> None:
         lines.append(_row((label, _md(counts[key]))))
 
 
-def _definitions(lines: list[str], fields: dict) -> None:
+def _definitions(lines: list[str], fields: dict, field_order: tuple[str, ...]) -> None:
     lines.extend(["| Gelecekteki response alan adı | Tür tanımı; gerçek yanıt değeri değildir |", "| --- | --- |"])
-    for name, type_description in fields.items():
-        lines.append(_row((_md(name), _md(type_description))))
+    for name in field_order:
+        lines.append(_row((_md(name), _md(fields[name]))))
 
 
 def _packets(lines: list[str], packets: list) -> None:
@@ -152,7 +160,7 @@ def render_response_slot_summary(slots: dict, template: dict, receipt: dict) -> 
         )))
     for slot in slots["response_slots"]:
         lines.extend(["", "### " + _md(slot["task_id"]) + " için gelecekteki yanıt sözleşmesi", ""])
-        _definitions(lines, slot["submission_contract"])
+        _definitions(lines, slot["submission_contract"], _SLOT_DEFINITION_ORDER)
     lines.extend([
         "", "submission=null ve awaiting_external_response gerçek başlangıç durumudur. Gelecekteki alanların tür tanımları observation değeri değildir. source_locator_description eski boş metadata'dan türetilmez; yetkili kişi ileride uygun biçimde sağlamalıdır. Bu turda future submission parser veya filled-response intake çalışmaz.", "",
         "## 5. Selected task referanslarının bütün izinli paketleri", "",
@@ -170,7 +178,7 @@ def render_response_slot_summary(slots: dict, template: dict, receipt: dict) -> 
         lines.append(_row((_md(entry["task_id"]), _md(entry["binding_digest"]), _md(entry["response_status"]), _value(entry["response"]))))
     for entry in template["template_entries"]:
         lines.extend(["", "### " + _md(entry["task_id"]) + " template.required_fields tanımları", ""])
-        _definitions(lines, entry["required_fields"])
+        _definitions(lines, entry["required_fields"], _TEMPLATE_DEFINITION_ORDER)
     lines.extend([
         "", "## 7. Source flag yokluğu, trust ve inspector sınırı", "",
         "Receipt content_scope: " + _md(receipt["content_scope"]),
