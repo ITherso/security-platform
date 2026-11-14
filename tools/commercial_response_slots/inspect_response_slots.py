@@ -104,12 +104,10 @@ def inspect_response_slots(slots_path: str, template_path: str, receipt_path: st
         "human_acceptance_verified": False,
         "inspection_scope": "five_new_response_slot_outputs_internal_correspondence_only",
         "integrity_limit": (
-            "Internal correspondence of the five new slots/template/receipt/summary/manifest files only. "
-            "The seventeen flat source/workflow limit fields are local inspector declarations, not inherited "
-            "from the five Phase40 source models, which do not contain them. No original Phase40 source "
-            "recheck, independent task membership or necessity proof, external response receipt, current "
-            "observation, assignment, fulfillment, collection authorization, producer, ownership, human, "
-            "legal, customer, production or release verification."
+            "Only the five new slots/template/receipt/summary/manifest files are compared. "
+            "The 17 flat limit flags are local inspector declarations, not inherited from the five Phase40 sources. "
+            "No original source recheck, task membership/necessity proof, response receipt, observation, "
+            "assignment, fulfillment, collection authorization, producer, human, legal or release verification."
         ),
     }
 
