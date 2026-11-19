@@ -91,7 +91,8 @@ Inspector şu on kontrolü yapar:
    - yasak anahtarlar;
    - `local_reference` alanının yalnız girdi kimliklerinden oluşması;
    - reddedilen capsule'da hiç yerel değer bulunmaması;
-   - önceden açıklanmamış bir yerel değerin yazılmamış olması;
+   - yazılan her yerel değerin, yerel kayıtta o satırın (kaynak, konu, alan) üçlüsü için tutulan değerle aynı olması. `MATCH` satırları da bu kontrole girer. Beklenen değer, inspector'ın owner reader'dan kendisinin okuduğu görevler ve yerel kayıt üzerinden ayrıca hesaplanır;
+   - `MATCH` olmayan bir satırda yazılan yerel değerin o satır için açıklanmış sayılması. Phase43 açıklama kaydındaki değerler (çok görevli kayıtta virgülle birleştirilmiş `task_id_list` dahil) ve açık girdi dosyalarının kimlikleri açıklanmış sayılır. Bir Phase42 görev değeri ise ancak Phase43 kaydı aynı görev ve alan için aynı değeri belirtiyorsa açıklanmış sayılır;
    - görev aramalarının (`task_lookups`) yalnız capsule'ın beyan ettiği görevleri adlandırması.
 
    Bu kontrol yapısaldır. Builder yerel kayıt verisini yalnız karşılaştırma `local_value`, `local_reference` ve manifest `inputs` alanlarına yazar; inspector tam olarak bu alanları denetler. Çıktı byte'larında substring araması yapılmaz, çünkü capsule kaynaklı metin (üye adları, JSON kaçışlı değerler, Phase44'ün hesapladığı hash'ler) yerel bir kimliğe benzeyebilir.

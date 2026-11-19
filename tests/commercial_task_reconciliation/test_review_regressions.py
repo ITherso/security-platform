@@ -168,9 +168,11 @@ def test_inspector_accepts_capsule_derived_strings_resembling_local_ids(tmp_path
 
 def test_disclosure_check_rejects_echoed_undisclosed_local_value():
     from inspect_task_reconciliation import _check_disclosure
+    from recipient_reader import inspect_task_exchange_capsule, read_portable_task_request
 
     local_task = synthetic_task()
     capsule = canonical_capsule(synthetic_envelope([dict(local_task, candidate_id="SYNTH0099")]))
+    owner_tasks = read_portable_task_request(inspect_task_exchange_capsule(capsule))[0]["tasks"]
     p42 = phase42_record([local_task])
     snapshot = local("PHASE42_TASK_RECORDS_ONLY", p42, None)
     req = request("PHASE42_TASK_RECORDS_ONLY", p42["register_sha256"])
@@ -181,9 +183,9 @@ def test_disclosure_check_rejects_echoed_undisclosed_local_value():
         if row["field"] == "candidate_id" and row["result"] == "MISMATCH":
             row.update(local_value="SYNTH0001", local_value_disclosure="ECHOED")
     with pytest.raises(InputError, match="undisclosed_local_value_echoed"):
-        _check_disclosure(report, inbox, manifest, snapshot.record())
+        _check_disclosure(report, inbox, manifest, snapshot.record(), owner_tasks)
     report["local_reconciliation"]["task_lookups"][0]["task_id"] = "F0063"
     for row in report["local_reconciliation"]["comparisons"]:
         row.update(local_value=None, local_value_disclosure="NOT_AVAILABLE") if row["result"] != "MATCH" else None
     with pytest.raises(InputError, match="lookup_names_unclaimed_task"):
-        _check_disclosure(report, inbox, manifest, snapshot.record())
+        _check_disclosure(report, inbox, manifest, snapshot.record(), owner_tasks)

@@ -20,8 +20,8 @@ import reconciliation_paths  # noqa: E402
 
 reconciliation_paths.install()
 
-from exchange_contracts import InputError, json_bytes, parse_json  # noqa: E402
-from recipient_reader import inspect_task_exchange_capsule  # noqa: E402
+from exchange_contracts import TASK_FIELDS, InputError, json_bytes, parse_json  # noqa: E402
+from recipient_reader import inspect_task_exchange_capsule, read_portable_task_request  # noqa: E402
 from reconciliation_contracts import (  # noqa: E402
     INSPECTION_CHECKS, INSPECTION_SCHEMA, INSPECTION_SCOPE, LIFECYCLE_FOR_STATUS, OUTPUT_NAMES, OUTPUT_PAYLOAD_NAMES,
     CheckResult, Eligibility, common, validate_inbox, validate_inspection, validate_output_manifest, validate_report,
@@ -69,18 +69,77 @@ def _keys(value: object):
             yield from _keys(child)
 
 
-def _scalars(value: object):
-    if type(value) is dict:
-        for child in value.values():
-            yield from _scalars(child)
-    elif type(value) is list:
-        for child in value:
-            yield from _scalars(child)
-    elif type(value) is str:
-        yield value
+_P42 = "PHASE42_LOCAL_TASK_RECORD"
+_P43 = "PHASE43_LOCAL_DISCLOSURE_RECORD"
+_ABSENT = object()
 
 
-def _check_disclosure(report: dict, inbox: dict, manifest: dict, local_record: dict) -> None:
+def _same(left: object, right: object) -> bool:
+    return type(left) is type(right) and left == right
+
+
+def _binding_tuple(task: dict) -> str:
+    return "|".join((task["reference_id"], task["candidate_id"], task["file_id"], task["binding_digest"]))
+
+
+def _local_expectations(local_record: dict, owner_tasks: list) -> dict:
+    """Map (source, subject, field) to (local value, echo allowed on non-MATCH).
+
+    Restated from the disclosure rule rather than imported from the builder:
+    a Phase43 disclosure-record value and an explicit input identity were
+    already disclosed; a Phase42 task value counts as disclosed only when the
+    Phase43 record states the same value for the same task and field, and a
+    binding owner only when that owner task is in the Phase43 record.
+    ``owner_tasks`` come from the inspector's own run of the owner reader.
+    """
+    expected = {}
+    p42, p43 = local_record["phase42"], local_record["phase43"]
+    disclosed = {task["task_id"]: task for task in p43["tasks"]} if p43 is not None else {}
+
+    def disclosed_value(task_ref: str, field: str) -> object:
+        task = disclosed.get(task_ref)
+        if task is None:
+            return _ABSENT
+        return _binding_tuple(task) if field == "binding_tuple" else task.get(field, _ABSENT)
+
+    if p43 is not None:
+        capsule_values = {
+            "capsule_sha256": p43["capsule_sha256"],
+            **{"member_sha256:" + item["name"]: item["sha256"] for item in p43["capsule_members"]},
+            "source_phase42_register_sha256": p43["source_phase42_register_sha256"],
+            "source_phase42_manifest_sha256": p43["source_phase42_manifest_sha256"],
+            "request_reference": p43["request_reference"], "task_id_list": ",".join(p43["task_ids"]),
+        }
+        for field, value in capsule_values.items():
+            expected[(_P43, "capsule", field)] = (value, True)
+        for task in owner_tasks:
+            if task["task_id"] in disclosed:
+                for field in (*TASK_FIELDS, "binding_tuple"):
+                    expected[(_P43, "task:" + task["task_id"], field)] = (disclosed_value(task["task_id"], field), True)
+    if p42 is not None:
+        # The two Phase42 source digests are the explicit input-file identities.
+        expected[(_P42, "capsule", "source_phase42_register_sha256")] = (p42["register_sha256"], True)
+        expected[(_P42, "capsule", "source_phase42_manifest_sha256")] = (p42["manifest_sha256"], True)
+        local42 = {task["task_id"]: task for task in p42["tasks"]}
+        by_digest = {task["binding_digest"]: task["task_id"] for task in p42["tasks"]}
+        by_triple = {(t["reference_id"], t["candidate_id"], t["file_id"]): t["task_id"] for t in p42["tasks"]}
+        for task in owner_tasks:
+            task_ref, subject = task["task_id"], "task:" + task["task_id"]
+            local_task = local42.get(task_ref)
+            if local_task is not None:
+                for field in (*TASK_FIELDS, "binding_tuple"):
+                    value = _binding_tuple(local_task) if field == "binding_tuple" else local_task[field]
+                    expected[(_P42, subject, field)] = (value, _same(disclosed_value(task_ref, field), value))
+            owners = (("binding_digest_owner_task", by_digest.get(task["binding_digest"])),
+                      ("binding_triple_owner_task",
+                       by_triple.get((task["reference_id"], task["candidate_id"], task["file_id"]))))
+            for field, owner in owners:
+                if owner is not None:
+                    expected[(_P42, subject, field)] = (owner, owner in disclosed)
+    return expected
+
+
+def _check_disclosure(report: dict, inbox: dict, manifest: dict, local_record: dict, owner_tasks: list) -> None:
     """Structural disclosure check on the only places that may carry local data.
 
     The builder writes local record data only into comparison ``local_value``,
@@ -91,36 +150,37 @@ def _check_disclosure(report: dict, inbox: dict, manifest: dict, local_record: d
     - no forbidden keys anywhere;
     - local_reference holds only explicit input-file identities;
     - a rejected capsule carries no local value at all;
-    - an echoed non-MATCH local value is a Phase43 disclosure-record value or
-      a recorded input identity;
+    - every echoed local value equals the value the local record holds for
+      that exact (source, subject, field) row, MATCH rows included;
+    - a non-MATCH echo is only a value the disclosure rule allows for that
+      row (see ``_local_expectations``);
     - task lookups name only capsule-declared tasks, never local enumeration.
     """
     for model in (report, inbox, manifest):
         if any(key in _FORBIDDEN_KEYS for key in _keys(model)):
             disagree("forbidden_disclosure_key")
     provenance = {item["sha256"] for item in manifest["inputs"]}
-    phase43_values = set()
-    if local_record["phase43"] is not None:
-        p43 = local_record["phase43"]
-        phase43_values = set(_scalars({key: p43[key] for key in p43 if key != "inputs"}))
-        phase43_values |= {"|".join((t["reference_id"], t["candidate_id"], t["file_id"], t["binding_digest"]))
-                           for t in p43["tasks"]}
     for group in ("phase42", "phase43"):
         entry = report["local_reference"][group]
         if entry is not None and not set(entry.values()) <= provenance:
             disagree("local_reference_not_input_identity")
     rejected = report["local_reconciliation"]["state"] != "PERFORMED"
+    expected = {} if rejected else _local_expectations(local_record, owner_tasks)
     for row in report["local_reconciliation"]["comparisons"]:
         if rejected and (row["local_value"] is not None or row["local_value_disclosure"] != "NOT_AVAILABLE"):
             disagree("rejected_capsule_local_value")
         if row["local_value_disclosure"] != "ECHOED":
             continue
+        key = (row["reference_source"], row["subject"], row["field"])
+        if key not in expected:
+            disagree("echoed_value_without_local_record")
+        value, disclosable = expected[key]
+        if not _same(row["local_value"], value):
+            disagree("echoed_value_differs_from_local_record")
         if row["result"] == "MATCH":
-            if row["local_value"] != row["capsule_value"]:
+            if not _same(row["local_value"], row["capsule_value"]):
                 disagree("match_local_value_differs")
-            continue
-        allowed = phase43_values | (provenance if row["reference_source"] == "PHASE42_LOCAL_TASK_RECORD" else set())
-        if row["local_value"] not in allowed:
+        elif not disclosable:
             disagree("undisclosed_local_value_echoed")
     identity = report["capsule_identity"]
     claimed = {task["task_id"] for task in identity["declared_tasks"] + identity["represented_tasks"]}
@@ -158,10 +218,10 @@ def inspect_task_reconciliation(args) -> dict:
     if report["local_reference"]["mode"] != mode:
         disagree("local_reference_mode")
     try:
-        inspect_task_exchange_capsule(inputs.capsule)
-        owner = "COMPATIBLE"
+        owner_envelope, _contract, _artifacts = read_portable_task_request(inspect_task_exchange_capsule(inputs.capsule))
+        owner, owner_tasks = "COMPATIBLE", owner_envelope["tasks"]
     except InputError:
-        owner = "INCOMPATIBLE"
+        owner, owner_tasks = "INCOMPATIBLE", []
     if report["phase43_reader"]["compatibility"] != owner:
         disagree("phase43_owner_reader")
     status = independent_status(report)
@@ -184,7 +244,7 @@ def inspect_task_reconciliation(args) -> dict:
     elif admitted != represented:
         disagree("inbox_report_tasks")
     local_record = inputs.local.record()
-    _check_disclosure(report, inbox, manifest, local_record)
+    _check_disclosure(report, inbox, manifest, local_record, owner_tasks)
     if raws[OUTPUT_NAMES[2]] != render_reconciliation_summary(report, inbox):
         disagree("summary")
     regenerated_report, regenerated_inbox = reconcile_capsule(inputs.capsule, inputs.request, inputs.local)

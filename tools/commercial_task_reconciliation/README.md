@@ -21,6 +21,8 @@ Araç hiçbir görevi göndermez, almaz, yürütmez, atamaz, onaylamaz, tamamlam
 - Durum `STRUCTURALLY_VALID_REQUIRES_MANUAL_REVIEW`, inbox `QUARANTINED_AWAITING_MANUAL_REVIEW`
 - Inspector: `AGREES` / `BYTE_IDENTICAL`
 
+Aynı gün, salt-okunur denetimin orta önemdeki bulguları düzeltildikten sonra demo `outputs/phase44-task-reconciliation-r2/` dizinine yeniden çalıştırıldı. Sonuç aynıdır; yalnız özetteki görev sayısı satırı nötr ifadeye geçti.
+
 Bu sonuç güven, atama veya onay değildir; manuel inceleme zorunludur. Gerçek byte ve hash değerleri [demo teslim kaydındadır](../../docs/commercial/operations/phase44/DEMO_DELIVERY.tr.md).
 
 ## Modüller

@@ -87,7 +87,34 @@ def _rewrite_manifest(workdir: Path) -> None:
     manifest_path.write_bytes(json_bytes(manifest))
 
 
-@pytest.mark.parametrize("tamper", ["status", "finding", "inbox_stage", "summary", "capsule_swap", "comparison"])
+def inspect_error(argv: list) -> str | None:
+    """Run the inspection function itself so the first failing check is visible."""
+    import argparse
+
+    from exchange_contracts import InputError
+    from reconciliation_inputs import add_input_arguments
+
+    parser = argparse.ArgumentParser()
+    add_input_arguments(parser)
+    for name in ("inbox", "report", "summary", "manifest", "output"):
+        parser.add_argument("--" + name, required=True)
+    try:
+        inspect_task_reconciliation.inspect_task_reconciliation(parser.parse_args(argv))
+    except InputError as error:
+        return str(error)
+    return None
+
+
+# The first inspector check that each tamper reaches in this NO_LOCAL_RECORDS run.
+# "finding" and "comparison" are visible in the summary rows; a capsule_value on an
+# UNAVAILABLE row is visible only to the final byte-identical regeneration (with
+# local records, MATCH rows are also checked by the disclosure check).
+FIRST_FAILING_CHECK = {"status": "eligibility", "finding": "summary", "inbox_stage": "inbox_report_tasks",
+                       "summary": "summary", "capsule_swap": "input_identity", "comparison": "summary",
+                       "capsule_value": "regeneration"}
+
+
+@pytest.mark.parametrize("tamper", sorted(FIRST_FAILING_CHECK))
 def test_inspector_detects_disagreement(workdir, tamper):
     write(workdir / "capsule.zip", canonical_capsule())
     assert import_task_capsule.main([*base_args(), "--output-dir", "out"]) == 3
@@ -112,7 +139,11 @@ def test_inspector_detects_disagreement(workdir, tamper):
         inbox["admitted_tasks"][0]["candidate_id"] = "SYNTH0999"
     elif tamper == "comparison":
         report["local_reconciliation"]["comparisons"] = report["local_reconciliation"]["comparisons"][1:]
-    if tamper in ("status", "finding", "inbox_stage", "comparison"):
+    elif tamper == "capsule_value":
+        row = [r for r in report["local_reconciliation"]["comparisons"] if r["field"] == "candidate_id"][0]
+        assert row["capsule_value"] == "SYNTH0001"
+        row["capsule_value"] = "SYNTH0002"
+    if tamper in ("status", "finding", "inbox_stage", "comparison", "capsule_value"):
         report_path.write_bytes(json_bytes(report))
         inbox_path.write_bytes(json_bytes(inbox))
     if tamper == "summary":
@@ -122,6 +153,8 @@ def test_inspector_detects_disagreement(workdir, tamper):
 
         write(workdir / "capsule.zip", canonical_capsule(synthetic_envelope(reference="synthetic-other")))
     _rewrite_manifest(workdir)
+    assert inspect_error(inspect_args()) == (
+        "task_reconciliation_inspection_disagreement_" + FIRST_FAILING_CHECK[tamper])
     assert inspect_task_reconciliation.main(inspect_args()) == 2
     assert not (out / "inspection-summary.json").exists()
 

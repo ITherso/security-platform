@@ -72,7 +72,7 @@ python -I -B security-platform-phase43-source/tools/commercial_task_reconciliati
 
 Bu sonuç yalnız şunu söyler: aynı capsule'ın yerel kayıtlarla yapısal ve kayıt düzeyinde tutarlı olduğu. Capsule ve açıklama kaydı aynı dosya olduğu için `MATCH` sonucu beklenendir; bağımsız bir kaynaktan gelen capsule kanıtı değildir. Üretici kimlik doğrulaması, güvenli aktarım, kaynak provenance'ı, gerçek dünya gözlemi, görev atama, onay, yürütme veya gönderim değildir. Bir sonraki adım ancak yetkili bir insanın manuel incelemesi olabilir; Phase44 bunu başlatmaz.
 
-## Testler
+## Testler (ilk teslim)
 
 Komut, worktree kökünden ve mevcut `security-platform/.venv` ortamıyla (Python 3.14.7, pytest 9.2.0) çalıştırıldı; yeni paket kurulmadı:
 
@@ -129,6 +129,82 @@ Hepsi düzeltildi ve regresyon testleri eklendi. Fail-open, yani güvenilmeyen c
 Değişiklik öncesinde `outputs/` altındaki 651 dosyanın baseline'ı alındı. Demo sonrası yeniden ölçüldüğünde 651 dosyanın hepsi byte ve SHA256 olarak aynıydı; yalnız beş yeni Phase44 çıktısı eklendi.
 
 Orijinal `security-platform` deposu (`feat/offline-deferred-intake`, HEAD `3dc85d1…`) değişmedi; önceden var olan üç untracked dizini korundu. Worktree'nin izlenen dosyalarında fark yoktur. Phase7–43 kaynakları, çıktıları, arşivleri ve manifestleri değiştirilmedi. Dış teslim ZIP'inin ve teslim metadata'sının ölçümü bu belgenin dışındaki kayıtlardadır; bu belge kendi arşivinin hash'ini içermez.
+
+## Denetim düzeltmeleri sonrası yeniden çalıştırma (r2)
+
+Aynı gün `2f2fbe0` commit'i üzerinde salt-okunur bir denetim yapıldı. Denetim kritik veya yüksek önemde bulgu çıkarmadı, dört orta önemde bulgu çıkardı. Dördü de düzeltildi:
+
+1. **Inspector, çok görevli Phase43 açıklama kaydına karşı dürüst bir `IDENTITY_MISMATCH` çıktısını reddediyordu.** Builder virgülle birleştirilmiş `task_id_list` değerini doğru biçimde yazıyordu, ama inspector'ın izinli değer kümesinde bu birleşik değer yoktu. Açıklama denetimi artık satır bazlıdır: yazılan her yerel değer, yerel kayıttan ayrıca hesaplanan değerle karşılaştırılır.
+2. **Özet, karantinadaki görevleri "Kabul edilen" diye adlandırıyordu.** Satır artık şöyledir: "Karantinadaki inbox kaydına alınan görev sayısı (kabul, onay veya atama değildir)".
+3. **Yalnız Phase43 owner'ın uyguladığı kapılar test edilmemişti.** Sondaki/öndeki byte, birleştirilmiş arşiv, flag bitleri, üye yorumu, tarih, `create_system`, `external_attr`, `internal_attr`, sürüm alanı ve yalnız local header'daki extra alanı için testler eklendi. Owner'ın sıkı JSON parser'ı için de testler eklendi: BOM, NaN, float, negatif, 2^53, 17 basamak, tekil surrogate, derinlik ve duplicate anahtar.
+4. **Phase44'ün kendi yollarında boşluklar vardı.** Şunlar için testler eklendi:
+   - `PHASE43_DISCLOSURE_RECORDS_ONLY` modu;
+   - 2 ve 8 görevli capsule'lar;
+   - üçlü ile binding sahipliği;
+   - owner ile beyan arasındaki farkın tek başına tetiklediği `DIAGNOSTIC_OWNER_DISAGREEMENT`;
+   - IDENTITY_MISMATCH çıktısında inspector;
+   - her kurcalamanın hangi inspector kontrolüne takıldığı;
+   - pin, yeniden okuma ve kimlik kontrolleriyle dosya yükleyicileri (owner inceleme fonksiyonları yerine sentetik vekiller kullanıldı);
+   - izole Python ile CLI çağrısı;
+   - daha önce hiçbir testte doğrulanmayan 27 bulgu kuralı. Katalogda doğrulanmayan tek kural, mevcut sınırlarla ulaşılamayan `FINDINGS_TRUNCATED` kaldı.
+
+Çalışma durumu `2f2fbe0` artı commit'lenmemiş düzeltmelerdir. Çalıştırma anında `tools/commercial_task_reconciliation/` altındaki Python dosyalarından yalnız ikisi değişmişti:
+
+| Dosya | SHA256 |
+| --- | --- |
+| `inspect_task_reconciliation.py` | `36a251f5630a508a924ba10b06065ab891c804db7f3be705260002b1f9f352d7` |
+| `reconciliation_renderer.py` | `df208fcbe0f3ac26514b27c8563841ab69adacefa16f90013fa21732f9180d33` |
+
+Diğer `tools/commercial_task_reconciliation/*.py` dosyaları `2f2fbe0` ile aynıdır. Diğer değişikliklerin durumu:
+
+- Çalıştırma anında iki test dosyası değişmiş, üç test dosyası yeni eklenmişti.
+- README ve üç belge çalıştırmadan sonra güncellendi.
+- Bağımsız incelemeden sonra yalnız test dosyaları ve bu kayıt değişti. Yukarıdaki iki hash, çalıştırılabilir kodun son hâlidir.
+
+Komutlar, yukarıdaki demo komutlarının aynısıdır. Tek fark çıktı yollarının `outputs/phase44-task-reconciliation-r2/` olmasıdır.
+
+| Sıra | Komut | UTC başlatma | Çıkış kodu |
+| ---: | --- | --- | ---: |
+| 1 | import_task_capsule.py | 2026-11-19T16:27:04.561309Z | 0 |
+| 2 | inspect_task_reconciliation.py | 2026-11-19T16:27:04.967645Z | 0 |
+
+| Dosya | Byte | SHA256 |
+| --- | ---: | --- |
+| task-inbox-record.json | 2373 | 2203622b9e4e37888fddb519518c99969cc63727168331ce05f24316fc05b13a |
+| capsule-reconciliation-report.json | 33548 | 9235ad645005e9c6bc65dd5f3bcbed9a90cb75915555ec283a1c9899f9eb9313 |
+| capsule-reconciliation-summary.md | 11759 | 5e4d08d02d5096a408d1cb81404a2776a7e2a5cd5b626cfdf9dbcb5701192697 |
+| manifest.json | 4058 | 68d7bf62647fdcbab406db79180c1728179d05d4182affc014238b288400c88d |
+| inspection-summary.json | 5353 | d54041061935cceedaab47b913c1a232550191d47ca5bb54bb7987d496e70d1b |
+
+İlk çalıştırmayla karşılaştırma:
+
+- Inbox ve rapor byte byte aynıdır.
+- Özette yalnız görev sayısı satırı değişti.
+- `manifest.json` ve `inspection-summary.json` yalnız özetin yeni byte kimliği nedeniyle farklıdır.
+- Uygunluk yine `STRUCTURALLY_VALID_REQUIRES_MANUAL_REVIEW`'dur; inspector yine `AGREES` / `BYTE_IDENTICAL` verdi.
+
+İlk çalıştırmanın `outputs/phase44-task-reconciliation/` dizini ve `outputs/Termivar-Offline-Task-Capsule-Reconciliation-phase44-2026-11-19.zip` teslim arşivi değiştirilmedi. Bu arşiv düzeltme öncesi kodu ve eski özet ifadesini içerir; tarihsel kayıt olarak durur.
+
+**Testler (r2):** `..\security-platform\.venv\Scripts\python.exe -m pytest tests/commercial_task_reconciliation -q -p no:cacheprovider -rs` komutu, bağımsız incelemeden sonra eklenen testlerle birlikte **157 passed**, 0 failed, 0 skipped verdi. Proje regresyon koşusu, yukarıdakiyle aynı komutla, **413 passed, 2 skipped** (platform nedenli), 55 deselected verdi.
+
+Yeni O1 ve O2 testleri ayrıca kontrol edildi. Değiştirilmiş iki dosyanın `2f2fbe0` sürümleri geçici bir kopyaya kondu ve testler orada koşuldu. O1 testleri iki modda da ve özet ifadesi testi dört senaryonun hepsinde başarısız oldu. Yani testler düzeltilen hataları gerçekten yakalıyor.
+
+**Bağımsız inceleme (r2):** Düzeltmeler üç ayrı açıdan incelendi: inspector doğruluğu, test kalitesi, belge–kod uyumu. Her bulguyu ayrı bir ajan çürütmeye çalıştı; toplam 9 ajan kullanıldı. Kritik, yüksek veya orta önemde bulgu çıkmadı.
+
+Düşük önemdeki test boşlukları kapatıldı. Bunun için yeni açıklama kurallarının her biri, geçici bir kopyada kasten bozuldu. Yedi mutasyondan altısını hedeflenen test yakaladı.
+
+Yakalanmayan tek mutasyon inspector'ın `match_local_value_differs` kontrolünü kaldırıyor. Bu kontrole sözleşmeye uygun hiçbir rapor ulaşamaz, çünkü kapalı rapor sözleşmesi `MATCH` satırında iki tarafın aynı tipte aynı değeri taşımasını zaten zorunlu kılar (`comparison_match_semantics`). Kontrol ikinci bir koruma olarak bırakıldı ve bu davranışı bir test sabitler.
+
+**Koruma (r2):** Çalıştırmadan önce `outputs/` altındaki 661 dosya ölçüldü. Sonrasında hiçbiri değişmemiş veya kaybolmamıştı; yalnız beş r2 çıktısı eklendi.
+
+**Açık kalanlar:**
+
+- Denetimin düşük ve bilgi düzeyindeki bulguları bu turda ele alınmadı. Örnekler: container kararının owner reddinde `ACCEPTABLE` kalması, ulaşılamayan `FINDINGS_TRUNCATED` yolu, yayının atomik olmaması.
+- Dosya yükleyicileri gerçek Phase42/Phase43 owner incelemesiyle yalnız çalışma alanı çıktılarının kopyalarını kullanan entegrasyon testinde çalışır. Bu test, çıktılar yoksa atlanır.
+- Bağımsız incelemenin önceden var olan iki sertleştirme bulgusu açık kaldı:
+  - Inspector, `capsule_value` alanlarını ve `MATCH`/`MISMATCH` etiketini owner reader çıktısından ayrıca yeniden hesaplamaz. Builder'da bir kusur olsaydı, sahte bir `MATCH` satırı açıklanmamış bir yerel değeri taşıyabilirdi. Bunu yalnız aynı motoru kullanan yeniden üretim adımı görür.
+  - Binding sahibi yankısı, sahibin görev kimliğinin Phase43 kaydında bulunmasına bakar, binding'in kendisine bakmaz. Bu, builder ile inspector'ın ortak kuralıdır. Ancak birbiriyle tutarsız yerel kayıtlarla ortaya çıkar.
+- Özetteki açıklama notu, yerel değerin yazıldığı üçüncü durumu (açık girdi dosyasının byte kimliği) hâlâ anmaz. Bu not değişirse özet byte'ları da değişir; bu yüzden ayrı bir turda ele alınmalıdır.
 
 ## NOT_RUN
 

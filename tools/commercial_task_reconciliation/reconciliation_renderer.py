@@ -39,7 +39,8 @@ def render_reconciliation_summary(report: dict, inbox: dict) -> bytes:
         "- Manuel inceleme gerekliliği: " + _md(eligibility["manual_review_requirement"]),
         "- Inbox yaşam döngüsü aşaması: " + _md(inbox["lifecycle_stage"]),
         "- Inbox güven durumu: " + _md(inbox["trust_state"]),
-        "- Kabul edilen (karantinadaki) görev sayısı: " + _md(inbox["admitted_task_count"]),
+        "- Karantinadaki inbox kaydına alınan görev sayısı (kabul, onay veya atama değildir): "
+        + _md(inbox["admitted_task_count"]),
         "- Request reference: " + _md(report["request_reference"]),
         "- Gerekçe bulguları: " + (", ".join(_md(item) for item in eligibility["basis_finding_ids"]) or "yok"), "",
         "## 2. Capsule kimliği ve yapısal inceleme", "",
