@@ -1,0 +1,8 @@
+{
+  "expected_local_phase42_register_sha256": "6465bab021f525b47d4fafd5a0ddc68020989b60e82bce3ec70f6bfaa4f8ff16",
+  "expected_local_phase43_index_sha256": "d3c1328549513342084493bf5390e11b871e04dfa501b869daa9822b8b346d41",
+  "local_reference_mode": "PHASE42_TASK_RECORDS_AND_PHASE43_DISCLOSURE_RECORDS",
+  "mode": "demo",
+  "request_reference": "phase44-demo-F0001-capsule-reimport",
+  "schema_version": "termivar-offline-task-capsule-reconciliation-request/v1"
+}
