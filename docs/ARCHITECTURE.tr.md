@@ -68,7 +68,7 @@ Termivar'da mevcut en son sayısal özet taşınır. Ham rapor, hedef, kanıt, H
 
 ## İşletim sınırı
 
-API ayrı runtime hesabı kullanır; migration/yerel bootstrap hesabı şema sahibidir. Runtime'ın audit DELETE hakkı yalnız bounded tenant retention içindir; cryptographic immutability sağlamaz. Audit en çok varsayılan 10.000 kayıt/tenant, credential geçmişi 16/cihaz, kayıt hakkı geçmişi 2.000/tenant ile sınırlıdır. Aktif hak ve toplam cihaz varsayılanı ayrı ayrı 1.000/tenant'tır; iptal edilmiş cihazlar toplam cihaz kotasına dahildir.
+API ayrı runtime hesabı kullanır; migration/yerel bootstrap hesabı şema sahibidir. Runtime'ın audit DELETE hakkı yalnız bounded tenant retention içindir; cryptographic immutability sağlamaz. Audit en çok varsayılan 10.000 kayıt/tenant, credential geçmişi 16/cihaz, kayıt hakkı geçmişi 2.000/tenant ile sınırlıdır. Aktif hak ve aktif cihaz varsayılanı ayrı ayrı 1.000/tenant'tır. İptal edilmiş cihazlar kotadan düşer; böylece iptal ve yeniden kayıt kurtarma yolu tenant'ı kilitlemez. İptal edilmiş satırlar geçmiş olarak kalır ve silme komutu yoktur. Cihaz listesi en fazla 10.000 offset ile sayfalandığından, çok sayıda iptal birikirse en yeni cihazlar listede görünmeyebilir. Bu durumda doğrudan cihaz kimliğiyle erişilir ve audit kaydındaki `device_enrolled` olayları kullanılır.
 
 Canonical Alembic yapılandırması ve migration dosyaları source ağacında tutulur; wheel'de aynı dosyalar `share/security-platform` kurulum verisi olarak taşınır. CLI önce source yerleşimini, sonra kurulu prefix'i denetler. Migration kaynakları eksikse hata verir; `create_all` ile sürümsüz alternatif şema kurmaz. Build aracı ayrı `requirements-build-lock.txt` ile sabitlenir.
 

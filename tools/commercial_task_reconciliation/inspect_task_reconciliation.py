@@ -20,6 +20,7 @@ import reconciliation_paths  # noqa: E402
 
 reconciliation_paths.install()
 
+from capsule_claims import owner_code  # noqa: E402
 from exchange_contracts import TASK_FIELDS, InputError, json_bytes, parse_json  # noqa: E402
 from recipient_reader import inspect_task_exchange_capsule, read_portable_task_request  # noqa: E402
 from reconciliation_contracts import (  # noqa: E402
@@ -39,8 +40,12 @@ _FORBIDDEN_KEYS = frozenset({"candidate_response", "observed_sha256", "observed_
                              "reference_packets", "source_locator", "locator_value", "analyst", "analyst_id"})
 
 
+DISAGREEMENT_PREFIX = "task_reconciliation_inspection_disagreement_"
+OUTPUT_EXISTS_CODE = "task_reconciliation_invalid_inspection_output_must_be_new"
+
+
 def disagree(code: str):
-    raise InputError("task_reconciliation_inspection_disagreement_" + code)
+    raise InputError(DISAGREEMENT_PREFIX + code)
 
 
 def _identity(raw: bytes) -> dict:
@@ -287,9 +292,15 @@ def main(argv=None) -> int:
         print("task_reconciliation_inspection: missing_explicit_input_or_output_file", file=sys.stderr)
         return 2
     except InputError as error:
-        disagreement = str(error).startswith("task_reconciliation_inspection_disagreement_")
-        print("task_reconciliation_inspection: " + ("outputs_disagree_with_independent_recomputation"
-                                                    if disagreement else "input_or_contract_rejected"), file=sys.stderr)
+        # Fixed codes only: owner_code passes [A-Za-z0-9_]{1,160} and replaces anything else.
+        code = owner_code(error)
+        if code.startswith(DISAGREEMENT_PREFIX):
+            reason = "outputs_disagree_with_independent_recomputation"
+        elif code == OUTPUT_EXISTS_CODE:
+            reason = "inspection_output_already_exists"
+        else:
+            reason = "input_or_contract_rejected"
+        print("task_reconciliation_inspection: " + reason + ": " + code + "; nothing published", file=sys.stderr)
         return 2
     except (OSError, UnicodeError, ValueError, RuntimeError, TypeError, KeyError,
             IndexError, RecursionError, StopIteration, EOFError, OverflowError):

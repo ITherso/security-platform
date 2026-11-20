@@ -1,6 +1,20 @@
 # Security Platform 0.1.0 — deneysel kaynak teslimatı
 
-Türkçe/İngilizce, salt okunur [operatör konsolu](operator-console/README.md), açıkça etiketlenen örnek veriyle bağımsız çalışır. React/TypeScript kaynakları, kilitli bağımlılıklar ve yerel kurulum yönergesi `operator-console/` altındadır. Gerçek API adapter'ı mevcut dört operatör GET'iyle sınırlıdır; canlı bağlantı kabulü yapılmadı. Kullanıcının yönlendirmesiyle bu frontend turunda testler bekletildi; önceki kabul sonuçları tarihsel temeldir.
+## Buradan başlayın / Start here
+
+Ürünün ne olduğu, kurulum, tek komutluk çevrimdışı demo, sorun giderme, güvenlik notları ve açık engeller: **[Ürün kılavuzu](docs/PRODUCT_GUIDE.tr.md)** · **[Product guide (English)](docs/PRODUCT_GUIDE.md)**.
+
+```powershell
+python -B scripts/run_demo.py
+```
+
+Bu komut gerçek CLI'leri commit'li örnek girdilerle çalıştırır. Sonuçları git dışındaki `demo-output/` altına yazar ve her adımı `PASSED`, `FAILED`, `NOT_RUN` veya `READY` olarak raporlar. İsteğe bağlı `--hbf-root`, `--termivar-root` ve `--phase30-delivery-zip` seçenekleri politika önizlemesini ve analist zincirinin 20–44. fazlarını açar. Sonuçlar örnek veriye aittir; gerçek bir sistemin değerlendirmesi, doğrulama veya onay değildir.
+
+Aşağıdaki bölümler ayrıntılı başvuru ve tarihsel teslim notlarıdır.
+
+## Bileşenler
+
+Türkçe/İngilizce, salt okunur [operatör konsolu](operator-console/README.md), açıkça etiketlenen örnek veriyle bağımsız çalışır. React/TypeScript kaynakları, kilitli bağımlılıklar ve yerel kurulum yönergesi `operator-console/` altındadır. Gerçek API adapter'ı mevcut dört operatör GET'iyle sınırlıdır; canlı bağlantı kabulü yapılmadı. Derlenmiş konsol (`operator-console/dist/`) git'te tutulmaz; paketlenmiş konsol derlemesi veya Node/pnpm ile build gerekir.
 
 Bağımsız FastAPI/PostgreSQL hizmeti: şirket üyeliklerini, tek kullanımlık cihaz kaydını ve cihazların bildirdiği son ürün durumunu tutar. Operatör yalnız güncel DB üyeliğinin izin verdiği tenant'a erişir; cihaz bearer kimliği yalnız kendi snapshot ve credential yaşam döngüsünü kullanır.
 
@@ -100,19 +114,28 @@ Mevcut yerel ürün merkezinden yetkili biçimde dışa aktarılmış `ecosystem
 
 Credential/state dizini owner/DACL veya POSIX izin denetimini geçmelidir. Paylaşılan ya da başka kullanıcılara yazılabilir parent içeren workspace yolları reddedilebilir; örnekte kullanıcıya ait Documents altında ayrı özel dizin seçilir. Bu dizin ve credential dosyası API belgesindeki private-file yardımcılarıyla hazırlanır.
 
-İstemci TLS doğrular, redirect izlemez, proxy ortamını kullanmaz, yanıtı 4 KiB ve bağlantı/okuma sürelerini sınırlar. CLI özel CA bayrağı sunmaz; normal güvenilir TLS sertifikası kullanılır. Test düzeneğinin programatik fixture CA bağlamı ayrı ve sertifika doğrulamalıdır; `verify=False` kullanılmaz. İstemci enrollment veya credential rotasyonunu kendiliğinden çalıştırmaz ve firewall dosyalarına yazmaz.
+İstemci TLS doğrular, redirect izlemez, proxy ortamını kullanmaz, yanıtı 4 KiB ve bağlantı/okuma sürelerini sınırlar. Varsayılan güven kümesi certifi'dır. Özel/kurumsal CA için `--ca-file` yalnız verilen PEM paketine güvenir. Sertifika ve hostname doğrulaması açık kalır; `verify=False` kullanılmaz. İstemci enrollment yapmaz, credential'ı kendiliğinden yenilemez ve firewall dosyalarına yazmaz.
+
+Credential süresi (`SP_CREDENTIAL_TTL_SECONDS`, varsayılan 24 saat) dolmadan açık yenileme yapılır:
+
+```powershell
+./.venv/Scripts/security-snapshot.exe --rotate-credential --credential-file "$env:USERPROFILE/Documents/SecurityPlatformPrivate/device.json"
+```
+
+Yeni sır aynı korumalı dosyaya atomik yazılır ve yazdırılmaz. Sunucu eski sırrı aynı işlemde iptal ettiği için kaybolan yanıt kurtarılamaz; cihaz iptal edilip yeniden kaydedilir. İptal edilmiş cihazlar cihaz kapasitesinden düşer. Ayrıntılar [API_V1.tr.md](docs/API_V1.tr.md) içindedir.
 
 ## Çevrimdışı politika önizlemesi
 
 Yalnız açık girdi ve çıktı dosyalarıyla çalışır. Aşağıdaki yollar proje köküne göredir; `../HostBasedFirewall-main` bu çalışma alanındaki açıkça seçilmiş yerel kaynak dizinidir. Birleşik ZIP'i açtıysanız `--hbf-root ../HostBasedFirewall` kullanın. Test fixture'ları iki klasör adını da bulur; ayrıca açık `SP_HBF_SOURCE` desteklenir. Geçersiz açık test yolu sessizce atlanmaz.
 
 ```powershell
-./.venv/Scripts/python.exe -m security_platform.policy_contracts.cli preview --input examples/policy-preview.json --hbf-root ../HostBasedFirewall-main --output preview-result.json
-./.venv/Scripts/python.exe -m security_platform.policy_contracts.cli check-preconditions --input examples/policy-preconditions.json --output preconditions-result.json
-./.venv/Scripts/python.exe -m security_platform.policy_contracts.cli validate-rollout --input examples/policy-rollout.json --evaluation-time 2030-01-01T00:30:00Z --output rollout-result.json
+New-Item -ItemType Directory -Force demo-output | Out-Null
+./.venv/Scripts/python.exe -m security_platform.policy_contracts.cli preview --input examples/policy-preview.json --hbf-root ../HostBasedFirewall-main --output demo-output/preview-result.json
+./.venv/Scripts/python.exe -m security_platform.policy_contracts.cli check-preconditions --input examples/policy-preconditions.json --output demo-output/preconditions-result.json
+./.venv/Scripts/python.exe -m security_platform.policy_contracts.cli validate-rollout --input examples/policy-rollout.json --evaluation-time 2030-01-01T00:30:00Z --output demo-output/rollout-result.json
 ```
 
-Kurulu wheel aynı aracı `security-policy` olarak sunar. Preview örneği açık WORK profili ve 09:30 yerel senaryo saatiyle ALLOW→DENY farkını hesaplar. Evaluator sağlanmazsa `evaluator_unavailable`; gerekli bağlam eksikse `insufficient_context` döner. Aynı CIDR'ın farklı zone'larda bulunması iki girdide de reddedilir. Mevcut yerel hash/trial protokolü korunur; eşit-prefix sıra sorununun yerel enforcement motorunda düzeltildiği iddia edilmez.
+Kurulu wheel aynı aracı `security-policy` olarak sunar. Preview örneği açık WORK profili ve 09:30 yerel senaryo saatiyle ALLOW→DENY farkını hesaplar. `--hbf-root` verilmezse çıktı `blocked`/`evaluator_unavailable` olarak yazılır. Açıkça verilen kök yüklenemezse komut çıkış kodu 1 ve stderr `evaluator_unavailable` verir, çıktı yazılmaz. `--hbf-root` ile çalıştırıldığında geçersiz politika, senaryo veya zone girdisi (`invalid_policy_bundle`, `invalid_scenario`, `input_limit_exceeded`, `ambiguous_equal_prefix_zones`) da çıkış kodu 1 verir. Bu kontroller evaluator gerektirir; `--hbf-root` olmadan şema açısından geçerli her istek `blocked`/`evaluator_unavailable` olarak yazılır. Gerekli bağlam eksikse yazılan sonuç `insufficient_context` olur. Aynı CIDR'ın farklı zone'larda bulunması iki girdide de reddedilir. Mevcut yerel hash/trial protokolü korunur; eşit-prefix sıra sorununun yerel enforcement motorunda düzeltildiği iddia edilmez.
 
 CAS ve rollout örnekleri sentetik UUID ve fingerprint yer tutucuları içerir; gerçek bir önizlemenin veya cihazın kanıtı değildir. Mevcut üründe kalıcı policy revision/lineage kaynağı bulunmadığı için örneklerde bu alanlar `null` bırakılır: CAS `precondition_evidence_missing`, rollout `would_pause` üretir. Timestamp veya inventory sequence bu eksiği doldurmaz. Eşleşen fixture beyanları bile `verified` veya uygulama yetkisine dönüşmez.
 
@@ -144,7 +167,7 @@ CLI yalnız açık `init`, `append`, `read`, `check`, `report` ve Windows biçim
 
 ```powershell
 ./.venv/Scripts/python.exe -m tools.policy_revision_lab.cli --help
-./.venv/Scripts/python.exe -m tools.policy_revision_lab.cli windows-report --input tests/fixtures/policy_revision_lab/windows-not-run.json --output windows-format-result.json
+./.venv/Scripts/python.exe -m tools.policy_revision_lab.cli windows-report --input tests/fixtures/policy_revision_lab/windows-not-run.json --output demo-output/windows-format-result.json
 ```
 
 Sentetik binding ve A/B bundle örnekleri `tests/fixtures/policy_revision_lab/` altındadır. Endpoint init için henüz var olmayan, owner/DACL denetimini geçen özel bir lab dizini seçilir; controller yalnız ayrı test helper'ının hazırladığı işaretli lab DB/config dosyasını kabul eder. Uygulama DSN'sine fallback veya uygulama hesabına yeni hak yoktur. Depolar commit öncesi/sonrası kesinti, exact retry, yarış ve bozulma retlerini sınamak içindir. Tutarlı eski kopya, dış güvenilir referans olmadan saptanamayabilir; anti-rollback/attestation garantisi yoktur.

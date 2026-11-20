@@ -166,7 +166,7 @@ export function parsePolicyReview(bytes: Uint8Array, source: PolicyReviewSource 
   try { contents = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes); }
   catch { throw new PolicyReviewError("invalid_utf8"); }
   let input: unknown;
-  try { input = strictJson(contents); }
+  try { input = strictJson(contents, "sp-hbf-preview-v1"); }
   catch { throw new PolicyReviewError("invalid_json"); }
   // strictJson bounds depth/nodes/strings, rejects duplicate keys, non-finite,
   // fractional/unsafe numbers, prototype keys and malformed JSON. No I/O here.

@@ -8,9 +8,7 @@
 |---|---|---:|---|
 | `comparison-example.json` | `docs/examples/report-compare/comparison.json` | 5674 | `291f5e7b407a247cb786119a249fe6f3cb9f5526e6700605c4a0008bee91a1d0` |
 
-Original and copied bytes were measured and matched before Phase12 packaging. The JSON was not reformatted. The local source checkout was:
-
-`C:/Users/galat/Documents/Codex/2026-07-31/github-plugin-github-openai-curated-remote/termivar`
+Original and copied bytes were measured and matched before Phase12 packaging. The JSON was not reformatted. The source was a local, read-only checkout of the `ITherso/termivar` repository at the reviewed commit below; its machine-specific location is intentionally not recorded.
 
 Reviewed checkout commit: `6a2639348c2366d0bf71b9a34e5484d40aa393a3`, origin `https://github.com/ITherso/termivar.git`. Read-only references were `crates/termivar-scanner/src/reporting/comparison.rs`, `docs/reporting.md` and the example's `README.md`, `comparison.json`, `provenance.json`.
 

@@ -199,7 +199,7 @@ Yakalanmayan tek mutasyon inspector'ın `match_local_value_differs` kontrolünü
 
 **Açık kalanlar:**
 
-- Denetimin düşük ve bilgi düzeyindeki bulguları bu turda ele alınmadı. Örnekler: container kararının owner reddinde `ACCEPTABLE` kalması, ulaşılamayan `FINDINGS_TRUNCATED` yolu, yayının atomik olmaması.
+- Denetimin düşük ve bilgi düzeyindeki bulguları bu turda ele alınmadı. Örnekler: container kararının owner reddinde `ACCEPTABLE` kalması, ulaşılamayan `FINDINGS_TRUNCATED` yolu. Yayının atomik olmaması ve tek satırlık genel hata mesajı, sonraki ürünleştirme turunda düzeltildi: hard link gerektirmeyen stage+rename yayını ve sabit ret kodları. Ayrıntı [IMPORT_AND_VALIDATION](IMPORT_AND_VALIDATION.tr.md) içindedir. Normal bir çalıştırmanın çıktı byte'ları değişmedi.
 - Dosya yükleyicileri gerçek Phase42/Phase43 owner incelemesiyle yalnız çalışma alanı çıktılarının kopyalarını kullanan entegrasyon testinde çalışır. Bu test, çıktılar yoksa atlanır.
 - Bağımsız incelemenin önceden var olan iki sertleştirme bulgusu açık kaldı:
   - Inspector, `capsule_value` alanlarını ve `MATCH`/`MISMATCH` etiketini owner reader çıktısından ayrıca yeniden hesaplamaz. Builder'da bir kusur olsaydı, sahte bir `MATCH` satırı açıklanmamış bir yerel değeri taşıyabilirdi. Bunu yalnız aynı motoru kullanan yeniden üretim adımı görür.

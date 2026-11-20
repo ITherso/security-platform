@@ -126,6 +126,133 @@ def test_cli_rollout_example_pauses_without_creating_job(tmp_path):
     assert "precondition_evidence_missing" in value["blocker_codes"]
 
 
+PREVIOUS = "previous-result"
+
+
+def keep_existing(tmp_path):
+    target = tmp_path / "result.json"
+    target.write_text(PREVIOUS, encoding="utf-8")
+    return target
+
+
+def assert_rejected_unchanged(captured, code, target, *secrets):
+    assert captured.out == "" and captured.err == code + "\n"
+    assert target.read_text(encoding="utf-8") == PREVIOUS
+    assert {path.name for path in target.parent.iterdir() if path.name.startswith(".security-policy-")} == set()
+    assert all(secret not in captured.err for secret in ("10.1.2.3", "NOPE", *secrets))
+
+
+def fake_hbf_root(tmp_path, layout):
+    root = tmp_path / "fake-hbf"
+    source = root if layout == "flat" else root / "src"
+    source.mkdir(parents=True)
+    for name in ("config_store.py", "document_limits.py", "policy_objects.py", "policy_engine.py"):
+        (source / name).write_text("VALUE = 1\n", encoding="utf-8")
+    if layout == "oversized":
+        (source / "config_store.py").write_bytes(b"#" * (256 * 1024 + 1))
+    elif layout == "syntax":
+        (source / "policy_objects.py").write_text("def broken(:\n", encoding="utf-8")
+    elif layout == "import":
+        (source / "config_store.py").write_text("import socket\n", encoding="utf-8")
+    elif layout == "incomplete":
+        (source / "policy_engine.py").unlink()
+    return root
+
+
+@pytest.mark.parametrize("layout", ["missing", "flat", "oversized", "syntax", "import", "incomplete"])
+def test_cli_explicit_unloadable_hbf_root_exits_1_without_output(tmp_path, capsys, layout):
+    root = tmp_path / "missing-hbf" if layout == "missing" else fake_hbf_root(tmp_path, layout)
+    target = keep_existing(tmp_path)
+    code, _, _ = invoke(tmp_path, example(), hbf_root=root)
+    assert code == 1
+    assert_rejected_unchanged(capsys.readouterr(), "evaluator_unavailable", target, str(root), root.name)
+    fresh = tmp_path / "fresh.json"
+    assert cli.main(["preview", "--input", str(tmp_path / "request.json"), "--output", str(fresh),
+                     "--hbf-root", str(root)]) == 1
+    assert not fresh.exists() and capsys.readouterr().err == "evaluator_unavailable\n"
+
+
+def test_cli_real_hbf_root_at_wrong_level_exits_1_and_keeps_output(tmp_path, capsys, hbf_root):
+    target = keep_existing(tmp_path)
+    code, _, _ = invoke(tmp_path, example(), hbf_root=hbf_root / "src")
+    assert code == 1
+    assert_rejected_unchanged(capsys.readouterr(), "evaluator_unavailable", target, str(hbf_root))
+
+
+def hbf_invalid_bundle(request):
+    request["candidate"]["policies"]["policies"][0]["src_zones"] = ["NOPE"]
+
+
+def duplicate_scenario(request):
+    request["scenarios"].append(copy.deepcopy(request["scenarios"][0]))
+
+
+def ambiguous_zone(request):
+    request["candidate"]["ordered_zones"].append({"name": "LAB", "cidrs": ["10.0.0.0/8"]})
+
+
+@pytest.mark.parametrize("mutate,blocker", [(hbf_invalid_bundle, "invalid_policy_bundle"),
+                                            (duplicate_scenario, "invalid_scenario"),
+                                            (ambiguous_zone, "ambiguous_equal_prefix_zones")])
+def test_cli_input_blocker_keeps_existing_good_preview(tmp_path, capsys, hbf_root, mutate, blocker):
+    code, target, _ = invoke(tmp_path, example(), hbf_root=hbf_root)
+    assert code == 0
+    good = target.read_bytes()
+    assert json.loads(good)["status"] == "ok"
+    capsys.readouterr()
+    request = example()
+    mutate(request)
+    code, _, _ = invoke(tmp_path, request, hbf_root=hbf_root)
+    captured = capsys.readouterr()
+    assert code == 1 and captured.out == "" and captured.err == blocker + "\n"
+    assert target.read_bytes() == good
+    assert "10.1.2.3" not in captured.err and "NOPE" not in captured.err and "LAB" not in captured.err
+
+
+def test_cli_no_hbf_root_still_writes_blocked_evaluator_unavailable(tmp_path, capsys):
+    target = keep_existing(tmp_path)
+    code, _, _ = invoke(tmp_path, example(), adapter=False)
+    captured = capsys.readouterr()
+    assert code == 0 and captured.err == ""
+    assert captured.out == '{"status":"output_written","execution_authorized":false}\n'
+    result = json.loads(target.read_bytes())
+    assert result["status"] == "blocked" and result["blocker_codes"] == ["evaluator_unavailable"]
+    assert result["results"] == [] and result["execution_authorized"] is False
+
+
+@pytest.mark.parametrize("blocker,with_root,expected", [
+    ("invalid_policy_bundle", True, 1), ("invalid_scenario", True, 1), ("input_limit_exceeded", True, 1),
+    ("ambiguous_equal_prefix_zones", True, 1), ("evaluator_unavailable", True, 1),
+    ("evaluator_unavailable", False, 0), ("insufficient_context", True, 0),
+    ("invalid_evaluator_result", True, 0), ("evaluator_failed", True, 0)])
+def test_cli_blocker_exit_classification(tmp_path, capsys, monkeypatch, blocker, with_root, expected):
+    from security_platform.policy_contracts import hbf_bridge, preview
+    from security_platform.policy_contracts.models import PreviewOutcome
+    monkeypatch.setattr(hbf_bridge, "load_hbf_adapter", lambda root: object())
+    monkeypatch.setattr(preview, "preview_policy", lambda *args, **kwargs:
+                        PreviewOutcome(status="blocked", blocker_codes=(blocker,)))
+    target = keep_existing(tmp_path)
+    code, _, _ = invoke(tmp_path, example(), adapter=with_root, hbf_root=tmp_path if with_root else None)
+    captured = capsys.readouterr()
+    assert code == expected
+    if expected:
+        assert_rejected_unchanged(captured, blocker, target)
+    else:
+        assert captured.err == "" and json.loads(target.read_bytes())["blocker_codes"] == [blocker]
+
+
+def test_cli_preview_help_names_trusted_local_code_not_review(capsys):
+    with pytest.raises(SystemExit) as caught:
+        cli.main(["--help"])
+    assert caught.value.code == 0
+    with pytest.raises(SystemExit) as caught:
+        cli.main(["preview", "--help"])
+    assert caught.value.code == 0
+    text = " ".join(capsys.readouterr().out.split())
+    assert "reviewed" not in text and "verified" not in text
+    assert "trusted local code" in text and "evaluator_unavailable" in text
+
+
 def test_cli_rollout_invalid_time_never_replaces_output(tmp_path, capsys):
     target = tmp_path / "rollout.json"
     target.write_text("previous-result", encoding="utf-8")

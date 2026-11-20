@@ -7,18 +7,28 @@ from security_platform.services.common import DEFAULT_LIMITS, bounded_page, iso,
 ACTIONS = {"tenant_created", "membership_set", "membership_revoked", "enrollment_grant_created",
            "enrollment_grant_revoked", "device_enrolled", "device_revoked", "device_credential_rotated"}
 OBJECTS = {"tenant", "membership", "enrollment_grant", "device", "device_credential"}
+ACTOR_TYPES = {"operator", "device", "local_admin"}
 
 
 def write_event(session, *, tenant_id, actor_type, actor_id, action, object_type, object_id,
                 now=None, limits=DEFAULT_LIMITS):
-    """Caller holds tenant row lock. Retain bounded newest events in this transaction."""
-    if action not in ACTIONS or object_type not in OBJECTS or actor_type not in {"operator", "device", "local_admin"}:
+    """Caller holds tenant row lock. Retain bounded newest events in this transaction.
+
+    At capacity a device-originated event evicts the oldest device events
+    first, so repeated device actions cannot push administrative history out;
+    only when no device event is left are the oldest events overall evicted.
+    Administrative events keep the plain oldest-overall retention. The
+    per-tenant bound itself is unchanged.
+    """
+    if action not in ACTIONS or object_type not in OBJECTS or actor_type not in ACTOR_TYPES:
         raise ValueError("Unsupported audit event")
-    count = session.scalar(select(func.count()).select_from(AuditEvent).where(AuditEvent.tenant_id == tenant_id))
-    if count >= limits.max_audits:
-        obsolete = select(AuditEvent.id).where(AuditEvent.tenant_id == tenant_id).order_by(
-            AuditEvent.created_at, AuditEvent.id).limit(count - limits.max_audits + 1)
-        session.execute(delete(AuditEvent).where(AuditEvent.tenant_id == tenant_id, AuditEvent.id.in_(obsolete)))
+    tenant = AuditEvent.tenant_id == tenant_id
+    excess = session.scalar(select(func.count()).select_from(AuditEvent).where(tenant)) - limits.max_audits + 1
+    scopes = ((tenant, AuditEvent.actor_type == "device"), (tenant,)) if actor_type == "device" else ((tenant,),)
+    for scope in scopes:
+        if excess > 0:
+            obsolete = select(AuditEvent.id).where(*scope).order_by(AuditEvent.created_at, AuditEvent.id).limit(excess)
+            excess -= session.execute(delete(AuditEvent).where(tenant, AuditEvent.id.in_(obsolete))).rowcount
     event = AuditEvent(tenant_id=tenant_id, actor_type=actor_type, actor_id=actor_id,
         action=action, object_type=object_type, object_id=object_id, outcome="success", created_at=utc_now(now))
     session.add(event)

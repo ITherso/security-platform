@@ -1,0 +1,238 @@
+{
+  "schema_version": "security-platform-offline-chain-expected/v1",
+  "mode": "demo",
+  "derived_from": "recorded demo delivery outputs of phases 16-44 (Phase29 corrected run, Phase44 r2 run)",
+  "inputs": {
+    "termivar_commit": "6a2639348c2366d0bf71b9a34e5484d40aa393a3",
+    "phase19_decision_draft_sha256": "208c27de6cf2b1ec28f17fe8fba15fc35ab7c6d38a6f998b8cffd255eea2d99d",
+    "phase30_delivery_zip_sha256": "aab4d89f3fbf95992675ce08b095468680ba29fb07e2b85dea7ed1dbd3742485"
+  },
+  "phases": {
+    "16": {
+      "outputs/phase16-demo/client-handoff-draft.html": "19bb1a0a3870507448696298e1e7805276ac32165265e5e4c6a77b7a6a78dd77",
+      "outputs/phase16-demo/client-handoff-draft.md": "4e82aaecee1b8efe4273e79f0ef570bbf8b93fc02497dfa362afd9851480f95e",
+      "outputs/phase16-demo/internal-review-summary.md": "8a3017136c94713147bf65aa659c2119d447474dd081363989c3495ec45d2f22",
+      "outputs/phase16-demo/manifest.json": "a88bc455fad514e0058c7dfc8fe7db7413ac5d4dc04f089f0ae261c3cb5c44cd"
+    },
+    "17": {
+      "outputs/phase17-handoff/client-handoff-draft.html": "29daf0472251aba150445feaa994d20eb494c4ffadd84c14c25fc0acbf0cc035",
+      "outputs/phase17-handoff/client-handoff-draft.md": "840e6acae74c27ecab8205e4c7e0f5378dae0bfd59e72a442cb73ca66ddc839b",
+      "outputs/phase17-handoff/internal-review-summary.md": "5d359b67f95e68a554c7fcec66274fe35c884260d6291c5dce35bf6d9010c608",
+      "outputs/phase17-handoff/manifest.json": "a4eacdd1d7375faa24d3a4df00f9b294bd7799642f459741d0e235e97577245a",
+      "outputs/phase17-intake/handoff-input.json": "b6cbb2cce71fc24e6ef27994fb3b57b4b5e7d5074bff143b9310c852f95a3560",
+      "outputs/phase17-intake/intake-manifest.json": "8c1e5e0a8142f9511c6ec2d79fe45bde19a8876825d7ee75df19fb7657a3f6e8",
+      "outputs/phase17-intake/source-mapping.json": "de0bc38fdef8a4ba5a5aca924a00c68e06a3993b0bc65be884b59cdb1db02398"
+    },
+    "18": {
+      "outputs/phase18-handoff/client-handoff-draft.html": "29daf0472251aba150445feaa994d20eb494c4ffadd84c14c25fc0acbf0cc035",
+      "outputs/phase18-handoff/client-handoff-draft.md": "840e6acae74c27ecab8205e4c7e0f5378dae0bfd59e72a442cb73ca66ddc839b",
+      "outputs/phase18-handoff/internal-review-summary.md": "5d359b67f95e68a554c7fcec66274fe35c884260d6291c5dce35bf6d9010c608",
+      "outputs/phase18-handoff/manifest.json": "a4eacdd1d7375faa24d3a4df00f9b294bd7799642f459741d0e235e97577245a",
+      "outputs/phase18-reconciled/handoff-input.json": "b6cbb2cce71fc24e6ef27994fb3b57b4b5e7d5074bff143b9310c852f95a3560",
+      "outputs/phase18-reconciled/reconciliation-manifest.json": "a4b5e3f456b573c9ffe0758234ce0ef4d52568a0d83dce3dd9f9d8e9f56d912d",
+      "outputs/phase18-reconciled/review-reconciliation.md": "53e265af12dc2f9d2d56c87a8c2aeb479ecd19a4e32f389dfc1dc9404c94b6d2",
+      "outputs/phase18-review-packet/decision-overlay.template.json": "27f57b781420d87c89f54e1369a390486b083f47c1fbf7c267cfeb90678183f8",
+      "outputs/phase18-review-packet/review-packet-manifest.json": "92caaa22d8376383ca0adff6c257c8edf1ad558e2fda25660785e17bf02713f0",
+      "outputs/phase18-review-packet/review-packet.json": "ad40ac467da7653b1b16da507b6252c7264fa5e0aaaf625d3da4675605671004",
+      "outputs/phase18-review-packet/review-worksheet.md": "24cdba89d144610a24b31d1edc31ccc17b06b86f6eb03766a9d222eff166af45"
+    },
+    "19": {
+      "outputs/phase19-finalized-overlay/decision-overlay.json": "27f57b781420d87c89f54e1369a390486b083f47c1fbf7c267cfeb90678183f8",
+      "outputs/phase19-finalized-overlay/overlay-manifest.json": "c0d80e8b27300bc2aabe20e3e7d0ab7f2800192e2001734d98c4d2dc98ef87c8",
+      "outputs/phase19-reconciled/handoff-input.json": "b6cbb2cce71fc24e6ef27994fb3b57b4b5e7d5074bff143b9310c852f95a3560",
+      "outputs/phase19-reconciled/reconciliation-manifest.json": "a4b5e3f456b573c9ffe0758234ce0ef4d52568a0d83dce3dd9f9d8e9f56d912d",
+      "outputs/phase19-reconciled/review-reconciliation.md": "53e265af12dc2f9d2d56c87a8c2aeb479ecd19a4e32f389dfc1dc9404c94b6d2",
+      "outputs/phase19-review-desk/desk-manifest.json": "f8f4860ad8569ad7a2632ff67d67925840018ab1a059f3451980a517b969a6df",
+      "outputs/phase19-review-desk/review-desk.html": "f41c05c6df1ddd4308d1534779c3f0794927ed5f4d15e459a4376c88ac3a2d59"
+    },
+    "20": {
+      "outputs/phase20-scope/assessment-plan-proposal.json": "49d3389c4b83bcc02504a7eb6d84dc9ea7c69bd374a4cd3e8c827b2a8fd23986",
+      "outputs/phase20-scope/assessment-plan-summary.md": "c6388d8e815d6152e988d7df41878b517cc14cdca68f3fba106410905aac5460",
+      "outputs/phase20-scope/capability-catalog.json": "6afee69dd632c1baafecd4a5b4a2fc45ba59f2e9123266180309d0b240cf9369",
+      "outputs/phase20-scope/manifest.json": "adbaf8e7ad19418d177a29ccbc22a8b2d446a1d858b3739392a9843f23cf7316",
+      "outputs/phase20-scope/scope-preflight.json": "a9d9b15faa715b5bf8bf05eac8718ad59fcfaaa6c99551e10492431b56a38e65"
+    },
+    "21": {
+      "outputs/phase21-traceability/manifest.json": "eeb8a472e406e2493bba6868a85605ad7f1df4b228977525bc3eb9d8e692da9f",
+      "outputs/phase21-traceability/traceability-ledger.json": "4d88190269b366d6f5f791b67360e8d6cd3452320c797637884a9f044292dcf8",
+      "outputs/phase21-traceability/traceability-summary.md": "ddbdc63d68a22894993b5ea8140508625f4c8ff890fc0c10babd0be2daa022b2"
+    },
+    "22": {
+      "outputs/phase22-case/assembly-summary.md": "2359241068dca455dfc0c3e283fd85f8895c80227a1e4172e0e6326ea8c97209",
+      "outputs/phase22-case/case-manifest.json": "ee78f9f8fceab93b7e36b442527b979b0fd80fb99227e686f1bbcd6d33b0f76e",
+      "outputs/phase22-case/inspection-summary.json": "4d3d3219831d422dec7c0c685e567044ab59235b895f74dac4128fa1a76b3a87",
+      "outputs/phase22-case/termivar-demo-case.zip": "f150095500e73d85dd741ef7bb92b4bd96893d5f8011a3a7668f4035cb2624be"
+    },
+    "23": {
+      "outputs/phase23-portfolio/portfolio-index.json": "ae53457cc2dc605b951e5a90e5517467c23460cb5c424432a8e2ab76e4f87485",
+      "outputs/phase23-portfolio/portfolio-inspection.json": "103b518b96d27f306c49a2d40844f5e45ca2fbf5c684efe42ac42e371ac5922a",
+      "outputs/phase23-portfolio/portfolio-manifest.json": "749f8c09bca8dcb13d0642b6f1649262a984635c8c045bc1a6adc716496962eb",
+      "outputs/phase23-portfolio/portfolio-overview.html": "0f9d13dd9094a1ca43288e0c20a82a99f5181b3bbf6a02a1558becaa5b2084af",
+      "outputs/phase23-portfolio/portfolio-summary.md": "a6168c841379e51befa401deb9b125c85d64fa1fbcee9714bd80bcbc11c872fd"
+    },
+    "24": {
+      "outputs/phase24-composition/composition-inventory.json": "57858a6de13a3f0994f3d21cc4564ccb430ae15eb2e6e9c2f885365492ce1a4e",
+      "outputs/phase24-composition/composition-summary.md": "64862044de910a9c183ee1d89faff1b8625ab77477501159053e37e5e46edfcd",
+      "outputs/phase24-composition/dependency-license-ledger.json": "e5cb40e42c46bf66b8721bf0f386b9be8112518e3cd5b4342e6b16682715cfe6",
+      "outputs/phase24-composition/inspection-summary.json": "e75b44ac8285196614264e22ba79b19596c5df0719e1cdb5efaca85822de2c01",
+      "outputs/phase24-composition/manifest.json": "95c04d5c14f2b6d017154817aec968e453d4a2772ba750baaf0b0ad47796cc32",
+      "outputs/phase24-composition/release-constraints.json": "8997a93eb051ed2c0e72f59b92e17c129a3082135ba7044e6b33369202bbdd9d"
+    },
+    "25": {
+      "outputs/phase25-license-evidence/binding-conflicts.json": "7a60b3f594d97415f0af647823848e55d61d53d1d2151396b0fa4251fd5eceb6",
+      "outputs/phase25-license-evidence/evidence-summary.md": "629dd5458b727e492afe6c604581ae646f323fef621efe76f73fdc26905fb434",
+      "outputs/phase25-license-evidence/inspection-summary.json": "b4b172e923177dc5aacfd5c106f70d65c1e95991ab1db9041898474f75cad6ab",
+      "outputs/phase25-license-evidence/license-evidence-ledger.json": "fa48a94625201dc2f15c0ebd380592ada10d9891bf7de82cb63dab84dea52a95",
+      "outputs/phase25-license-evidence/manifest.json": "60fb9e95188d4148ec5a3bc0cc8b631c979a6ee5a16eaf54a993cebdc602b27b",
+      "outputs/phase25-license-evidence/review-queue.json": "de4f82b7e990c276daeb66aeb943589a37b5dcc843f1b772c3c51c7f1bc22a45"
+    },
+    "26": {
+      "outputs/phase26-pilot-variants/dependency-exposure.json": "f873a031237111fd63047eb4ecea8dff83c28e2afdf51802560e89bf81ee502e",
+      "outputs/phase26-pilot-variants/inspection-summary.json": "e24e89a5ffaf6ca806828f1c771ad4fe6fbe58b20ce63c7af7f0f05de71ba1cc",
+      "outputs/phase26-pilot-variants/license-readiness.json": "94dbe23914c43a735bd9374aa3d389c985a68c97caccd1da16f3fac52caa89d2",
+      "outputs/phase26-pilot-variants/manifest.json": "9db501cf6fb091a3b1aebc21a22726c839760b37c9ff1b3b212feb98c7c4883f",
+      "outputs/phase26-pilot-variants/variant-analysis.json": "16ec8d8d509e3bfc6dc689a00262e0e0d6bb9d3e71d3dee859a8f9fb06aa44ce",
+      "outputs/phase26-pilot-variants/variant-comparison.md": "cb8a2c9ae08cd4da02ac3dd1f94f64f5566c89e88ad15dab49485efe3e6f4a4b"
+    },
+    "27": {
+      "outputs/phase27-dependency-evidence/dependency-evidence-summary.md": "eeea3e40006eda7c2b6fda6afe4453ecc98b51ca048be45484618395fa3fb946",
+      "outputs/phase27-dependency-evidence/direct-dependency-evidence.json": "112c459a33d7b4181411ea527fef1373a9bc8360a5f44d01ce7559bf2e916813",
+      "outputs/phase27-dependency-evidence/inspection-summary.json": "be24f8a7f6216257cc5e76c32d2bbba448685aa008f601e909a988d5c87e8f47",
+      "outputs/phase27-dependency-evidence/manifest.json": "6d23970109da92c2b6ec88fb42ea77bba46ecccbb1dece2c5e6069e500147948",
+      "outputs/phase27-dependency-evidence/source-evidence-graph.json": "13693e7b5c5423a47846d7c5f3598883232a6bca2234b74ebe525d6828dbd042",
+      "outputs/phase27-dependency-evidence/variant-dependency-evidence.json": "5b2528b9b2bdfbabba93ec1d710900f31e26352fd1bca34f21c352f680767a1d"
+    },
+    "28": {
+      "outputs/phase28-entrypoint-coverage/entrypoint-coverage.json": "f75e0e61789d90da544a05a09eb6452bb293e575670f72c311241d8ec3ec832b",
+      "outputs/phase28-entrypoint-coverage/entrypoint-summary.md": "1e85b293ec46e8a9058d060aa337d057c6f33ac95d25ba61cba7a90b5a705912",
+      "outputs/phase28-entrypoint-coverage/inspection-summary.json": "1d5d12a7e77088f0dd69a269bfd109555a4273544907df898ea4a770bbe88e67",
+      "outputs/phase28-entrypoint-coverage/manifest.json": "8e3ffcc2c408c58aa0ad9944c4b726902631e9c4207ccd3eb87e7f385f0eba51",
+      "outputs/phase28-entrypoint-coverage/source-scope-delta.json": "24d56afe089636d34a9ffdae511b4fd807bafe6f854794f3b4cf85a577bdd2ac",
+      "outputs/phase28-entrypoint-coverage/variant-entrypoint-projection.json": "224fab9939be9c503b02c86a76ef90692829072a9afc70f739d5ea4f8ab0dba8"
+    },
+    "29": {
+      "outputs/phase29-rust-source-graph-corrected/inspection-summary.json": "ae339c881c5715c7cb8ff16e15d904df3b33d832dbd150c8680cce2a436ed647",
+      "outputs/phase29-rust-source-graph-corrected/manifest.json": "2bf619674e90fb366d5f89a3b62b34fe9c3c0994bbc5e51b86bd3792370c6d4a",
+      "outputs/phase29-rust-source-graph-corrected/module-coverage-projection.json": "a5f99f97ca36c61f4ea8cb79e942ce250ec1e3ec731982ad738d926443e49c7f",
+      "outputs/phase29-rust-source-graph-corrected/source-evidence-graph.json": "37233e08acf08d4c67827b143e4fe26ba70a8c6d96b6fadcd6b517a1f8abf7ad",
+      "outputs/phase29-rust-source-graph-corrected/source-graph-summary.md": "b49643189458302ab416527ae3de3b19d8c1ff8c6441c37d87550be4983a5551",
+      "outputs/phase29-rust-source-graph-corrected/source-reference-ledger.json": "5848c517bc0dccd3a45914a7e8c4be28102f0f95f78a234ad57bc50006e2ab96"
+    },
+    "30": {
+      "outputs/phase30-module-candidates/candidate-coverage.json": "da0d5c62605c7a3c89162d2886275741505d8e967721fc13270f0e42caeca7d6",
+      "outputs/phase30-module-candidates/candidate-summary.md": "91a9813a12e5f81937d355d753604afcd00d0bc0d13daab1ebaa6c3503cf3d0e",
+      "outputs/phase30-module-candidates/candidate-triage.json": "46590bff728d62c2e5c1989d673a5b46c3de3741fd0458f016e8328b269e7cf8",
+      "outputs/phase30-module-candidates/inspection-summary.json": "596f0ba892c56914ab08139c05e9b63286a72ca7a0f201341aae0bb323eaafad",
+      "outputs/phase30-module-candidates/manifest.json": "af4202db09ac16c5cde57392d29207fd862980d952659d4a0ff035ba1772bd3e",
+      "outputs/phase30-module-candidates/module-candidate-evidence.json": "81be491582f1163b7fbf7bc0520825df156db7abf0f543a23c99e6ae0058ab1e"
+    },
+    "31": {
+      "outputs/phase31-candidate-revalidation/evidence-reuse.json": "6cd38b27d8734897a236f92986d382da0e37746a9b321a4534d56f768fc5350d",
+      "outputs/phase31-candidate-revalidation/inspection-summary.json": "72861c99fd46296a1f3bc5c48aec5d28f68d163cbd15af609ed68b947ac7fd90",
+      "outputs/phase31-candidate-revalidation/manifest.json": "4515bbfbe603f05bf09e48dcf4ed95ccc8d872ab7c11535a0429b92e6d79f57a",
+      "outputs/phase31-candidate-revalidation/revalidation-ledger.json": "d2076a23f56ba19181cd792ce762b65aaae54e4dc83ac412a7e0cec5e382db76",
+      "outputs/phase31-candidate-revalidation/revalidation-summary.md": "7082ac96cdceeb046a767dcd4831a95324bff86448681279755b6ada382e5f76"
+    },
+    "32": {
+      "outputs/phase32-reference-metadata/inspection-summary.json": "846a34df129c1c05ee63b0a7b5de7686b917e5f863afa16d98a21740f22b207e",
+      "outputs/phase32-reference-metadata/manifest.json": "7309d00d1c4ba5ad5866f73c66118c1e86060ec96da6d6ae2d526b616f185204",
+      "outputs/phase32-reference-metadata/metadata-selection-ledger.json": "2bef037c617ab120cb925eaffa1ef5bde8100b69204b98603a528ee77c4cf5e4",
+      "outputs/phase32-reference-metadata/metadata-summary.md": "7782401c5ea1e298a27893394fdb0f9e52cb475d054838d7a469fc426702339b",
+      "outputs/phase32-reference-metadata/reference-metadata-response.json": "98d1a5409ccc12a4f504d209844b9f95b89b4452e278ba953add2aff508e89c5"
+    },
+    "33": {
+      "outputs/phase33-reference-capsule/assembly-manifest.json": "d8fb9678e3a36688a1b2e0c02491299b330699aea417814707860fbe5c2a4b16",
+      "outputs/phase33-reference-capsule/capsule-assembly-summary.md": "f976a1c1dde28110a0ecce22d958c5e56105550878440eb16faf0891888f5333",
+      "outputs/phase33-reference-capsule/capsule-inspection.json": "ed21257290eff3c33bea23a9f78baa90ac6e85b0fdda438316aad55534d109e4",
+      "outputs/phase33-reference-capsule/capsule-source-bindings.json": "98545bd77122731c54716940bb15e35579cf2b5f7fbccca8ccd80f88c3501e04",
+      "outputs/phase33-reference-capsule/guarded-reference-capsule.zip": "19e61b261d63863f10b4147daf6dc5b2199faedcda41b03acb20322d30cb3388",
+      "outputs/phase33-reference-capsule/lookup-results.json": "9c3d1a4c6c79d2103e6b51f48a93f1b2e0ac66146af32043e32efb2eb690bf34"
+    },
+    "34": {
+      "outputs/phase34-capsule-derivation/derivation-inspection.json": "e1d808080c8f3b5043b8ada96152ec14815767dd08d992ef687d5c9ab76e6557",
+      "outputs/phase34-capsule-derivation/derivation-ledger.json": "fc1b20a0b480968333273b91074474e6bbd01af7022ea906ea5aff4aa4e9d7ee",
+      "outputs/phase34-capsule-derivation/derivation-summary.md": "637138e3581a6bc59137844489785d095bfeb8d0c33e52c04906d4e2765fe292",
+      "outputs/phase34-capsule-derivation/derived-reference-capsule.zip": "d3eea4c7946d45290c4876ac8b6d8ca5172297933b7681812863158bf845c01d",
+      "outputs/phase34-capsule-derivation/manifest.json": "1c79d7240c75f58f841cfb72de803ca011176dfd82b5309b7eb7df76942ab9b3"
+    },
+    "35": {
+      "outputs/phase35-capsule-tabular/inspection-summary.json": "08a984dffebae65eaa6982f125c503712d0a12b58a857fb21906c0f0db7be467",
+      "outputs/phase35-capsule-tabular/manifest.json": "22c5600604ce604a041fe976593fb99b6db2c111364f9268f29936277e0f389a",
+      "outputs/phase35-capsule-tabular/projection-register.csv": "0fd3c41f41458704b684086318f8d823faf5edcfc23893620c5888154868a405",
+      "outputs/phase35-capsule-tabular/reference-register.csv": "aa57d6576470a12c40900c365a1a46bf35734cd214c5c6ef9d5b00f165656390",
+      "outputs/phase35-capsule-tabular/tabular-dataset.json": "e66548f773b74cb670503c645b1ca3cfe49aac1521b76855ed4da423ced39d5e",
+      "outputs/phase35-capsule-tabular/tabular-summary.md": "310e82ef1c5137f4ec1c763b06940653af7561a79e76983b001b432fe87d3a27"
+    },
+    "36": {
+      "outputs/phase36-tabular-inbox/import-receipt.json": "09bda63816bbd137efc648a40469c7125ce5e8844c833889e9af9f3c3d22b3f8",
+      "outputs/phase36-tabular-inbox/inbox-summary.md": "1058437236dac56a90f57536a7e65250604f0e6748ed4629ece5e44ee2ff55bf",
+      "outputs/phase36-tabular-inbox/inspection-summary.json": "ed348eb8cd14df9ee567ca0ddd4f86e02ccace9fd08fdc0bef808a7de538c6fd",
+      "outputs/phase36-tabular-inbox/manifest.json": "671a192258c0a52eab3bf5fc0de3f0aa2a53346e782c18eb81d3459708c9d0ad",
+      "outputs/phase36-tabular-inbox/reference-query.json": "899e5657b8695cb43a9e83de85adfe36e1d913017a5fb910a520cc27a2cea4ce",
+      "outputs/phase36-tabular-inbox/typed-inbox.json": "8f42ae940dfe34b73065a365be753c7f424850268f0d7981ead20365107aaea2"
+    },
+    "37": {
+      "outputs/phase37-file-reference-index/file-index-summary.md": "c8c7ae446a826c9592195cb86db27b95718378f3828c8e755df3229b2ec8eb70",
+      "outputs/phase37-file-reference-index/file-reference-index.json": "5a36725b572f7e8cef59b20ff2633c292fb608ecd7e3b766a6b8f30f8c2e60e0",
+      "outputs/phase37-file-reference-index/file-reference-lookup.json": "6fb6e3e5ced910bbe52b2d1c5f6c4748d8d2d1978ad400ee7da1dd0d0b47f4eb",
+      "outputs/phase37-file-reference-index/index-source-receipt.json": "14d06bb8026efaf41b7d34921d3fc24e29b31d3d45f029fcb1c5495f9bebeb43",
+      "outputs/phase37-file-reference-index/inspection-summary.json": "cf9eea49ef7a7c13b348a0e17f027bbbfa33b40a023be14b3db92a6526541a6b",
+      "outputs/phase37-file-reference-index/manifest.json": "943fe3c3eaffc0336d32264fe5220095b9ecfe87e3e8f6fd97c9dc1b87661f91"
+    },
+    "38": {
+      "outputs/phase38-co-reference/co-reference-join.json": "fd90a2c53abf1d09c5f902f33a379b6865b2f70adb51bdb821f1bd12092e67f2",
+      "outputs/phase38-co-reference/co-reference-lookup.json": "613f0a0fd2b158d74b6421a4873230560172699bbaab354c33fc60792a0c391c",
+      "outputs/phase38-co-reference/co-reference-source-receipt.json": "af82218d57997a393a6392f4cb6076026967fdabff3d587eb4cbd40401d31278",
+      "outputs/phase38-co-reference/co-reference-summary.md": "b57071787c756c93e594a18406b030b7a2a7f36155332f404a2029a2944cac58",
+      "outputs/phase38-co-reference/inspection-summary.json": "34696d496995c2ebb4ac412135e50c7cd0b5299b9d13a414631936b24a208e4b",
+      "outputs/phase38-co-reference/manifest.json": "f00b8b7798ad4b6c578c093ab232fa3b80c640747e4c9d40b5e9db1e6b888407"
+    },
+    "39": {
+      "outputs/phase39-cohort-query/cohort-query.json": "a51eb6061d652051680fd600de47930796311837040e910264c0b43a8910f535",
+      "outputs/phase39-cohort-query/cohort-source-receipt.json": "aea2d13023043c657d160594d6327fcf5af94612168208fbd6bb355f194776d8",
+      "outputs/phase39-cohort-query/cohort-summary.md": "40112d2883f1f5f691a144ac1fc4fe9ac79a55c56df7ea210a5c81086336ba8a",
+      "outputs/phase39-cohort-query/cohort-witnesses.json": "97d96202926e6fff9038f51ea96dfde50abdbc761512e92d1d7cd9329179d8a3",
+      "outputs/phase39-cohort-query/inspection-summary.json": "42444ab7e373308c0055fe2b5ecbeb8c13010461741006737da6856c3978e434",
+      "outputs/phase39-cohort-query/manifest.json": "aaab43b75be22e31797b5ecd16224283fdc6aa59a070744a7f725698c5ff1eeb"
+    },
+    "40": {
+      "outputs/phase40-evidence-followup/analyst-handoff.json": "a330dadcb654b23031218472381d6b0ad67a7d941f5593173ab2b4cf00b5a50c",
+      "outputs/phase40-evidence-followup/evidence-followup-queue.json": "fd86dda8259efe31c661cd8f4ca4732e1a000f65854ff66c69fa346ae0ba71ec",
+      "outputs/phase40-evidence-followup/followup-source-receipt.json": "2a148d316c6ce22523c76bd494c669e184bb709fd770fdb710f27e5c0375c694",
+      "outputs/phase40-evidence-followup/followup-summary.md": "004b25fedbbf53f560dbeb9306a77ad5a11e679212ff6379e079e5b2641e70aa",
+      "outputs/phase40-evidence-followup/inspection-summary.json": "da61529f6ccb72c9fcf4b847ad9575177c91a68954f72fa86e183d9256f26fff",
+      "outputs/phase40-evidence-followup/manifest.json": "e611c540022cb268550bb2a2b21cd591a89f12557a3786ddde3cdfdd410819dd"
+    },
+    "41": {
+      "outputs/phase41-response-slots/inspection-summary.json": "6369f516cf9efec5a88f589e9f0a77c2e681eb7d1048c9274170988e9e26ffb5",
+      "outputs/phase41-response-slots/manifest.json": "0d67de7226e61efa9c1af7236e8f01d7458df9adab13e0217e8150af2565c0e4",
+      "outputs/phase41-response-slots/response-slot-source-receipt.json": "15ee0d7d9fc55cede43b9337d87072f662e5df2cc748ca7f05293594f850e560",
+      "outputs/phase41-response-slots/response-slot-summary.md": "13db71324bb894226a9c50403b480be52f82fa90b32e4b0be2a4272d3b196d48",
+      "outputs/phase41-response-slots/response-template.json": "6f7b10ab4c32ef89039983e480ef87935d72e4d4bd68367675a10cd66c10ef5d",
+      "outputs/phase41-response-slots/task-response-slots.json": "291caf1d486ad50bab53a784adffa5b7b4bebd02e0ced53c85ae310f7eee9173"
+    },
+    "42": {
+      "outputs/phase42-deferred-intake/deferred-intake-register.json": "6465bab021f525b47d4fafd5a0ddc68020989b60e82bce3ec70f6bfaa4f8ff16",
+      "outputs/phase42-deferred-intake/inspection-summary.json": "ab059112f6d3e51862d02a63caab533040d9b89775cd89ed4788f8cf9dbc275f",
+      "outputs/phase42-deferred-intake/intake-classification.json": "0ad99132b85355b52717d502a295ccb75fbc5074d02622c63a7f4133802b0e7d",
+      "outputs/phase42-deferred-intake/intake-source-receipt.json": "0915a855ec4474972f5af6e79ff7142186d959cda0de4bb1621621fda5b0b639",
+      "outputs/phase42-deferred-intake/intake-summary.md": "e78e79e65dfae68fb0e2798622da8f3203fc6dcf531995a7de57f828aa1b28fd",
+      "outputs/phase42-deferred-intake/manifest.json": "fbe94605564f06a11165cc9fb71229100b609e2c7d0248e4772af53ddb81b6cc"
+    },
+    "43": {
+      "outputs/phase43-task-exchange/inspection-summary.json": "74c158e7b1ebd8af7827445c88c46457b390bb93a54573d22688a2e4f990ea73",
+      "outputs/phase43-task-exchange/manifest.json": "43d4bfca39ccf39c05c7d8a3a18ba78045a3504aad168b761628f0a31bd55ea7",
+      "outputs/phase43-task-exchange/task-exchange-capsule.zip": "49a10169defbaa4f5f2c59e8488f8a345e8c8a51926dc4534893f9c93619c70a",
+      "outputs/phase43-task-exchange/task-exchange-index.json": "d3c1328549513342084493bf5390e11b871e04dfa501b869daa9822b8b346d41",
+      "outputs/phase43-task-exchange/task-exchange-source-receipt.json": "7871e5a9e716dd07a7cdcdb523d0e77fcb597f7c3b75e62cd087b9a55262a098",
+      "outputs/phase43-task-exchange/task-exchange-summary.md": "e7a7ae0959d7ae242eae3c4ad4795d5cfce36aca13a4f210510c394210489061"
+    },
+    "44": {
+      "outputs/phase44-task-reconciliation/capsule-reconciliation-report.json": "9235ad645005e9c6bc65dd5f3bcbed9a90cb75915555ec283a1c9899f9eb9313",
+      "outputs/phase44-task-reconciliation/capsule-reconciliation-summary.md": "5e4d08d02d5096a408d1cb81404a2776a7e2a5cd5b626cfdf9dbcb5701192697",
+      "outputs/phase44-task-reconciliation/inspection-summary.json": "d54041061935cceedaab47b913c1a232550191d47ca5bb54bb7987d496e70d1b",
+      "outputs/phase44-task-reconciliation/manifest.json": "68d7bf62647fdcbab406db79180c1728179d05d4182affc014238b288400c88d",
+      "outputs/phase44-task-reconciliation/task-inbox-record.json": "2203622b9e4e37888fddb519518c99969cc63727168331ce05f24316fc05b13a"
+    }
+  }
+}

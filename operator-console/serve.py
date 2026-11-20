@@ -1,11 +1,19 @@
 """Loopback-only immutable static preview. No API forwarding or runtime access."""
 import argparse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+import os
+import socket
 import sys
 from types import MappingProxyType
 
 from build import BuildError, read_dist
 
+# Fixed one-line startup failures: no paths, tracebacks, hosts or request data.
+BUILD_UNAVAILABLE = ("preview_build_unavailable: console build missing or not matching dist/build-manifest.json; "
+                     "use the packaged console build or run pnpm build")
+PORT_UNAVAILABLE = "preview_port_unavailable: port unavailable on 127.0.0.1; choose another --port"
+PREVIEW_UNAVAILABLE = "preview_unavailable: preview could not start or stopped unexpectedly"
+FAILURES = (BuildError, OSError, ValueError, TypeError, RecursionError, OverflowError)
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; "
        "img-src 'self'; font-src 'self'; base-uri 'none'; object-src 'none'; "
        "frame-ancestors 'none'; form-action 'none'")
@@ -16,6 +24,14 @@ CONTENT_TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; c
 class PreviewServer(ThreadingHTTPServer):
     daemon_threads = True
     request_queue_size = 16
+    # Windows SO_REUSEADDR lets a second preview co-bind a busy port; binding is exclusive there.
+    allow_reuse_address = os.name != "nt"
+    allow_reuse_port = False
+
+    def server_bind(self):
+        if os.name == "nt":
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_EXCLUSIVEADDRUSE, 1)
+        super().server_bind()
 
     def handle_error(self, request, client_address):
         pass  # Connection failures must not dump request context or tracebacks.
@@ -101,17 +117,19 @@ def main():
     parser = argparse.ArgumentParser(description="Serve the built console only on 127.0.0.1")
     parser.add_argument("--port", type=_port, default=8787)
     args = parser.parse_args()
-    server = None
+    server, failure = None, BUILD_UNAVAILABLE
     try:
         assets = read_dist()
+        failure = PORT_UNAVAILABLE
         server = PreviewServer(("127.0.0.1", args.port), PreviewHandler)
+        failure = PREVIEW_UNAVAILABLE
         server.assets = MappingProxyType({"/" + name: raw for name, raw in assets.items()})
         print(f"http://127.0.0.1:{server.server_address[1]}/", flush=True)
         server.serve_forever(poll_interval=0.25)
     except KeyboardInterrupt:
         pass
-    except (BuildError, OSError, ValueError, TypeError, RecursionError, OverflowError):
-        print("preview_unavailable", file=sys.stderr)
+    except FAILURES:
+        print(failure, file=sys.stderr)
         return 1
     finally:
         if server is not None:

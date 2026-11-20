@@ -11,9 +11,7 @@ Yerleşik iki örnek **elle yazılmış sentetik belgedir**; CLI/scanner çıkt�
 | `assessment-example.json` | Complete v1 shape; one informational/observation and one needs_review/differential item | 2377 | `1ef1eed88ad97d9e21e7df4e989db2eee65b3d5a1044f5c4208688f366096537` |
 | `incomplete-example.json` | Separate exact-origin `web-assessment/v2` diagnostic shape, items unavailable | 3465 | `85881c1d3883bb719cd05e7fbd63f564188371ddab58be94eb7e56c9e84d4f0a` |
 
-These were written directly from the reviewed source contract. The source checkout was `ITherso/termivar` commit `6a2639348c2366d0bf71b9a34e5484d40aa393a3`, at:
-
-`C:/Users/galat/Documents/Codex/2026-07-31/github-plugin-github-openai-curated-remote/termivar`
+These were written directly from the reviewed source contract. The source was a local, read-only checkout of `ITherso/termivar` at commit `6a2639348c2366d0bf71b9a34e5484d40aa393a3`; its machine-specific location is intentionally not recorded.
 
 Reviewed source: `docs/reporting.md`, `crates/termivar-cli/src/assessment_scan.rs`, `crates/termivar-cli/src/report_bundle.rs`, `crates/termivar-scanner/src/reporting/comparison/import.rs` and `crates/termivar-scanner/src/web_runtime/scan_profile.rs`.
 

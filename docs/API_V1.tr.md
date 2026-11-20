@@ -38,11 +38,15 @@ JWKS yenilemesi: yöneticinin doğruladığı dosyaya eski+yeni public anahtarla
 | `GET /api/v1/tenants/{tenant_id}/audit` | Tenant admin | Bounded başarılı yönetim olayları; sır veya ham payload içermez. |
 | `POST /api/v1/enroll` | Enrollment grant | `{label:"..."}`; 201: `tenant_id`, `device_id`, `credential_id`, `credential_secret`, `credential_expires_at`. |
 | `PUT /api/v1/device/snapshot` | Device credential | Strict V1 snapshot; 200 kabul cevabı. |
-| `POST /api/v1/device/credentials/rotate` | Device credential | `{}` veya `ttl_seconds`; yeni credential cevabı, eski sır aynı transaction'da iptal edilir. |
+| `POST /api/v1/device/credentials/rotate` | Device credential | `{}` veya `ttl_seconds`; yeni credential cevabı (süre yapılandırılmış credential süresini aşmaz), eski sır aynı transaction'da iptal edilir. |
 
 Liste yolları `limit=1..100` (varsayılan 50), `offset=0..10000` alır. Cursor yolu yoktur; V1 offset sayfalaması kullanır. Liste ve detay aynı tenant üyeliğini uygular. Bilinmeyen extra body alanları reddedilir.
 
-Kayıt hakkı varsayılanı 600 saniye, API üst sınırı 3600 saniyedir; yapılandırılmış daha dar üst sınır da uygulanır. Credential varsayılanı 86400 saniye; rotasyon body aralığı 60–2592000 saniyedir. Snapshot credential süresini uzatmaz. Yeni cihaz ilk snapshot'a kadar `never_seen` kalır. Enrollment veya rotasyon commit'inden sonra cevap kaybolursa plaintext sır yeniden üretilemez; yönetici cihazı iptal edip yeni grant ile kayıt yaptırır.
+Kayıt hakkı varsayılanı 600 saniye, API üst sınırı 3600 saniyedir; yapılandırılmış daha dar üst sınır da uygulanır. Credential süresi `SP_CREDENTIAL_TTL_SECONDS` ile ayarlanır (60–2592000, varsayılan 86400). Rotasyon body aralığı 60–2592000 saniyedir, fakat verilen süre yapılandırılmış credential süresiyle sınırlanır: daha uzun istek bu değere indirilir, daha kısa istek olduğu gibi uygulanır; gerçek süre cevaptaki `credential_expires_at` alanıdır. Snapshot credential süresini uzatmaz; süresi dolmuş credential rotasyon yapamaz (401). Yeni cihaz ilk snapshot'a kadar `never_seen` kalır. Enrollment veya rotasyon commit'inden sonra cevap kaybolursa plaintext sır yeniden üretilemez; yönetici cihazı iptal edip yeni grant ile kayıt yaptırır.
+
+Tenant cihaz kotası (`SP_MAX_DEVICES_PER_TENANT`, varsayılan 1000) yalnız iptal edilmemiş (aktif) cihazları sayar. İptal edilen cihaz satırı geçmiş olarak kalır, fakat kota yeri tutmaz; iptal + yeniden kayıt kurtarması tenant'ı kilitlemez. İptal edilmiş satırları silen bir komut yoktur.
+
+Audit kaydı tenant başına sınırlıdır (`SP_MAX_AUDIT_EVENTS_PER_TENANT`, varsayılan 10000). Sınıra ulaşıldığında yeni olay cihazdan geliyorsa önce en eski cihaz olayı silinir; cihaz olayı kalmamışsa en eski olay silinir. Yönetim olayları (`operator`, `local_admin`) her zaman en eski olayı siler. Toplam sınır değişmez; tekrarlanan cihaz rotasyonları yönetim geçmişini silemez.
 
 ## Snapshot zarfı
 
@@ -146,4 +150,20 @@ with httpx.Client(verify=True, trust_env=False, follow_redirects=False, timeout=
         "credential_secret": device["credential_secret"]})
 ```
 
-Bu örnekteki `private` ilk blokta oluşturulan dizindir. Grant veya credential cevaplarını yazdırmayın. Enrollment grant yalnız bir defa tüketilir. Snapshot gönderimi ayrı `security-snapshot` komutuyla açıkça yapılır. Rotasyon da `/api/v1/device/credentials/rotate` için geçerli cihaz bearer'ıyla açık API çağrısıdır; yeni `credential_secret` aynı private `device.json` dosyasına atomik yazılır, mevcut cihaz state'i sıfırlanmaz.
+Bu örnekteki `private` ilk blokta oluşturulan dizindir. Grant veya credential cevaplarını yazdırmayın. Enrollment grant yalnız bir defa tüketilir. Snapshot gönderimi ve credential rotasyonu ayrı `security-snapshot` komutuyla açıkça yapılır.
+
+## `security-snapshot` istemcisi
+
+```text
+security-snapshot --credential-file device.json --state-dir state --snapshot-file export.json [--initialize-state] [--ca-file ca.pem]
+security-snapshot --credential-file device.json --rotate-credential [--ca-file ca.pem]
+```
+
+- Snapshot modunda `--state-dir` zorunludur. `--initialize-state` yalnız yeni kaydedilen cihaz için sıra 1'i açıkça başlatır.
+- `--rotate-credential` açık, tek seferlik operatör işlemidir; otomatik veya zamanlanmış rotasyon yoktur. `--snapshot-file`, `--state-dir` ve `--initialize-state` ile birlikte verilemez (argparse hatası, çıkış 2) ve snapshot göndermez. Mevcut sırla `POST /api/v1/device/credentials/rotate` `{}` body ile çağrılır, böylece sunucunun yapılandırılmış süresi uygulanır.
+- Yeni `credential_secret` aynı `device.json` dosyasına mevcut private dosya yardımcılarıyla yazılır: owner/DACL veya POSIX izin denetimi, geçici dosya ve atomik replace. `base_url`, `device_id`, client state ve sıra korunur. İstekten önce dosya aynı içerikle yeniden yazılarak yazılabilirlik denetlenir; yazılamıyorsa istek gönderilmez (`credential_file_not_writable`). Eşzamanlı yenilemeler credential dizinindeki `client.lock` ile sıralanır. Snapshot gönderimi credential'ı state dizininin kilidi altında okur. Bu yüzden gönderim ile yenileme yalnız credential dosyası state dizinindeyse birbirine göre sıralanır. Dosyalar ayrı dizinlerdeyse yenileme sırasında başlayan bir gönderim eski sırla reddedilebilir. Bekleyen mesaj korunur ve yeniden denemek yeterlidir.
+- Başarıda stdout yalnız sabit JSON yazar: `{"credential_expires_at":"…","credential_rotated":true}`. Sunucu süre döndürmezse yalnız `credential_rotated` yazılır. Sır hiçbir zaman yazdırılmaz.
+- Kurtarılamayan durum: sunucu eski sırrı aynı transaction'da iptal eder. Bu yüzden yeni sır kaybolursa geri getirilemez. Bu durum şu hallerde olabilir: istek gönderildikten sonra bağlantı veya süre hatası (`credential_rotation_failed`, `credential_rotation_deadline_exceeded`), geçersiz/büyük/sıkıştırılmış cevap (`credential_rotation_response_invalid`, `credential_rotation_response_too_large`, `credential_rotation_response_encoding_unsupported`) ya da başarılı cevaptan sonra dosya yazılamaması (`credential_file_write_failed`). Dosya bu hallerde normalde eski sırrı tutar. Önce normal bir snapshot gönderimi deneyin; `snapshot_delivery_rejected` dönerse yönetici cihazı iptal eder, yeni grant ile yeniden kaydeder ve yeni state'i `--initialize-state` ile başlatır.
+- `credential_rotation_rejected` sunucunun 200 dışı cevabıdır (ör. 401 süresi dolmuş/iptal edilmiş credential, 429); dosya değişmez. Süresi dolmuş credential rotasyon yapamaz. `credential_expires_at` değerini izleyip rotasyonu süre dolmadan elle çalıştırın; aksi halde yeniden kayıt gerekir.
+- `--ca-file PATH` özel veya kurumsal CA kullanan sunucular içindir. PEM CA paketi `ssl.create_default_context(cafile=...)` ile yüklenir. Sertifika zinciri ve hostname doğrulaması açık kalır. Verilen paket varsayılan certifi paketinin yerine geçer; yalnız bu CA'lara güvenilir. Seçenek verilmezse certifi kullanılır; `SSL_CERT_FILE` ve sistem deposu okunmaz. Doğrulamayı kapatan bir seçenek yoktur. Python 3.13 ve sonrası bu bağlamda katı X.509 denetimi (`VERIFY_X509_STRICT`) uygular; CA sertifikasında kritik `basicConstraints CA:TRUE` ve `keyCertSign` bulunmalıdır. Dosya en fazla 1 MiB olabilir. Okunamayan veya geçersiz dosya, ağ isteği ya da state oluşturulmadan `ca_file_invalid` ile reddedilir. CA dosyasını yalnız yöneticinin değiştirebileceği bir konumda tutun.
+- Hatalar stderr'e tek satır sabit kod olarak yazılır, çıkış kodu 1'dir. Dosya yolu, sır veya sunucu gövdesi yazılmaz.

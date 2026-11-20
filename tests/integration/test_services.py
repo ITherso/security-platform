@@ -20,7 +20,8 @@ from security_platform.contracts import SnapshotEnvelope
 from security_platform.db import Database
 from security_platform.models import AuditEvent, Device, DeviceCredential, EnrollmentGrant, Membership, ProductState
 from security_platform.services import administration, audit, enrollment, inventory, snapshots
-from security_platform.services.common import DEFAULT_LIMITS, CapacityError, Conflict, Forbidden, NotFound, Unauthorized
+from security_platform.services.common import (DEFAULT_LIMITS, CapacityError, Conflict, Forbidden, NotFound,
+    ServiceError, Unauthorized)
 
 
 pytestmark = pytest.mark.integration
@@ -320,6 +321,100 @@ def test_bounded_grants_devices_and_credential_history(service_tenants):
             enrollment.revoke_grant(session, admin, a, UUID(current["grant_id"]), limits=limits, now=NOW)
     with owner.session() as session:
         assert session.scalar(select(func.count()).select_from(EnrollmentGrant).where(EnrollmentGrant.tenant_id == a)) <= 2
+
+
+def test_rotated_credential_lifetime_is_capped_at_configured_ttl(service_tenants):
+    owner, runtime, a, _, admin, _ = service_tenants
+    limits = replace(DEFAULT_LIMITS, credential_ttl_seconds=3600)
+    device = enrolled(runtime, admin, a, limits=limits)
+    for requested, expected in ((DEFAULT_LIMITS.max_credential_ttl_seconds, 3600), (None, 3600), (120, 120), (3600, 3600)):
+        with runtime.session() as session:
+            principal = enrollment.authenticate_device(session, device["credential_secret"], now=NOW)
+            device = enrollment.rotate_credential(session, principal, ttl_seconds=requested, limits=limits, now=NOW)
+        assert device["credential_expires_at"] == (NOW + timedelta(seconds=expected)).isoformat().replace("+00:00", "Z")
+        with owner.session() as session:
+            saved = session.scalar(select(DeviceCredential).where(DeviceCredential.id == UUID(device["credential_id"])))
+            assert saved.expires_at == NOW + timedelta(seconds=expected)
+    with runtime.session() as session:
+        principal = enrollment.authenticate_device(session, device["credential_secret"], now=NOW)
+        with pytest.raises(ServiceError):
+            enrollment.rotate_credential(session, principal, ttl_seconds=DEFAULT_LIMITS.max_credential_ttl_seconds + 1,
+                                         limits=limits, now=NOW)
+
+
+def test_device_capacity_counts_only_active_devices(service_tenants):
+    owner, runtime, a, _, admin, _ = service_tenants
+    limits = replace(DEFAULT_LIMITS, max_devices=2)
+    first = enrolled(runtime, admin, a, limits=limits)
+    enrolled(runtime, admin, a, limits=limits)
+    with pytest.raises(CapacityError):
+        enrolled(runtime, admin, a, limits=limits)
+    replacement = first
+    # Revoke + re-enroll beyond the configured maximum never locks the tenant out.
+    for _ in range(4):
+        with runtime.session() as session:
+            enrollment.revoke_device(session, admin, a, UUID(replacement["device_id"]), limits=limits, now=NOW)
+        replacement = enrolled(runtime, admin, a, limits=limits)
+    with pytest.raises(CapacityError):
+        enrolled(runtime, admin, a, limits=limits)
+    with owner.session() as session:
+        assert session.scalar(select(func.count()).select_from(Device).where(Device.tenant_id == a)) == 6
+        assert session.scalar(select(func.count()).select_from(Device).where(
+            Device.tenant_id == a, Device.revoked_at.is_(None))) == 2
+
+
+def audit_rows(owner, tenant):
+    with owner.session() as session:
+        return session.execute(select(AuditEvent.id, AuditEvent.actor_type, AuditEvent.action)
+                               .where(AuditEvent.tenant_id == tenant)).all()
+
+
+def test_device_audit_events_cannot_evict_administrative_events(service_tenants):
+    owner, runtime, a, b, admin, _ = service_tenants
+    limits = replace(DEFAULT_LIMITS, max_audits=10)
+    other_before = len(audit_rows(owner, b))
+    device = enrolled(runtime, admin, a, limits=limits)
+    administrative = sorted(action for _, actor, action in audit_rows(owner, a) if actor != "device")
+    assert administrative == ["enrollment_grant_created", "membership_set", "membership_set", "tenant_created"]
+    for index in range(25):
+        moment = NOW + timedelta(seconds=index)
+        with runtime.session() as session:
+            principal = enrollment.authenticate_device(session, device["credential_secret"], now=moment)
+            device = enrollment.rotate_credential(session, principal, limits=limits, now=moment)
+    rows = audit_rows(owner, a)
+    assert len(rows) == 10
+    assert sorted(action for _, actor, action in rows if actor != "device") == administrative
+    assert [action for _, actor, action in rows if actor == "device"] == ["device_credential_rotated"] * 6
+    # An administrative event at capacity keeps plain oldest-overall retention:
+    # it evicts the oldest event (the tenant_created bootstrap event here), so
+    # administrative history is never frozen at the size it had at saturation.
+    with owner.session() as session:
+        before = session.execute(select(AuditEvent.id).where(AuditEvent.tenant_id == a)
+                                 .order_by(AuditEvent.created_at, AuditEvent.id)).scalars().all()
+    grant(runtime, admin, a, limits=limits)
+    ids = {row_id for row_id, _, _ in audit_rows(owner, a)}
+    assert len(ids) == 10 and before[0] not in ids and set(before[1:]) <= ids
+    assert len(audit_rows(owner, b)) == other_before
+
+
+def test_audit_retention_falls_back_to_oldest_overall_and_keeps_the_bound(service_tenants):
+    owner, runtime, a, _, admin, _ = service_tenants
+    limits = replace(DEFAULT_LIMITS, max_audits=4)
+    grant(runtime, admin, a, limits=limits)
+    assert len(audit_rows(owner, a)) == 4
+    # No device event exists yet, so the first one evicts the oldest event overall.
+    device = enrolled(runtime, admin, a, limits=limits)
+    rows = audit_rows(owner, a)
+    assert len(rows) == 4 and [action for _, actor, action in rows if actor == "device"] == ["device_enrolled"]
+    # A lowered bound with too few same-class events still trims back to the bound.
+    lowered = replace(DEFAULT_LIMITS, max_audits=2)
+    with runtime.session() as session:
+        principal = enrollment.authenticate_device(session, device["credential_secret"], now=NOW)
+        enrollment.rotate_credential(session, principal, limits=lowered, now=NOW + timedelta(seconds=1))
+    rows = audit_rows(owner, a)
+    assert len(rows) == 2
+    assert sorted((actor == "device", action) for _, actor, action in rows)[-1] == (True, "device_credential_rotated")
+    assert sum(actor == "device" for _, actor, _ in rows) == 1
 
 
 def test_expired_revoked_and_wrong_purpose_credentials_are_rejected(service_tenants):

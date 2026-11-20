@@ -100,7 +100,10 @@ def enroll_device(session, grant_principal, *, label, limits=DEFAULT_LIMITS, now
     now = utc_now(supplied_time)
     if (grant is None or grant.consumed_at is not None or grant.revoked_at is not None or grant.expires_at <= now):
         raise Unauthorized("Invalid credential")
-    count = session.scalar(select(func.count()).select_from(Device).where(Device.tenant_id == grant.tenant_id))
+    # Capacity bounds active devices. Revoked rows stay as history and do not
+    # permanently consume a slot after the documented revoke/re-enroll recovery.
+    count = session.scalar(select(func.count()).select_from(Device).where(Device.tenant_id == grant.tenant_id,
+        Device.revoked_at.is_(None)))
     if count >= limits.max_devices:
         raise CapacityError("Device capacity reached")
     device = Device(tenant_id=grant.tenant_id, label=label.strip(), created_at=now)
@@ -131,7 +134,10 @@ def rotate_credential(session, device_principal, *, ttl_seconds=None, limits=DEF
     now = utc_now(now)
     if not isinstance(device_principal, DevicePrincipal):
         raise Unauthorized("Device credential required")
-    ttl = _ttl(ttl_seconds, limits.credential_ttl_seconds, limits.max_credential_ttl_seconds)
+    # A device may request a shorter lifetime, never one longer than the
+    # operator-configured credential TTL; longer requests are capped to it.
+    ttl = min(_ttl(ttl_seconds, limits.credential_ttl_seconds, limits.max_credential_ttl_seconds),
+              limits.credential_ttl_seconds)
     locked_tenant(session, device_principal.tenant_id)
     device, old = locked_device_credential(session, device_principal, supplied_time)
     now = utc_now(supplied_time)

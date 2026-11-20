@@ -1,8 +1,12 @@
 """Signed operator JWTs + real PostgreSQL; no auth dependency is overridden."""
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import json
+import os
 from pathlib import Path
+import tempfile
 import time
 from uuid import UUID, uuid4
 
@@ -13,6 +17,8 @@ import pytest
 from sqlalchemy import select
 
 from security_platform.app import create_app
+from security_platform.connectors.hostbased_firewall.client import read_credentials, rotate_credential_file
+from security_platform.connectors.hostbased_firewall.private_files import create_private_directory, write_private_json
 from security_platform.db import Database
 from security_platform.models import AuditEvent, Device, DeviceCredential, Membership
 from security_platform.services import administration
@@ -239,6 +245,103 @@ def test_device_identity_is_derived_from_bearer_not_headers_or_body(api_context)
     source = client.get(f"/api/v1/tenants/{ctx['a']}/devices/{first['device_id']}", headers=auth(ctx["token"]())).json()
     assert target["connection_status"] == "never_seen"
     assert source["last_sequence"] == 1
+
+
+@contextmanager
+def private_client_root(tmp_path):
+    # Same trustworthy-ancestor rule as the client unit tests on this workstation.
+    if os.name != "nt":
+        yield tmp_path
+        return
+    import ctypes
+    buffer = ctypes.create_unicode_buffer(32768)
+    assert ctypes.windll.shell32.SHGetFolderPathW(None, 5, None, 0, buffer) == 0
+    with tempfile.TemporaryDirectory(prefix=".security-platform-api-client-test-", dir=buffer.value) as directory:
+        yield Path(directory)
+
+
+def utc(value):
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def test_shipped_client_rotation_against_real_api_keeps_device_and_sequence(api_context, tmp_path):
+    ctx = api_context; client = ctx["client"]
+    device, _ = enroll(ctx)
+    assert client.put("/api/v1/device/snapshot", json=snapshot(1), headers=auth(device["credential_secret"])).status_code == 200
+    with private_client_root(tmp_path) as root:
+        credential_file = create_private_directory(root / "credentials") / "device.json"
+        write_private_json(credential_file, {"schema_version": 1, "base_url": "https://platform.example.test",
+            "device_id": device["device_id"], "credential_secret": device["credential_secret"]})
+        before = datetime.now(timezone.utc)
+        # The in-process ASGI transport replaces only the network; the client's own request/reply checks run.
+        result = rotate_credential_file(credential_file, transport=client._transport)
+        after = datetime.now(timezone.utc)
+        rotated = read_credentials(credential_file)
+    assert set(result) == {"credential_rotated", "credential_expires_at"} and result["credential_rotated"] is True
+    assert rotated["device_id"] == device["device_id"] and rotated["base_url"] == "https://platform.example.test"
+    assert rotated["credential_secret"] != device["credential_secret"]
+    assert rotated["credential_secret"] not in json.dumps(result)
+    ttl = timedelta(seconds=ctx["settings"].credential_ttl_seconds)
+    assert before + ttl <= utc(result["credential_expires_at"]) <= after + ttl
+    assert client.put("/api/v1/device/snapshot", json=snapshot(2), headers=auth(device["credential_secret"])).status_code == 401
+    accepted = client.put("/api/v1/device/snapshot", json=snapshot(2), headers=auth(rotated["credential_secret"]))
+    assert accepted.status_code == 200 and accepted.json()["sequence"] == 2
+    audit = client.get(f"/api/v1/tenants/{ctx['a']}/audit", headers=auth(ctx["token"]())).text
+    assert rotated["credential_secret"] not in audit and "device_credential_rotated" in audit
+
+
+def test_device_cannot_rotate_into_lifetime_longer_than_configured_ttl(api_context):
+    ctx = api_context
+    with TestClient(create_app(replace(ctx["settings"], credential_ttl_seconds=3600)),
+                    base_url="https://platform.example.test") as client:
+        device, _ = enroll({**ctx, "client": client})
+        secret = device["credential_secret"]
+        for requested, expected in ((2592000, 3600), (120, 120)):
+            before = datetime.now(timezone.utc)
+            reply = client.post("/api/v1/device/credentials/rotate", json={"ttl_seconds": requested}, headers=auth(secret))
+            after = datetime.now(timezone.utc)
+            assert reply.status_code == 200, reply.text
+            expires = utc(reply.json()["credential_expires_at"])
+            assert before + timedelta(seconds=expected) <= expires <= after + timedelta(seconds=expected)
+            secret = reply.json()["credential_secret"]
+        assert client.post("/api/v1/device/credentials/rotate", json={"ttl_seconds": 2592001},
+                           headers=auth(secret)).status_code == 422
+
+
+def test_revoked_devices_do_not_consume_tenant_capacity(api_context):
+    ctx = api_context
+    with TestClient(create_app(replace(ctx["settings"], max_devices_per_tenant=1)),
+                    base_url="https://platform.example.test") as client:
+        local = {**ctx, "client": client}
+        first, _ = enroll(local)
+        grant = new_grant(local)
+        over = client.post("/api/v1/enroll", json={"label": "Over cap"}, headers=auth(grant["enrollment_token"]))
+        assert over.status_code == 429 and over.json() == {"detail": "Device capacity reached"}
+        revoked = client.post(f"/api/v1/tenants/{ctx['a']}/devices/{first['device_id']}/revoke", json={},
+                              headers=auth(ctx["token"]()))
+        assert revoked.status_code == 200
+        replacement = client.post("/api/v1/enroll", json={"label": "Replacement"}, headers=auth(grant["enrollment_token"]))
+        assert replacement.status_code == 201, replacement.text
+        assert client.put("/api/v1/device/snapshot", json=snapshot(1),
+                          headers=auth(first["credential_secret"])).status_code == 401
+
+
+def test_device_rotations_cannot_push_operator_events_out_of_audit(api_context):
+    ctx = api_context
+    with TestClient(create_app(replace(ctx["settings"], max_audit_events_per_tenant=10)),
+                    base_url="https://platform.example.test") as client:
+        device, grant = enroll({**ctx, "client": client})
+        secret = device["credential_secret"]
+        for _ in range(12):
+            reply = client.post("/api/v1/device/credentials/rotate", json={}, headers=auth(secret))
+            assert reply.status_code == 200, reply.text
+            secret = reply.json()["credential_secret"]
+        items = client.get(f"/api/v1/tenants/{ctx['a']}/audit?limit=100", headers=auth(ctx["token"]())).json()["items"]
+    assert len(items) == 10
+    assert [item["action"] for item in items if item["actor_type"] == "local_admin"].count("membership_set") == 3
+    assert any(item["action"] == "tenant_created" for item in items)
+    assert [item["object_id"] for item in items if item["actor_type"] == "operator"] == [grant["grant_id"]]
+    assert [item["action"] for item in items if item["actor_type"] == "device"] == ["device_credential_rotated"] * 5
 
 
 def test_runtime_cannot_be_replaced_by_migration_owner_credentials(api_context, api_database):

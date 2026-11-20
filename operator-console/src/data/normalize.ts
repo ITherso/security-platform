@@ -204,6 +204,10 @@ export const normalizeAuditPage = (input: unknown, options: Pagination, tenantId
 const STRICT_JSON_BUDGETS = {
   default: { depth: 12, nodes: 12000, stringUnits: 1024, arrayItems: 100, objectKeys: 32, tokens: 60000 },
   "termivar-comparison-v1": { depth: 12, nodes: 250000, stringUnits: 1024, arrayItems: 4096, objectKeys: 32, tokens: 750000 },
+  // Adapter maxima within the 1 MiB file cap: 4,096 items; densest diagnostic ~251k nodes / ~508k tokens.
+  "termivar-assessment-v1": { depth: 12, nodes: 300000, stringUnits: 1024, arrayItems: 4096, objectKeys: 32, tokens: 600000 },
+  // CLI maxima within 512 KiB: 32 scenarios x 2 x 64 trace rows ~42k nodes / ~128k tokens; 1,024 code points = 2,048 units.
+  "sp-hbf-preview-v1": { depth: 12, nodes: 50000, stringUnits: 2048, arrayItems: 100, objectKeys: 32, tokens: 160000 },
 } as const;
 export type StrictJsonProfile = keyof typeof STRICT_JSON_BUDGETS;
 type StrictJsonBudget = typeof STRICT_JSON_BUDGETS[StrictJsonProfile];
@@ -237,7 +241,7 @@ export function freeze<T>(value: T): T {
 }
 export function strictJson(textValue: string, profile: StrictJsonProfile = "default"): unknown {
   // A trusted caller selects a closed profile; JSON never supplies arbitrary limits.
-  requireValue(profile === "default" || profile === "termivar-comparison-v1");
+  requireValue(profile === "default" || profile === "termivar-comparison-v1" || profile === "termivar-assessment-v1" || profile === "sp-hbf-preview-v1");
   const budget = STRICT_JSON_BUDGETS[profile];
   // Native JSON.parse loses duplicate keys and rounds unsafe/fractional values.
   const token = /"(?:\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|[^"\\\u0000-\u001f])*"|[{}\[\]:,]|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null/gy;

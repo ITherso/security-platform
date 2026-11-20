@@ -28,7 +28,14 @@
 6. **Phase43 owner reader.** `recipient_reader.inspect_task_exchange_capsule` aynı byte'lar üzerinde değiştirilmeden çalıştırılır. Uyumluluk kararını yalnız bu reader verir.
 7. **Fail-closed çapraz kontrol.** Owner reader kabul ettiği halde Phase44 tanılaması engelleyici bir sorun bulursa ya da beyan edilen kimlik owner'ın okuduğu kimlikten farklıysa `DIAGNOSTIC_OWNER_DISAGREEMENT` bulgusu üretilir ve sonuç `STRUCTURAL_REJECTION` olur.
 8. **Yerel mutabakat** (`identity_reconciliation.py`). Yalnız yapısal olarak geçerli capsule için yapılır; reddedilen capsule'da yerel kayıtlara hiç bakılmaz. Ardından uygunluk durumu, inbox kaydı, rapor, Markdown özet ve manifest üretilir.
-9. **Yayın.** Girdi kararlılığı tekrar kontrol edilir. Çıktılar mevcut owner yayıncısıyla (`capsule_manifest._publish`) yalnız **yeni** bir dizine yazılır. Var olan dizin reddedilir.
+9. **Yayın.** Girdi kararlılığı tekrar kontrol edilir. Çıktılar yalnız **yeni** bir dizine yazılır; var olan dizin reddedilir. Yol kuralları owner'dan gelir (`capsule_manifest.explicit_path`, `check_path`, `same_directory`): göreli yol, `..` yok, link/reparse yok, üst dizin mevcut ve dizin olmalı. Yayının kendisi Phase44'e aittir ve **hard link gerektirmez**:
+   - Çıktının üst dizininde `tempfile.mkdtemp` ile bu çalıştırmaya ait bir stage dizini (`.task-reconciliation-*`) açılır.
+   - Her dosya `open(..., "xb")` ile yazılır, `flush` ve `os.fsync` yapılır.
+   - Stage dizini tek bir `os.rename` ile çıktı adına taşınır. Stage aynı üst dizinde olduğu için işlem tek volume'da kalır; Windows var olan hedefe rename'i reddeder.
+   - Herhangi bir hatada yalnız bu çalıştırmanın stage içinde yazdığı dosyalar (aynı cihaz ve inode) silinir, stage dizini kaldırılır ve hata yeniden yükseltilir. Boş veya yarım çıktı dizini kalmaz, bu yüzden aynı `--output-dir` ile yeniden deneme engellenmez. Çalıştırmanın oluşturmadığı hiçbir şey silinmez; arada başka biri hedefi oluşturduysa hedefe dokunulmaz ve `..._output_directory_must_be_new` kodu verilir.
+   - Inspector'ın `inspection-summary.json` dosyası da aynı yolla yayımlanır: stage içinde yazılır, sonra tek dosya rename edilir.
+
+   POSIX notu: Kontrol ile rename arasında aynı yolda bir hedef oluşturulursa POSIX `rename` iki durumda o hedefin yerine geçebilir: hedef **boş** bir dizinse veya inspector'ın tek dosyalık `inspection-summary.json` çıktısıysa. Bu yarış penceresi kısa bir ön kontrolle daraltılır ama kapatılmaz. Windows'ta rename mevcut hedefi reddeder. Demo Windows üzerinde çalıştırılmıştır.
 
 ## Capsule yapısı (Phase43, değişmedi)
 
@@ -68,7 +75,28 @@ Yerel gruplar ya tamamen verilir ya hiç verilmez. Verilen gruplar isteğin `loc
 | 0 | Çıktılar yayımlandı, durum `STRUCTURALLY_VALID_REQUIRES_MANUAL_REVIEW` |
 | 3 | Çıktılar yayımlandı, durum uygun değil (red, uyuşmazlık veya yerel kayıt yok) |
 | 2 | Argüman, girdi, pin veya yerel kayıt reddedildi; hiçbir şey yayımlanmadı. 131072 byte'tan büyük capsule dosyası da bu koddadır, çünkü okunmadan reddedilir. |
-| 1 | Beklenmeyen hata; başarı iddia edilmez |
+| 1 | Beklenmeyen hata; başarı iddia edilmez. Yayın sırasında olduysa stage geri alınır, çıktı dizini oluşmaz. |
+
+Exit 2'de stderr sabit hata kodunu yazar:
+
+```text
+task_reconciliation: rejected: <kod>; nothing published
+```
+
+Kod yalnız `[A-Za-z0-9_]` karakterlerinden oluşur (`capsule_claims.owner_code`). Kod bu biçime uymuyorsa `owner_code_unrepresentable` yazılır. Dosya yolu, token, politika içeriği veya kullanıcı verisi yazılmaz. Sık görülen kodlar:
+
+| Kod | Anlamı ve çözüm |
+| --- | --- |
+| `task_reconciliation_invalid_output_directory_must_be_new` | `--output-dir` zaten var. Yeni bir ad verin. |
+| `task_reconciliation_output_parent_missing` | `--output-dir` üst dizini yok. Önce üst dizini oluşturun. |
+| `task_reconciliation_publication_path_or_state_rejected` | Çıktı yolu owner kurallarını ihlal ediyor: mutlak yol, `..`, link/reparse, üst yol dizin değil veya yayın sırasında dizin değişti. |
+| `task_reconciliation_invalid_partial_local_record_group` | Bir yerel grubun beş seçeneğinin hepsi verilmedi. |
+| `task_reconciliation_invalid_local_path_groups_do_not_match_request_mode` | Verilen gruplar isteğin `local_reference_mode` değeriyle uyuşmuyor. |
+| `task_reconciliation_invalid_local_phase42_register_pin` (ve benzer `..._pin` kodları) | Yerel dosya hash'i istekteki pin ile eşleşmiyor. |
+| `task_exchange_binary_input_rejected`, `task_exchange_text_input_rejected` | Girdi yolu reddedildi: mutlak yol, `..`, link/reparse veya okunamayan dosya. |
+| `task_exchange_binary_size_or_hardlink_rejected` | Capsule dosyası 0 byte, sınırdan büyük ya da birden fazla hard link'e sahip. 0 byte capsule için rapor üretilmez. |
+
+Açıkça verilen bir girdi dosyası yoksa stderr `task_reconciliation: missing_explicit_input` yazar (exit 2). Exit 1'de stderr `task_reconciliation: rejected; no reconciliation is claimed` yazar.
 
 Bağımsız inceleme aynı girdileri alır, ek olarak dört çıktıyı ve yeni bir `--output` JSON yolunu ister:
 
@@ -77,6 +105,20 @@ python -I -B security-platform-phase43-source/tools/commercial_task_reconciliati
 ```
 
 Inspector çıkış kodları: 0 uyumlu; 2 uyuşmazlık veya ret (dosya yazılmaz); 1 beklenmeyen hata.
+
+Exit 2'de stderr bir neden ve sabit kodu yazar:
+
+```text
+task_reconciliation_inspection: <neden>: <kod>; nothing published
+```
+
+| Neden | Kod | Anlamı |
+| --- | --- | --- |
+| `outputs_disagree_with_independent_recomputation` | `task_reconciliation_inspection_disagreement_<kontrol>` | İlk başarısız kontrolün adı sondadır: `non_canonical_*`, `output_manifest_identity`, `input_identity`, `capsule_identity`, `request_reference`, `local_reference_mode`, `phase43_owner_reader`, `eligibility`, `mismatch_without_finding`, `lifecycle`, `rejected_capsule_admitted`, `inbox_report_tasks`, açıklama sınırı kontrolleri (`forbidden_disclosure_key`, `local_reference_not_input_identity`, `rejected_capsule_local_value`, `echoed_value_without_local_record`, `echoed_value_differs_from_local_record`, `match_local_value_differs`, `undisclosed_local_value_echoed`, `lookup_names_unclaimed_task`), `summary`, `regeneration`. |
+| `inspection_output_already_exists` | `task_reconciliation_invalid_inspection_output_must_be_new` | `--output` dosyası zaten var; mevcut dosyaya dokunulmaz. Yeni bir ad verin. |
+| `input_or_contract_rejected` | örneğin `task_reconciliation_inspection_output_parent_missing`, `task_reconciliation_invalid_inspection_json_required`, `task_reconciliation_inspection_publication_rejected` veya import tablosundaki girdi kodları | Girdi, çıktı yolu veya sözleşme reddedildi. |
+
+Açıkça verilen bir dosya yoksa stderr `task_reconciliation_inspection: missing_explicit_input_or_output_file` yazar (exit 2).
 
 Inspector şu on kontrolü yapar:
 

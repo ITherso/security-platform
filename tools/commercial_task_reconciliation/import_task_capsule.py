@@ -3,9 +3,9 @@
 Exit codes: 0 = outputs published and the capsule is
 STRUCTURALLY_VALID_REQUIRES_MANUAL_REVIEW; 3 = outputs published with a
 non-eligible status (rejection, mismatch or unavailable reconciliation);
-2 = arguments, inputs or local records rejected, nothing published;
-1 = unexpected failure, nothing claimed. No task is sent, assigned,
-approved, executed, completed or submitted.
+2 = arguments, inputs or local records rejected, nothing published (stderr
+names the fixed rejection code); 1 = unexpected failure, nothing claimed.
+No task is sent, assigned, approved, executed, completed or submitted.
 """
 from __future__ import annotations
 
@@ -18,6 +18,7 @@ import reconciliation_paths  # noqa: E402
 
 reconciliation_paths.install()
 
+from capsule_claims import owner_code  # noqa: E402
 from exchange_contracts import InputError  # noqa: E402
 from reconciliation_contracts import Eligibility  # noqa: E402
 from reconciliation_engine import reconcile_capsule  # noqa: E402
@@ -52,8 +53,9 @@ def main(argv=None) -> int:
     except FileNotFoundError:
         print("task_reconciliation: missing_explicit_input", file=sys.stderr)
         return 2
-    except InputError:
-        print("task_reconciliation: input_or_local_record_rejected; nothing published", file=sys.stderr)
+    except InputError as error:
+        # Fixed codes only: owner_code passes [A-Za-z0-9_]{1,160} and replaces anything else.
+        print("task_reconciliation: rejected: " + owner_code(error) + "; nothing published", file=sys.stderr)
         return 2
     except (OSError, UnicodeError, ValueError, RuntimeError, TypeError, KeyError,
             IndexError, RecursionError, StopIteration, EOFError, OverflowError):

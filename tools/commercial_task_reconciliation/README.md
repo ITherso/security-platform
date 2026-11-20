@@ -37,7 +37,7 @@ Bu sonuç güven, atama veya onay değildir; manuel inceleme zorunludur. Gerçek
 | `identity_reconciliation.py` | Yerel kimlik ve açıklama karşılaştırması, açıklama kuralı |
 | `reconciliation_engine.py` | Envanter → yorum → Phase43 owner reader → mutabakat → uygunluk |
 | `reconciliation_renderer.py` | Raporun inert Markdown görünümü |
-| `reconciliation_manifest.py` | Çıktı byte kimlikleri, manifest ve yeni dizine owner yayıncısıyla yazma |
+| `reconciliation_manifest.py` | Çıktı byte kimlikleri, manifest ve yeni dizine stage-ve-rename yayını (hard link gerekmez) |
 | `reconciliation_inputs.py`, `reconciliation_paths.py` | Açık CLI girdileri ve sabit owner import kökleri |
 | `import_task_capsule.py` | İçe alma CLI'ı |
 | `inspect_task_reconciliation.py` | Bağımsız inceleme CLI'ı |
@@ -49,11 +49,18 @@ Phase43 sözleşmesi yeniden yazılmadı. Kullanılan Phase43 owner kodu:
 - `recipient_reader`: uyumluluk otoritesi
 - `inspect_task_exchange`: Phase43 çıktı doğrulaması
 - `phase42_adapter`: bütçeli okuma ve Phase42 kaynak doğrulaması
-- `commercial_reference_capsule.capsule_manifest`: yeni dizine yayın
+- `commercial_reference_capsule.capsule_manifest`: çıktı yolu kuralları (`explicit_path`, `check_path`, `same_directory`). Yayının kendisi Phase44'e aittir: stage dizini çıktının üst dizininde açılır, dosyalar `xb` + `fsync` ile yazılır, tek `os.rename` ile yayımlanır. Hata olursa yalnız bu çalıştırmanın yazdıkları silinir; yarım dizin kalmaz.
 
 ## Kullanım
 
 Ayrıntılı akış, CLI, çıkış kodları ve çıktı yapısı [içe alma ve doğrulama](../../docs/commercial/operations/phase44/IMPORT_AND_VALIDATION.tr.md) belgesindedir. Veri modeli ve uygunluk anlamları [mutabakat sözleşmesi](../../docs/commercial/operations/phase44/RECONCILIATION_CONTRACT.tr.md) belgesinde, güven ve açıklama sınırı ile bilinen sınırlamalar [güven ve açıklama](../../docs/commercial/operations/phase44/TRUST_AND_DISCLOSURE.tr.md) belgesindedir. Gerçek demo kaydı [demo teslim](../../docs/commercial/operations/phase44/DEMO_DELIVERY.tr.md) belgesindedir.
+
+Hata olduğunda CLI'lar sabit kodu yazar (yol veya kullanıcı verisi yazılmaz):
+
+- Import, exit 2: `task_reconciliation: rejected: <kod>; nothing published`. Örnekler: `task_reconciliation_invalid_output_directory_must_be_new` (çıktı dizini zaten var), `task_reconciliation_output_parent_missing` (üst dizin yok), `task_reconciliation_invalid_local_phase42_register_pin` (pin uyuşmuyor).
+- Inspector, exit 2: `task_reconciliation_inspection: <neden>: <kod>; nothing published`. Neden `outputs_disagree_with_independent_recomputation` ise kod başarısız kontrolü adlandırır (örneğin `task_reconciliation_inspection_disagreement_eligibility`). `--output` zaten varsa neden `inspection_output_already_exists` olur.
+
+Çıkış kodlarının anlamı değişmedi. Kod listesi [içe alma ve doğrulama](../../docs/commercial/operations/phase44/IMPORT_AND_VALIDATION.tr.md) belgesindedir.
 
 Demo isteği `examples/demo_reconciliation_request.json` dosyasıdır. Doğrulanmış Phase42 register SHA256 değerini (`6465bab0…8ff16`) ve Phase43 index SHA256 değerini (`d3c13285…346d41`) pinler. Doğrulanmış tek Phase43 capsule'ını (F0001 / CAND0002) her iki yerel kayıt grubuyla birlikte yeniden içe alır.
 

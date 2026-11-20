@@ -1,5 +1,6 @@
 /** Display-only native subsets. No scanner, target following, evidence or HTML loading. */
 import { strictJson } from "../../data/normalize";
+import type { StrictJsonProfile } from "../../data/normalize";
 import { TERMIVAR_AUDIT_BOUND_CAPABILITIES, TERMIVAR_CLAIM_BASES, TERMIVAR_DIAGNOSTIC_FIELDS, TERMIVAR_DIAGNOSTIC_REPORT_FIELDS,
   TERMIVAR_DIAGNOSTIC_SCHEMA, TERMIVAR_DISPOSITIONS, TERMIVAR_INCOMPLETE_REASONS, TERMIVAR_ITEM_FIELDS, TERMIVAR_MANIFEST_SCHEMA, TERMIVAR_PROFILE_CAPABILITIES,
   TERMIVAR_PROFILE_LIMITS, TERMIVAR_RENDERED_FIELDS, TERMIVAR_RENDERED_SCHEMA, TERMIVAR_SEVERITIES } from "./termivarContracts";
@@ -40,12 +41,12 @@ function reference(input: unknown, kind: string): { text: string; number: number
 function digest(input: unknown, prefix = ""): string {
   const value = text(input, prefix.length + 64); termivarRequire(value.startsWith(prefix) && full(HEX, value.slice(prefix.length))); return value;
 }
-function rawJson(bytes: Uint8Array, maximum: number): unknown {
+function rawJson(bytes: Uint8Array, maximum: number, profile: StrictJsonProfile): unknown {
   termivarRequire(bytes instanceof Uint8Array); termivarRequire(bytes.byteLength <= maximum, "file_too_large");
   let value: string;
   try { value = new TextDecoder("utf-8", { fatal: true, ignoreBOM: true }).decode(bytes); }
   catch { throw new TermivarReviewError("invalid_utf8"); }
-  try { return strictJson(value); } catch { throw new TermivarReviewError("invalid_json"); }
+  try { return strictJson(value, profile); } catch { throw new TermivarReviewError("invalid_json"); }
 }
 function absentCoverage(projectionStatus: "available" | "unavailable"): TermivarCoverage {
   return { scope: null, startedAt: null, finishedAt: null, requestLimit: null, wallTimeLimitMs: null, requestsUsed: null, activeVerifications: null,
@@ -185,7 +186,7 @@ function diagnostic(input: unknown): Projection {
 export async function parseTermivarAssessment(bytes: Uint8Array, source: TermivarReviewSource = "file"): Promise<AssessmentDocument> {
   termivarRequire(bytes instanceof Uint8Array && (source === "file" || source === "example"));
   termivarRequire(bytes.byteLength <= MAX_TERMIVAR_REVIEW_BYTES, "file_too_large");
-  const selected = new Uint8Array(bytes), input = rawJson(selected, MAX_TERMIVAR_REVIEW_BYTES);
+  const selected = new Uint8Array(bytes), input = rawJson(selected, MAX_TERMIVAR_REVIEW_BYTES, "termivar-assessment-v1");
   termivarRequire(input !== null && typeof input === "object" && !Array.isArray(input)); const header = input as Record<string, unknown>;
   let projection: Projection;
   if (header.schema === TERMIVAR_RENDERED_SCHEMA) projection = rendered(input);
@@ -203,7 +204,7 @@ export async function parseTermivarAssessment(bytes: Uint8Array, source: Termiva
     sourceClaim: "self_reported", producerVerification: "not_verified" });
 }
 export function parseTermivarManifest(bytes: Uint8Array, assessment: AssessmentDocument): ManifestReview {
-  const input = rawJson(bytes, MAX_TERMIVAR_MANIFEST_BYTES);
+  const input = rawJson(bytes, MAX_TERMIVAR_MANIFEST_BYTES, "default");
   termivarRequire(input !== null && typeof input === "object" && !Array.isArray(input)); const header = input as Record<string, unknown>;
   if (header.schema !== TERMIVAR_MANIFEST_SCHEMA) throw new TermivarReviewError(typeof header.schema === "string" && header.schema.startsWith("termivar-report-bundle/") ? "unsupported_version" : "unsupported_manifest");
   const value = object(input, ["schema", "producer", "assessment", "files"]);
