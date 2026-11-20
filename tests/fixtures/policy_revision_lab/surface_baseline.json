@@ -245,14 +245,14 @@
     "src/security_platform/cli.py": "dde1d17da4475d05fbd175ce10b022d4a53b35386001a52e55eb15fc92b0d43f",
     "src/security_platform/connectors/__init__.py": "6cf28fb732cb9edc9660a0f34486d6b9b079bb645a3bb5f61b8ee56d0a284ed8",
     "src/security_platform/connectors/hostbased_firewall/__init__.py": "1a0e87184d2c302307ef35da55504105ea62de7dfa8e5ff7b434d96d061777c4",
-    "src/security_platform/connectors/hostbased_firewall/client.py": "99ecf72acee9e53f4dab24a9bf0963a850d19fa0de2be327238062bbbdbc0de9",
+    "src/security_platform/connectors/hostbased_firewall/client.py": "0c0c4e6f9cf707920538d100c6ad5a53fb81516596daa3a95629021c2997eb37",
     "src/security_platform/connectors/hostbased_firewall/private_files.py": "905f45d13a8da1fc6e84c8fade295fcb81b8c65b873eadcbda59a994ad0fda04",
     "src/security_platform/connectors/hostbased_firewall/snapshot_mapper.py": "e21a4fe2258283c4455dc21bdadda211f1a71b0f116dd8140817c10b8985324f",
     "src/security_platform/contracts.py": "bcef784d6e1a80f9266bd24b90bbdea30ac051e189ad1bcb148b2df16cfbb6d2",
     "src/security_platform/db.py": "c393ea7a4bc9630cecbd9367ea8387e2b941eb9279ae7c0e299e1e6204907468",
     "src/security_platform/models.py": "ece057e313393fbbe0f0d7b0ad11efc252f00eaca5e7f15ebbca0e301e67d932",
     "src/security_platform/policy_contracts/__init__.py": "185ba87fb3c7c0d0bf4ae9cd15759bc385ddc0c24e7630e26967899060e0b9b3",
-    "src/security_platform/policy_contracts/cli.py": "13d8615b14219c6449c34bf787c5833c8147a2b3147d33df577b8bd1333d44f2",
+    "src/security_platform/policy_contracts/cli.py": "6a13d527308bc8d6b517438ea46fd30a8c72222a42602589e19cd14b55c73e21",
     "src/security_platform/policy_contracts/errors.py": "7ca15208f143d2128f0e1eda220aafb27f880f265cc27fe429a60afeb066316c",
     "src/security_platform/policy_contracts/fingerprints.py": "42155856bd7d2afbef7fa9dc74d5408bdd7a812d39558fe09ed7c7ad5a487cb7",
     "src/security_platform/policy_contracts/hbf_bridge.py": "4630716db9fe148608dea1d1aaa595ffa5413c6223eab414d5bbbf5a5259e766",
@@ -265,13 +265,13 @@
     "src/security_platform/policy_contracts/zone_safety.py": "8c53bad6ca8bcd9fdfa003b541f510036131c6938f694d6c2ab23558a66c4ebc",
     "src/security_platform/services/__init__.py": "264052c7dde21012c10ca761ef468b5cf178e2aa2b20dd56cd102e5b64f178b5",
     "src/security_platform/services/administration.py": "c8f7f48865af1c19a6e775042dd9b9692730c77c51dd662e9e059fc7a9c3b59c",
-    "src/security_platform/services/audit.py": "5a8ac7dfc1217c325cfd3d053c4dfdc6adaa6eeeb6965d4be1e0fa76c31ed367",
+    "src/security_platform/services/audit.py": "6a1492b7d56145409df41c6ff42fae12a34c39ecb454dda5d912b8e559f6cd3b",
     "src/security_platform/services/common.py": "efcb89b46dcc25ab0f23dd03dbf220bfcdeb96a8ace8728226a4a90a6ed62de1",
-    "src/security_platform/services/enrollment.py": "5c399ebe5e13737aaf5e7262cb0e99a170f759a700b3e6668dce1987c5b5eb42",
+    "src/security_platform/services/enrollment.py": "de194608a3a85407fd661cc5c71f8089de4cccd9e696f81ee7064cc5afe0e4fd",
     "src/security_platform/services/inventory.py": "afd8398f10eb4c9bd7f400652aecedab64ed3af344af8e1ba3eddaa883a20072",
     "src/security_platform/services/snapshots.py": "f0ad6cbcd1194c688d08bd0e296a2d1cd71dca54b62ce59a61d60db9e223f328",
     "src/security_platform/settings.py": "a9a0254a40ad1a3b7c79c811e940ad51399846bc3efdaffb8d11a84104ac12e6",
-    "tests/fixtures/policy_surface_baseline_v1.json": "adac0cc2c60b263171a6bf1f1099366e52c33074b872c73a36ac3ac8ce495095"
+    "tests/fixtures/policy_surface_baseline_v1.json": "8a3296e82e4f48b5c2e6c4da0042ea5f64972bd23c25b56b22ce0c9e3628a906"
   },
   "production_directories": {
     "migrations": [

@@ -6,6 +6,18 @@
     "src/security_platform/services/inventory.py": {
       "commit": "9c2ce8c",
       "reason": "Reviewed FOR SHARE coherence fix, predating pure policy phase"
+    },
+    "src/security_platform/connectors/hostbased_firewall/client.py": {
+      "commit": "cae7c18",
+      "reason": "Owner-approved explicit one-shot credential rotation and --ca-file private CA trust; TLS verification never disabled"
+    },
+    "src/security_platform/services/audit.py": {
+      "commit": "cae7c18",
+      "reason": "Owner-approved audit retention: device events evict device events first; per-tenant bound unchanged"
+    },
+    "src/security_platform/services/enrollment.py": {
+      "commit": "cae7c18",
+      "reason": "Owner-approved: capacity counts active devices; rotated credential TTL capped at configured TTL"
     }
   },
   "platform_files": {
@@ -74,8 +86,8 @@
       "sha256": "1a0e87184d2c302307ef35da55504105ea62de7dfa8e5ff7b434d96d061777c4"
     },
     "src/security_platform/connectors/hostbased_firewall/client.py": {
-      "commit": "2755336",
-      "sha256": "99ecf72acee9e53f4dab24a9bf0963a850d19fa0de2be327238062bbbdbc0de9"
+      "commit": "cae7c18",
+      "sha256": "0c0c4e6f9cf707920538d100c6ad5a53fb81516596daa3a95629021c2997eb37"
     },
     "src/security_platform/connectors/hostbased_firewall/private_files.py": {
       "commit": "2755336",
@@ -106,16 +118,16 @@
       "sha256": "c8f7f48865af1c19a6e775042dd9b9692730c77c51dd662e9e059fc7a9c3b59c"
     },
     "src/security_platform/services/audit.py": {
-      "commit": "2755336",
-      "sha256": "5a8ac7dfc1217c325cfd3d053c4dfdc6adaa6eeeb6965d4be1e0fa76c31ed367"
+      "commit": "cae7c18",
+      "sha256": "6a1492b7d56145409df41c6ff42fae12a34c39ecb454dda5d912b8e559f6cd3b"
     },
     "src/security_platform/services/common.py": {
       "commit": "2755336",
       "sha256": "efcb89b46dcc25ab0f23dd03dbf220bfcdeb96a8ace8728226a4a90a6ed62de1"
     },
     "src/security_platform/services/enrollment.py": {
-      "commit": "2755336",
-      "sha256": "5c399ebe5e13737aaf5e7262cb0e99a170f759a700b3e6668dce1987c5b5eb42"
+      "commit": "cae7c18",
+      "sha256": "de194608a3a85407fd661cc5c71f8089de4cccd9e696f81ee7064cc5afe0e4fd"
     },
     "src/security_platform/services/inventory.py": {
       "commit": "9c2ce8c",
