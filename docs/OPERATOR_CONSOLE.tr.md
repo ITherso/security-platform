@@ -22,7 +22,7 @@ Statik yerel önizleme yalnız `http://127.0.0.1:8787/` üzerinde örnek veri su
 
 ## Mevcut API'ye sonraki açık bağlantı
 
-Adapter yalnız dört operatör GET'ini uygular: erişilebilir tenant'lar, tenant cihaz listesi, cihaz ayrıntısı ve tenant audit'i. Mevcut API'nin toplam 12 operation'ı korunur; mutation/device/operasyon yolları UI adapter'ına eklenmez. Gerçek alan ve rol eşlemesi [API_UI_MAPPING](../operator-console/docs/API_UI_MAPPING.tr.md) belgesindedir.
+Adapter yalnız dört operatör GET'ini uygular: erişilebilir tenant'lar, tenant cihaz listesi, cihaz ayrıntısı ve tenant audit'i. Mevcut API'nin toplam 14 operation'ı korunur; mutation/device/operasyon yolları UI adapter'ına eklenmez. Konsol iki olay yolunu (`POST /api/v1/device/events` ve `GET /api/v1/tenants/{tenant_id}/devices/{device_id}/events`) henüz kullanmaz. Olaylarla ilgili tek konsol değişikliği audit görünümündedir: yerel `set-event-retention` komutunun yazdığı `tenant_event_retention_set` eylemini tanır ve etiketler. Gerçek alan ve rol eşlemesi [API_UI_MAPPING](../operator-console/docs/API_UI_MAPPING.tr.md) belgesindedir.
 
 Bağlantı paneli login/SSO değildir. API adresi ve dışarıdan sağlanan mevcut operatör access token, ayrı Bağlan eylemiyle kullanılabilir. Hedef sayfanın aynı HTTPS origin'indeki sabit `/api/v1` tabanıdır; userinfo/query/fragment, keyfî origin veya path kabul edilmez. Token yalnız açık sayfanın belleğindedir; bağlanınca giriş alanı temizlenir. URL, cookie, localStorage/sessionStorage/IndexedDB, env/build, log ve dışa aktarım token deposu değildir. Bağlantı/kip/adres/token değişimi özel veriyi ve eski istekleri temizler; sayfa yenilenince canlı oturum geri kurulmaz.
 

@@ -5,7 +5,8 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from security_platform.auth.principals import DevicePrincipal, EnrollmentPrincipal
 from security_platform.contracts import SnapshotEnvelope
-from security_platform.services import enrollment, snapshots
+from security_platform.event_contracts import EventBatch
+from security_platform.services import enrollment, events, snapshots
 from .dependencies import SessionDependency, device_principal, enrollment_principal
 
 router = APIRouter(prefix="/api/v1", tags=["device"])
@@ -31,6 +32,11 @@ def enroll(body: EnrollRequest, actor: EnrollmentDependency, session: SessionDep
 @router.put("/device/snapshot")
 def snapshot(body: SnapshotEnvelope, actor: DeviceDependency, session: SessionDependency):
     return snapshots.ingest_snapshot(session, actor, body)
+
+
+@router.post("/device/events")
+def event_batch(body: EventBatch, actor: DeviceDependency, session: SessionDependency, request: Request):
+    return events.ingest_events(session, actor, body, limits=request.app.state.limits)
 
 
 @router.post("/device/credentials/rotate")

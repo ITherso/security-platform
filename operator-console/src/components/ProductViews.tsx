@@ -27,6 +27,7 @@ const AUDIT_ACTIONS: Readonly<Record<string, ProductTextKey>> = {
   membership_revoked: "product.audit.action.membership_revoked", enrollment_grant_created: "product.audit.action.enrollment_grant_created",
   enrollment_grant_revoked: "product.audit.action.enrollment_grant_revoked", device_enrolled: "product.audit.action.device_enrolled",
   device_revoked: "product.audit.action.device_revoked", device_credential_rotated: "product.audit.action.device_credential_rotated",
+  tenant_event_retention_set: "product.audit.action.tenant_event_retention_set",
 };
 const ACTOR_LABELS: Readonly<Record<string, ProductTextKey>> = {
   operator: "product.audit.actor.operator", device: "product.audit.actor.device", local_admin: "product.audit.actor.local_admin",

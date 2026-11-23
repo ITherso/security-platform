@@ -16,9 +16,9 @@ Aşağıdaki bölümler ayrıntılı başvuru ve tarihsel teslim notlarıdır.
 
 Türkçe/İngilizce, salt okunur [operatör konsolu](operator-console/README.md), açıkça etiketlenen örnek veriyle bağımsız çalışır. React/TypeScript kaynakları, kilitli bağımlılıklar ve yerel kurulum yönergesi `operator-console/` altındadır. Gerçek API adapter'ı mevcut dört operatör GET'iyle sınırlıdır; canlı bağlantı kabulü yapılmadı. Derlenmiş konsol (`operator-console/dist/`) git'te tutulmaz; paketlenmiş konsol derlemesi veya Node/pnpm ile build gerekir.
 
-Bağımsız FastAPI/PostgreSQL hizmeti: şirket üyeliklerini, tek kullanımlık cihaz kaydını ve cihazların bildirdiği son ürün durumunu tutar. Operatör yalnız güncel DB üyeliğinin izin verdiği tenant'a erişir; cihaz bearer kimliği yalnız kendi snapshot ve credential yaşam döngüsünü kullanır.
+Bağımsız FastAPI/PostgreSQL hizmeti: şirket üyeliklerini, tek kullanımlık cihaz kaydını, cihazların bildirdiği son ürün durumunu ve cihazın kendi beyanı olan süreç/sensör olaylarını tutar. Operatör yalnız güncel DB üyeliğinin izin verdiği tenant'a erişir; cihaz bearer kimliği yalnız kendi snapshot'ını, olaylarını ve credential yaşam döngüsünü kullanır.
 
-Bu sürüm envanter ve durum aktarımıdır. Firewall politika gönderimi, uzaktan shell, Termivar tarama yürütmesi, antivirüs motoru, otomatik enrollment veya ajan daemon'u içermez. Cihazın kimliğinin doğrulanması, bildirdiği korumanın veya raporun doğru olduğunu kanıtlamaz.
+Bu sürüm envanter, durum aktarımı ve cihazın kendi beyanı olan olayların (süreç başlangıcı/bitişi, sensör durumu) alımıdır; olaylar `self_reported`/`not_verified` kalır, uyarı kuralı ve konsol görünümü henüz yoktur. Firewall politika gönderimi, uzaktan shell, Termivar tarama yürütmesi, antivirüs motoru, otomatik enrollment veya ajan daemon'u içermez. Cihazın kimliğinin doğrulanması, bildirdiği korumanın, raporun veya olayların doğru olduğunu kanıtlamaz.
 
 Ek çevrimdışı araç, mevcut HBF değerlendiricisiyle açık senaryoları karşılaştırır ve yürütülemeyen politika sözleşmeleri üretir. Ayrı içerik kimlikleri, iki CAS önkoşulu ve raporlanan receipt tutarlılığı saf fonksiyonlarla kontrol edilir. Bu araç HTTP/DB yüzeyini veya cihaz yetkilerini genişletmez.
 
@@ -143,10 +143,10 @@ CLI çıkış kodu 0 yalnız belirtilen çıktı dosyasının yazıldığını b
 
 ## Sözleşme ve kabul
 
-- [API V1 ve statik OpenAPI](docs/API_V1.tr.md): 12 dar endpoint ve üç ayrı bearer türü.
+- [API V1 ve statik OpenAPI](docs/API_V1.tr.md): 14 dar endpoint, olay sözleşmesi ve üç ayrı bearer türü.
 - [Mimari](docs/ARCHITECTURE.tr.md): transaction, tenant ilişkileri, sıra ve kaynak anlamı.
 - [Tehdit modeli](docs/THREAT_MODEL.tr.md): güven sınırları ve kalan riskler.
-- [İşletim](docs/OPERATIONS.tr.md): portable PostgreSQL, roller, migration, TLS ve durdurma.
+- [İşletim](docs/OPERATIONS.tr.md): portable PostgreSQL, roller, migration, olay saklama ve günlük temizlik, TLS ve durdurma.
 - [Kabul matrisi](docs/ACCEPTANCE.tr.md): 27 kapı; `passed`, `failed`, `not_run` ayrımı.
 - [Politika sözleşmesi](docs/POLICY_CONTRACT_V1.tr.md): sıralı zone'lar, açık bağlam, fingerprint, fixture CAS ve yürütülemeyen rollout.
 - [Politika kabul kaydı](docs/POLICY_PREVIEW_ACCEPTANCE.tr.md): 22 ayrı kapı ve canlı uygulamanın açık sınırları.

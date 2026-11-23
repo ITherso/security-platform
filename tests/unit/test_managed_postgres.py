@@ -88,6 +88,14 @@ def test_runtime_table_rights_allow_retention_but_not_audit_edits():
     assert "DELETE" not in managed.TABLE_GRANTS["devices"]
 
 
+def test_runtime_event_rights_are_append_and_retention_only():
+    # Rows are never edited; DELETE serves the per-device cap and `events prune`.
+    assert set(managed.TABLE_GRANTS["endpoint_events"]) == {"SELECT", "INSERT", "DELETE"}
+    # SELECT FOR UPDATE on the cursor needs UPDATE; a cursor is never deleted.
+    assert set(managed.TABLE_GRANTS["device_event_cursors"]) == {"SELECT", "INSERT", "UPDATE"}
+    assert len(managed.TABLE_GRANTS) == 10
+
+
 def test_reparse_fixture_path_is_rejected_without_following(tmp_path, monkeypatch):
     original = Path.lstat
     def redirected(path, *args, **kwargs):

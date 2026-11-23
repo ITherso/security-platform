@@ -47,6 +47,11 @@ TABLE_GRANTS = {
     # DELETE is used only for bounded per-tenant retention in application code.
     # A stolen runtime DB credential could delete audit; no immutability claim.
     "audit_events": ("SELECT", "INSERT", "DELETE"),
+    # Event rows are never updated. DELETE serves only the per-device cap at
+    # ingestion and the operator-scheduled `events prune` retention command.
+    "endpoint_events": ("SELECT", "INSERT", "DELETE"),
+    # One cursor per device, never deleted; UPDATE also covers SELECT FOR UPDATE.
+    "device_event_cursors": ("SELECT", "INSERT", "UPDATE"),
 }
 
 

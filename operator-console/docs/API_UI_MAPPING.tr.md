@@ -2,7 +2,7 @@
 
 Kaynaklar: [operatör route'ları](../../src/security_platform/api/operator.py), [envanter yanıtları](../../src/security_platform/services/inventory.py), [audit yanıtları](../../src/security_platform/services/audit.py), [üyelik/sayfalama sınırı](../../src/security_platform/services/common.py), [ürün DTO'ları](../../src/security_platform/contracts.py) ve [yerel OpenAPI](../../docs/openapi.json). Bu GET'ler backend'de ayrı Pydantic `response_model` ilan etmez; gerçek response sözlüğü servis fonksiyonlarından, gömülü ürün state'i mevcut snapshot DTO'larından alınmıştır. OpenAPI tek başına tam typed response şeması değildir.
 
-Frontend akışı `DTO → runtime normalize → view model → React bileşeni` şeklindedir. TypeScript cast'i doğrulama değildir. Örnek adapter da aynı normalizer'ı kullanır. UI adapter'ı aşağıdaki **dört GET** dışında HTTP operation açmaz; önceki 12 operation'ın mutation/device/operasyon yollarını genel çağrı aracına dönüştürmez.
+Frontend akışı `DTO → runtime normalize → view model → React bileşeni` şeklindedir. TypeScript cast'i doğrulama değildir. Örnek adapter da aynı normalizer'ı kullanır. UI adapter'ı aşağıdaki **dört GET** dışında HTTP operation açmaz; API'nin toplam 14 operation'ının mutation/device/operasyon yollarını, iki olay yolu dahil, genel çağrı aracına dönüştürmez.
 
 ## Ekran ve route tablosu
 
@@ -51,7 +51,7 @@ Ortak state alanları: `product_id`, `catalog_available:bool|null`, `version:str
 
 ## Audit alanları ve erişim
 
-`AuditEvent`: `id`, `tenant_id`, `actor_type`, nullable `actor_id`, `action`, `object_type`, `object_id`, `outcome`, `created_at`. Aktör türü operator/device/local_admin; actor_id yoksa kimlik uydurulmaz. Mevcut yazıcı başarılı yönetim olayları için `outcome=success` kaydeder. Sunulan eylemler tenant_created, membership_set/revoked, enrollment_grant_created/revoked, device_enrolled/revoked ve device_credential_rotated; nesne türleri tenant/membership/enrollment_grant/device/device_credential'dır.
+`AuditEvent`: `id`, `tenant_id`, `actor_type`, nullable `actor_id`, `action`, `object_type`, `object_id`, `outcome`, `created_at`. Aktör türü operator/device/local_admin; actor_id yoksa kimlik uydurulmaz. Mevcut yazıcı başarılı yönetim olayları için `outcome=success` kaydeder. Sunulan eylemler tenant_created, membership_set/revoked, enrollment_grant_created/revoked, device_enrolled/revoked, device_credential_rotated ve tenant_event_retention_set (nesne türü tenant; yerel yönetim CLI'ının `set-event-retention` komutu yazar); nesne türleri tenant/membership/enrollment_grant/device/device_credential'dır.
 
 Audit yeni → eski sırasıyla, bounded retention ile gelir. UI “yüklenen kayıtlar” der; tam, değişmez veya bağımsız doğrulanmış olay geçmişi iddiası kurmaz. Snapshot sayısını, başarısız tüm girişimleri veya tarama sonuçlarını audit'ten türetmez. Viewer için bu görünüm yetkisizdir; UI rol etiketi yardımcıdır, yetki API'de yeniden kontrol edilir.
 

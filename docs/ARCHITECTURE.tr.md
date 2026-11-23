@@ -13,6 +13,8 @@ flowchart LR
     Local[Yerel ürün özeti] --> Mapper[Saf mapper]
     Mapper --> Client[Elle tek gönderim istemcisi]
     Client -->|Bağımsız cihaz credentialı| API
+    Agent[Uç nokta ajanı] -->|Cihaz credentialı ve olay batch'i| API
+    Scheduler[Operatörün zamanladığı events prune] -->|Runtime hesabı| DB
 ```
 
 IdP dış sistemdir; bu proje onu veya parola girişini uygulamaz. Üretim IdP kurulumu yoktur; testlerde geçici fixture issuer gerçek RS256 imzalı token üretir. Yerel firewall cookie/CSRF/controller anahtarı merkez kimliği olarak taşınmaz.
@@ -26,15 +28,17 @@ IdP dış sistemdir; bu proje onu veya parola girişini uygulamaz. Üretim IdP k
 | `models.py`, `db.py`, `migrations/` | Gerçek PostgreSQL şeması, birleşik ilişkiler ve transaction sahipliği |
 | `services/common.py` | Güncel DB üyeliği, tenant/cihaz kilitleri ve sınırlı servis ayarları |
 | `services/enrollment.py`, `snapshots.py`, `inventory.py`, `audit.py` | Tek kullanımlık kayıt, credential yaşam döngüsü, son durum, sayfalama ve audit |
-| `cli.py`, `services/administration.py` | Migration hesabıyla yerel tenant/üyelik yönetimi ve TLS sunucu girişi |
+| `services/events.py` | Olay alımı ve cihaz imleci, cihaz başına üst sınır, zaman çizelgesi ve zamana göre saklama |
+| `cli.py`, `services/administration.py` | Migration hesabıyla yerel tenant/üyelik yönetimi ve tenant olay saklama günü; TLS sunucu girişi; runtime hesabıyla `events prune` |
 | `contracts.py` | Strict V1 snapshot ve ürün DTO'ları |
+| `event_contracts.py` | Strict `altay-edr-event/v1` olay batch'i, gizlilik maskesi kuralı ve kanonik özet |
 | `connectors/hostbased_firewall/` | Saf mevcut özet eşlemesi, özel dosyalar ve elle tek gönderim |
 
 Principal yetkisi veya token mantığı tek büyük route dosyasına konmaz. V1 kayıt hakkı ve cihaz digest işlemleri `services/enrollment.py` içinde birleştirilmiştir; ayrı `device_tokens.py` modülü bulunduğu iddia edilmez.
 
 ## Tenant verisi ve roller
 
-Tablolar: `tenants`, global `(issuer, subject)` anahtarlı `principals`, tenant'a bağlı `memberships`, `enrollment_grants`, `devices`, `device_credentials`, `product_states`, `audit_events`. Tenant'a ait kayıtta `tenant_id` zorunludur. Credential ve ürün satırları `(tenant_id, device_id)` birleşik foreign key'i ile aynı tenant cihazına bağlanır. Kayıt hakkını oluşturan principal da `(tenant_id, principal_id)` üyeliğine bağlanır.
+Tablolar: olay saklama gününü de (`event_retention_days`) tutan `tenants`, global `(issuer, subject)` anahtarlı `principals`, tenant'a bağlı `memberships`, `enrollment_grants`, `devices`, `device_credentials`, `product_states`, `device_event_cursors`, `endpoint_events`, `audit_events`. Tenant'a ait kayıtta `tenant_id` zorunludur. Credential, ürün, olay imleci ve olay satırları `(tenant_id, device_id)` birleşik foreign key'i ile aynı tenant cihazına bağlanır. Kayıt hakkını oluşturan principal da `(tenant_id, principal_id)` üyeliğine bağlanır.
 
 `viewer` kendi tenant'ının cihazlarını okur. `tenant_admin` buna ek olarak kayıt hakkı üretir/iptal eder, cihazı iptal eder ve audit okur. Aynı insan iki tenant'ta farklı role sahip olabilir. Güncel üyelik her istek transaction'ında DB'den okunur; token rolleri veya e-posta alan adı üyelik oluşturmaz. Başka tenant nesneleri, ilgili üyelik yoksa tutarlı 404 ile gizlenir; kendi tenant'ında yetersiz rol 403'tür.
 
@@ -56,6 +60,14 @@ Her cihazda yalnız son sıra, mesaj UUID'si, kanonik içerik SHA256 değeri ve 
 
 Bağlantı durumu sunucu zamanından hesaplanır: ilk snapshot öncesi `never_seen`; API varsayılanında son kabulden 90 saniyeye kadar `recent`; sonra `stale`. Cihaz saati bunu değiştirmez. `identity_status=active|revoked` bağlantı durumundan ayrıdır. Kaynak zamanı yoksa yaş `unknown`; gelecekse `future` olur. Kaynağın doğruluğu `not_verified` kalır.
 
+## Olaylar, imleç ve saklama
+
+Olay batch'leri snapshot ile aynı kimlik ve sıra ilkesini izler. Alım işlemi önce cihaz ve credential satırlarını, sonra cihazın `device_event_cursors` satırını `FOR UPDATE` ile kilitler; böylece bir cihazın batch'leri sıralanır. İmleç son batch'in sırasını, UUID'sini, kanonik içerik özetini, son `event_seq` değerini, sunucunun alış zamanını, cihazın saklanan satır sayısını (`stored_events`) ve cihaz başına üst sınırın sildiği satırların toplamını (`cap_deleted_events`; zaman çizelgesi cevabında döner) tutar. `devices` tablosuna sütun eklenmez. Son batch'in tam tekrarı saklanan cevabı alır; diğer çakışmalar 409'dur. Satır ekleme, cihaz başına üst sınır silmesi ve imleç güncellemesi tek transaction'dadır.
+
+`endpoint_events` satırı kanonik olayı JSONB olarak, cihaz saati `observed_at` ve sunucu saati `received_at` ile ayrı tutar. Cihaz saati tazelik veya saklama kararı vermez. Olay alımı snapshot `connection_status` değerini değiştirmez ve yüksek hacim nedeniyle audit yazmaz. Her olay `self_reported` ve `not_verified` kalır. Runtime hesabı olay satırlarını güncelleyemez; DELETE yalnız cihaz başına üst sınır ve saklama içindir.
+
+Zamana göre saklama operatörün zamanladığı `security-platform events prune` komutudur; arka plan işi veya zamanlayıcı süreç yoktur. Komut her tenant için `received_at` değeri `event_retention_days` (varsayılan 30, 1–90) günden eski satırları `(tenant_id, received_at)` indeksiyle en çok 5000 satırlık parçalar hâlinde siler; her parça kendi kısa transaction'ıdır. Kilit sırası alımla aynıdır: önce ilgili cihazların imleçleri (cihaz kimliğine göre sıralı), sonra olay satırları. Bu yüzden komut alımla veya paralel çalışan başka bir prune ile kilitlenmeye (deadlock) girmez. `stored_events` aynı transaction'da silinen satır sayısı kadar düşürülür; böylece sınırdaki bir cihazın alımı gereğinden fazla satır silmez. `cap_deleted_events` değişmez; yalnız alış sırasındaki üst sınır silmelerini sayar. Komut çalıştırılmazsa yalnız cihaz başına üst sınır korur.
+
 ## Yerel özetin anlamı
 
 Mapper yalnız mevcut `security_ecosystem.py` ürün/özet sözleşmesini okur. HostBasedFirewall'ın katalog girdisi motor gözleminin zamanını sunmadığından mapper zaman uydurmaz; kurulum durumu da gözlenmiyorsa `null` kalır. `enforce` bildirimi merkez tarafından canlı paket engelleme kanıtı sayılmaz.
@@ -68,7 +80,7 @@ Termivar'da mevcut en son sayısal özet taşınır. Ham rapor, hedef, kanıt, H
 
 ## İşletim sınırı
 
-API ayrı runtime hesabı kullanır; migration/yerel bootstrap hesabı şema sahibidir. Runtime'ın audit DELETE hakkı yalnız bounded tenant retention içindir; cryptographic immutability sağlamaz. Audit en çok varsayılan 10.000 kayıt/tenant, credential geçmişi 16/cihaz, kayıt hakkı geçmişi 2.000/tenant ile sınırlıdır. Aktif hak ve aktif cihaz varsayılanı ayrı ayrı 1.000/tenant'tır. İptal edilmiş cihazlar kotadan düşer; böylece iptal ve yeniden kayıt kurtarma yolu tenant'ı kilitlemez. İptal edilmiş satırlar geçmiş olarak kalır ve silme komutu yoktur. Cihaz listesi en fazla 10.000 offset ile sayfalandığından, çok sayıda iptal birikirse en yeni cihazlar listede görünmeyebilir. Bu durumda doğrudan cihaz kimliğiyle erişilir ve audit kaydındaki `device_enrolled` olayları kullanılır.
+API ayrı runtime hesabı kullanır; migration/yerel bootstrap hesabı şema sahibidir. Runtime'ın audit DELETE hakkı yalnız bounded tenant retention içindir; cryptographic immutability sağlamaz. `endpoint_events` için DELETE yalnız cihaz başına üst sınır (`SP_MAX_EVENTS_PER_DEVICE`, varsayılan 250.000) ve `events prune` içindir; UPDATE verilmez. Tenant'ın saklama gününü runtime hesabı değiştiremez. Audit en çok varsayılan 10.000 kayıt/tenant, credential geçmişi 16/cihaz, kayıt hakkı geçmişi 2.000/tenant ile sınırlıdır. Aktif hak ve aktif cihaz varsayılanı ayrı ayrı 1.000/tenant'tır. İptal edilmiş cihazlar kotadan düşer; böylece iptal ve yeniden kayıt kurtarma yolu tenant'ı kilitlemez. İptal edilmiş satırlar geçmiş olarak kalır ve silme komutu yoktur. Cihaz listesi en fazla 10.000 offset ile sayfalandığından, çok sayıda iptal birikirse en yeni cihazlar listede görünmeyebilir. Bu durumda doğrudan cihaz kimliğiyle erişilir ve audit kaydındaki `device_enrolled` olayları kullanılır.
 
 Canonical Alembic yapılandırması ve migration dosyaları source ağacında tutulur; wheel'de aynı dosyalar `share/security-platform` kurulum verisi olarak taşınır. CLI önce source yerleşimini, sonra kurulu prefix'i denetler. Migration kaynakları eksikse hata verir; `create_all` ile sürümsüz alternatif şema kurmaz. Build aracı ayrı `requirements-build-lock.txt` ile sabitlenir.
 

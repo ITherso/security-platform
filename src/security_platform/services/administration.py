@@ -43,6 +43,19 @@ def set_membership(session, tenant_id, issuer, subject, role, *, now=None, limit
     return {"tenant_id": str(tenant_id), "principal_id": str(principal.id), "role": role}
 
 
+def set_event_retention(session, tenant_id, days, *, now=None, limits=DEFAULT_LIMITS):
+    """Days of server receive time that `events prune` keeps for this tenant."""
+    if type(days) is not int or not 1 <= days <= 90:
+        raise ServiceError("Invalid event retention")
+    now = utc_now(now)
+    tenant = locked_tenant(session, tenant_id)
+    tenant.event_retention_days = days
+    session.flush()
+    write_event(session, tenant_id=tenant_id, actor_type="local_admin", actor_id=None,
+        action="tenant_event_retention_set", object_type="tenant", object_id=tenant_id, now=now, limits=limits)
+    return {"tenant_id": str(tenant_id), "event_retention_days": days}
+
+
 def revoke_membership(session, tenant_id, issuer, subject, *, now=None, limits=DEFAULT_LIMITS):
     now = utc_now(now)
     locked_tenant(session, tenant_id)

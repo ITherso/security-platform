@@ -117,7 +117,8 @@ export interface DeviceDetail extends Device {
   readonly missing_products: readonly ProductId[];
 }
 export type AuditAction = "tenant_created" | "membership_set" | "membership_revoked" | "enrollment_grant_created"
-  | "enrollment_grant_revoked" | "device_enrolled" | "device_revoked" | "device_credential_rotated";
+  | "enrollment_grant_revoked" | "device_enrolled" | "device_revoked" | "device_credential_rotated"
+  | "tenant_event_retention_set";
 export type AuditObject = "tenant" | "membership" | "enrollment_grant" | "device" | "device_credential";
 export interface AuditEvent {
   readonly id: string;

@@ -223,13 +223,17 @@ def test_no_remote_execution_or_public_signup_surface_exists(api_context):
         ("post", "/api/v1/tenants/{tenant_id}/enrollment-grants/{grant_id}/revoke"),
         ("get", "/api/v1/tenants/{tenant_id}/devices"), ("get", "/api/v1/tenants/{tenant_id}/devices/{device_id}"),
         ("post", "/api/v1/tenants/{tenant_id}/devices/{device_id}/revoke"), ("get", "/api/v1/tenants/{tenant_id}/audit"),
-        ("post", "/api/v1/enroll"), ("put", "/api/v1/device/snapshot"), ("post", "/api/v1/device/credentials/rotate")}
+        ("post", "/api/v1/enroll"), ("put", "/api/v1/device/snapshot"), ("post", "/api/v1/device/credentials/rotate"),
+        ("post", "/api/v1/device/events"), ("get", "/api/v1/tenants/{tenant_id}/devices/{device_id}/events")}
     assert actual == expected
     spec = app.openapi()
     assert set(spec["components"]["securitySchemes"]) == {"OperatorAccessToken", "EnrollmentGrant", "DeviceCredential"}
     assert spec["paths"]["/api/v1/enroll"]["post"]["security"] == [{"EnrollmentGrant": []}]
     assert spec["paths"]["/api/v1/device/snapshot"]["put"]["security"] == [{"DeviceCredential": []}]
+    assert spec["paths"]["/api/v1/device/events"]["post"]["security"] == [{"DeviceCredential": []}]
     assert spec["paths"]["/api/v1/tenants"]["get"]["security"] == [{"OperatorAccessToken": []}]
+    assert spec["paths"]["/api/v1/tenants/{tenant_id}/devices/{device_id}/events"]["get"]["security"] == [
+        {"OperatorAccessToken": []}]
     for route in ("/signup", "/api/v1/commands", "/api/v1/device/shell", "/api/v1/device/policy", "/api/v1/device/scan"):
         assert api_context["client"].post(route, json={}).status_code == 404
 

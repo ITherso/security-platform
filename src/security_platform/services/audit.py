@@ -5,7 +5,8 @@ from security_platform.services.common import DEFAULT_LIMITS, bounded_page, iso,
 
 
 ACTIONS = {"tenant_created", "membership_set", "membership_revoked", "enrollment_grant_created",
-           "enrollment_grant_revoked", "device_enrolled", "device_revoked", "device_credential_rotated"}
+           "enrollment_grant_revoked", "device_enrolled", "device_revoked", "device_credential_rotated",
+           "tenant_event_retention_set"}
 OBJECTS = {"tenant", "membership", "enrollment_grant", "device", "device_credential"}
 ACTOR_TYPES = {"operator", "device", "local_admin"}
 

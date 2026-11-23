@@ -5,7 +5,8 @@ from fastapi import APIRouter, Body, Depends, Query, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from security_platform.auth.principals import OperatorPrincipal
-from security_platform.services import audit, enrollment, inventory
+from security_platform.contracts import MAX_SEQUENCE
+from security_platform.services import audit, enrollment, events, inventory
 from .dependencies import SessionDependency, operator_principal
 
 router = APIRouter(prefix="/api/v1", tags=["operator"])
@@ -48,6 +49,14 @@ def devices(tenant_id: UUID, actor: OperatorDependency, session: SessionDependen
 @router.get("/tenants/{tenant_id}/devices/{device_id}")
 def device(tenant_id: UUID, device_id: UUID, actor: OperatorDependency, session: SessionDependency, request: Request):
     return inventory.get_device(session, actor, tenant_id, device_id, limits=request.app.state.limits)
+
+
+@router.get("/tenants/{tenant_id}/devices/{device_id}/events")
+def device_events(tenant_id: UUID, device_id: UUID, actor: OperatorDependency, session: SessionDependency,
+                  request: Request, before_seq: int | None = Query(None, ge=1, le=MAX_SEQUENCE),
+                  limit: int = Query(50, ge=1, le=100)):
+    return events.list_device_events(session, actor, tenant_id, device_id, before_seq=before_seq, limit=limit,
+                                     limits=request.app.state.limits)
 
 
 @router.post("/tenants/{tenant_id}/devices/{device_id}/revoke")

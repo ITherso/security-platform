@@ -1,6 +1,8 @@
 """Local administration requires the separate migration/owner DB credential.
 
-No bootstrap or membership mutation is exposed by the HTTP service.
+No bootstrap or membership mutation is exposed by the HTTP service. Event
+retention (`events prune`) is routine runtime work and, like `serve`, uses only
+the unprivileged runtime credential.
 """
 import argparse
 import json
@@ -20,6 +22,14 @@ def _owner_database():
     if not url or not url.startswith("postgresql+psycopg://"):
         raise ValueError("SP_MIGRATION_DATABASE_URL is required for local administration")
     # There is deliberately no fallback to the runtime credential.
+    return Database(url)
+
+
+def _runtime_database():
+    url = os.environ.get("SP_DATABASE_URL")
+    if not url or not url.startswith("postgresql+psycopg://"):
+        raise ValueError("SP_DATABASE_URL is required for event retention")
+    # There is deliberately no fallback to the migration/owner credential.
     return Database(url)
 
 
@@ -46,6 +56,12 @@ def main(argv=None):
     revoke.add_argument("--tenant-id", required=True, type=UUID)
     revoke.add_argument("--issuer", required=True)
     revoke.add_argument("--subject", required=True)
+    retention = commands.add_parser("set-event-retention")
+    retention.add_argument("--tenant-id", required=True, type=UUID)
+    retention.add_argument("--days", required=True, type=int)
+    events = commands.add_parser("events")
+    event_commands = events.add_subparsers(dest="events_command", required=True)
+    event_commands.add_parser("prune")
     commands.add_parser("migrate")
     serve = commands.add_parser("serve")
     serve.add_argument("--host", default="127.0.0.1")
@@ -83,6 +99,25 @@ def main(argv=None):
             config.set_main_option("script_location", str(root / "migrations"))
             command.upgrade(config, "head")
             return 0
+        if args.command == "events":
+            from security_platform.app import validate_runtime_role
+            from security_platform.services.events import prune_expired_events
+            database = _runtime_database()
+            try:
+                try:
+                    validate_runtime_role(database)
+                except ValueError:
+                    raise ValueError("events prune requires the separate unprivileged runtime database role") from None
+                result = prune_expired_events(database)
+            finally:
+                database.close()
+            print(json.dumps(result))
+            if result["failed_tenants"]:
+                # Earlier chunks were committed, so "no success was recorded" would be false.
+                print(f"events prune incomplete: {result['failed_tenants']} tenant(s) failed and were skipped; "
+                      "deleted events stay deleted and the next run retries the rest.", file=sys.stderr)
+                return 1
+            return 0
         database = _owner_database()
         try:
             with database.session() as session:
@@ -90,6 +125,8 @@ def main(argv=None):
                     result = administration.create_tenant(session, args.name)
                 elif args.command == "set-membership":
                     result = administration.set_membership(session, args.tenant_id, args.issuer, args.subject, args.role)
+                elif args.command == "set-event-retention":
+                    result = administration.set_event_retention(session, args.tenant_id, args.days)
                 else:
                     result = administration.revoke_membership(session, args.tenant_id, args.issuer, args.subject)
             print(json.dumps(result, ensure_ascii=False))

@@ -2,7 +2,7 @@
 import uuid
 
 from sqlalchemy import (BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint,
-                        Index, Integer, JSON, String, UniqueConstraint, Uuid, text)
+                        Index, Integer, JSON, SmallInteger, String, UniqueConstraint, Uuid, text)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -11,9 +11,11 @@ from security_platform.db import Base
 
 class Tenant(Base):
     __tablename__ = "tenants"
+    __table_args__ = (CheckConstraint("event_retention_days BETWEEN 1 AND 90", name="ck_tenant_event_retention"),)
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
+    event_retention_days: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text("30"))
 
 
 class Principal(Base):
@@ -106,6 +108,53 @@ class ProductState(Base):
     device_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
     product_id: Mapped[str] = mapped_column(String(32), primary_key=True)
     snapshot_sequence: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    received_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSON().with_variant(JSONB(), "postgresql"), nullable=False)
+
+
+class DeviceEventCursor(Base):
+    """Last accepted event batch of one device; serialised by the device row lock."""
+    __tablename__ = "device_event_cursors"
+    __table_args__ = (
+        ForeignKeyConstraint(["tenant_id", "device_id"], ["devices.tenant_id", "devices.id"],
+                             name="fk_event_cursor_tenant_device"),
+        CheckConstraint("last_batch_sequence >= 1", name="ck_event_cursor_batch_sequence"),
+        CheckConstraint("last_batch_digest ~ '^[0-9a-f]{64}$'", name="ck_event_cursor_digest"),
+        CheckConstraint("last_event_seq >= 1", name="ck_event_cursor_event_seq"),
+        CheckConstraint("stored_events >= 0", name="ck_event_cursor_stored_events"),
+        CheckConstraint("cap_deleted_events >= 0", name="ck_event_cursor_cap_deleted_events"),
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    device_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    last_batch_sequence: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    last_batch_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    last_batch_digest: Mapped[str] = mapped_column(String(64), nullable=False)
+    last_event_seq: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    last_received_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
+    stored_events: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default=text("0"))
+    # Rows the per-device cap deleted at ingestion, in total; retention prune leaves it alone.
+    cap_deleted_events: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default=text("0"))
+
+
+class EndpointEvent(Base):
+    """One self-reported event; observed_at is the device clock, received_at the server's."""
+    __tablename__ = "endpoint_events"
+    __table_args__ = (
+        ForeignKeyConstraint(["tenant_id", "device_id"], ["devices.tenant_id", "devices.id"],
+                             name="fk_endpoint_event_tenant_device"),
+        CheckConstraint("event_seq >= 1", name="ck_endpoint_event_sequence"),
+        CheckConstraint("kind IN ('process_started','process_stopped','sensor_state')", name="ck_endpoint_event_kind"),
+        # The contract's observed_at window; every instant in it loads in any session time zone.
+        CheckConstraint("observed_at >= '1970-01-01 00:00:00+00' AND observed_at < '9999-01-01 00:00:00+00'",
+                        name="ck_endpoint_event_observed_at"),
+        CheckConstraint("octet_length(payload::text) <= 4096", name="ck_endpoint_event_payload_bytes"),
+        Index("ix_endpoint_events_tenant_received", "tenant_id", "received_at"),
+    )
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    device_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
+    event_seq: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)
+    kind: Mapped[str] = mapped_column(String(32), nullable=False)
+    observed_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
     received_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
     payload: Mapped[dict] = mapped_column(JSON().with_variant(JSONB(), "postgresql"), nullable=False)
 

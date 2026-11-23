@@ -11,7 +11,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from security_platform.auth.operator_oidc import OperatorVerifier
 from security_platform.boundary import RequestBoundary
 from security_platform.db import Database
-from security_platform.services.common import ServiceError, ServiceLimits
+from security_platform.services.common import EventCursorConflict, ServiceError, ServiceLimits
 from security_platform.settings import Settings
 from security_platform.api import device, operator
 
@@ -38,7 +38,7 @@ def create_app(settings=None):
         max_active_grants=settings.max_active_grants_per_tenant, max_grant_records=settings.max_active_grants_per_tenant * 2,
         max_audits=settings.max_audit_events_per_tenant, stale_seconds=settings.stale_after_seconds,
         grant_ttl_seconds=settings.enrollment_ttl_seconds, max_grant_ttl_seconds=settings.max_enrollment_ttl_seconds,
-        credential_ttl_seconds=settings.credential_ttl_seconds)
+        credential_ttl_seconds=settings.credential_ttl_seconds, max_events_per_device=settings.max_events_per_device)
 
     @asynccontextmanager
     async def lifespan(app):
@@ -59,7 +59,11 @@ def create_app(settings=None):
 
     @app.exception_handler(ServiceError)
     async def service_error(request: Request, exc: ServiceError):
-        return JSONResponse({"detail": str(exc)[:160]}, status_code=exc.status_code,
+        body = {"detail": str(exc)[:160]}
+        if isinstance(exc, EventCursorConflict):
+            # Only event ingestion raises it; every other route keeps {"detail"}.
+            body.update(last_batch_sequence=exc.last_batch_sequence, last_event_seq=exc.last_event_seq)
+        return JSONResponse(body, status_code=exc.status_code,
             headers={"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else {})
 
     @app.exception_handler(SQLAlchemyError)

@@ -29,6 +29,28 @@ class Conflict(ServiceError):
     status_code = 409
 
 
+class EventCursorConflict(Conflict):
+    """An event batch conflict that reports the device's accepted position.
+
+    The two numbers are diagnostic: the agent keeps the pending batch on a 409
+    and recovers by re-enrollment. Only event ingestion raises this, so every
+    other 409 keeps its plain body.
+    """
+
+    def __init__(self, message, *, last_batch_sequence, last_event_seq):
+        super().__init__(message)
+        self.last_batch_sequence = last_batch_sequence
+        self.last_event_seq = last_event_seq
+
+
+class ContentTooLarge(ServiceError):
+    status_code = 413
+
+
+class UnprocessableContent(ServiceError):
+    status_code = 422
+
+
 class CapacityError(ServiceError):
     status_code = 429
 
@@ -46,6 +68,7 @@ class ServiceLimits:
     max_grant_ttl_seconds: int = 3600
     credential_ttl_seconds: int = 86400
     max_credential_ttl_seconds: int = 2592000
+    max_events_per_device: int = 250000
 
     def __post_init__(self):
         if any(type(value) is not int or value < 1 or value > 10000000 for value in vars(self).values()):

@@ -351,6 +351,92 @@
         }
       }
     },
+    "/api/v1/tenants/{tenant_id}/devices/{device_id}/events": {
+      "get": {
+        "tags": [
+          "operator"
+        ],
+        "summary": "Device Events",
+        "operationId": "device_events_api_v1_tenants__tenant_id__devices__device_id__events_get",
+        "security": [
+          {
+            "OperatorAccessToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tenant Id"
+            }
+          },
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Device Id"
+            }
+          },
+          {
+            "name": "before_seq",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9223372036854775807,
+                  "minimum": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before Seq"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tenants/{tenant_id}/devices/{device_id}/revoke": {
       "post": {
         "tags": [
@@ -543,6 +629,50 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/SnapshotEnvelope"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "DeviceCredential": []
+          }
+        ]
+      }
+    },
+    "/api/v1/device/events": {
+      "post": {
+        "tags": [
+          "device"
+        ],
+        "summary": "Event Batch",
+        "operationId": "event_batch_api_v1_device_events_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventBatch"
               }
             }
           },
@@ -769,6 +899,63 @@
         ],
         "title": "EnrollRequest"
       },
+      "EventBatch": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Schema Version"
+          },
+          "batch_id": {
+            "type": "string",
+            "maxLength": 36,
+            "minLength": 36,
+            "title": "Batch Id"
+          },
+          "batch_sequence": {
+            "type": "integer",
+            "maximum": 9.223372036854776e+18,
+            "minimum": 1.0,
+            "title": "Batch Sequence"
+          },
+          "events": {
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/ProcessStarted"
+                },
+                {
+                  "$ref": "#/components/schemas/ProcessStopped"
+                },
+                {
+                  "$ref": "#/components/schemas/SensorState"
+                }
+              ],
+              "discriminator": {
+                "propertyName": "kind",
+                "mapping": {
+                  "process_started": "#/components/schemas/ProcessStarted",
+                  "process_stopped": "#/components/schemas/ProcessStopped",
+                  "sensor_state": "#/components/schemas/SensorState"
+                }
+              }
+            },
+            "type": "array",
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Events"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "schema_version",
+          "batch_id",
+          "batch_sequence",
+          "events"
+        ],
+        "title": "EventBatch"
+      },
       "GrantRequest": {
         "properties": {
           "ttl_seconds": {
@@ -954,6 +1141,125 @@
         ],
         "title": "HostBasedFirewallStatus"
       },
+      "ProcessStarted": {
+        "properties": {
+          "event_seq": {
+            "type": "integer",
+            "maximum": 9.223372036854776e+18,
+            "minimum": 1.0,
+            "title": "Event Seq"
+          },
+          "observed_at": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 20,
+            "title": "Observed At"
+          },
+          "kind": {
+            "type": "string",
+            "const": "process_started",
+            "title": "Kind"
+          },
+          "pid": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Pid"
+          },
+          "parent_pid": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Parent Pid"
+          },
+          "session_id": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Session Id"
+          },
+          "image": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Image"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_seq",
+          "observed_at",
+          "kind",
+          "pid",
+          "parent_pid",
+          "session_id",
+          "image"
+        ],
+        "title": "ProcessStarted"
+      },
+      "ProcessStopped": {
+        "properties": {
+          "event_seq": {
+            "type": "integer",
+            "maximum": 9.223372036854776e+18,
+            "minimum": 1.0,
+            "title": "Event Seq"
+          },
+          "observed_at": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 20,
+            "title": "Observed At"
+          },
+          "kind": {
+            "type": "string",
+            "const": "process_stopped",
+            "title": "Kind"
+          },
+          "pid": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Pid"
+          },
+          "exit_code": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Code"
+          },
+          "image": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 260,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_seq",
+          "observed_at",
+          "kind",
+          "pid"
+        ],
+        "title": "ProcessStopped"
+      },
       "RotateRequest": {
         "properties": {
           "ttl_seconds": {
@@ -973,6 +1279,65 @@
         "additionalProperties": false,
         "type": "object",
         "title": "RotateRequest"
+      },
+      "SensorState": {
+        "properties": {
+          "event_seq": {
+            "type": "integer",
+            "maximum": 9.223372036854776e+18,
+            "minimum": 1.0,
+            "title": "Event Seq"
+          },
+          "observed_at": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 20,
+            "title": "Observed At"
+          },
+          "kind": {
+            "type": "string",
+            "const": "sensor_state",
+            "title": "Kind"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "started",
+              "lost",
+              "failed",
+              "stopped"
+            ],
+            "title": "State"
+          },
+          "error_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "session_name_invalid",
+                  "session_in_use",
+                  "access_denied",
+                  "session_start_failed",
+                  "session_stop_failed",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "event_seq",
+          "observed_at",
+          "kind",
+          "state"
+        ],
+        "title": "SensorState"
       },
       "SeverityCounts": {
         "properties": {

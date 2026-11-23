@@ -1,6 +1,6 @@
 # API V1 sözleşmesi
 
-Temel adres dağıtım yöneticisinin seçtiği HTTPS origin'idir. Uygulama 12 operation sunar; signup, komut, policy push, shell veya scan endpointi yoktur. Gerçek `app.openapi()` çıktısı [openapi.json](openapi.json) dosyasındadır. Public `/docs`, `/redoc` ve `/openapi.json` yolları kapalıdır; statik dosya inceleme içindir. Route/spec eşitliği entegrasyon testinde denetlenir.
+Temel adres dağıtım yöneticisinin seçtiği HTTPS origin'idir. Uygulama 14 operation sunar; signup, komut, policy push, shell veya scan endpointi yoktur. Gerçek `app.openapi()` çıktısı [openapi.json](openapi.json) dosyasındadır. Public `/docs`, `/redoc` ve `/openapi.json` yolları kapalıdır; statik dosya inceleme içindir. Route/spec eşitliği entegrasyon testinde denetlenir.
 
 ## Üç bearer türü
 
@@ -8,7 +8,7 @@ Temel adres dağıtım yöneticisinin seçtiği HTTPS origin'idir. Uygulama 12 o
 |---|---|
 | `OperatorAccessToken` | Güvenilir IdP'nin RS256 API erişim token'ı. Tenant rolü güncel DB üyeliğinden gelir. |
 | `EnrollmentGrant` | `spg_` + 43 base64url karakter; yalnız tek kullanımlık cihaz kaydı. |
-| `DeviceCredential` | `spd_` + 43 base64url karakter; tek tenant ve cihaza bağlı snapshot/rotasyon. |
+| `DeviceCredential` | `spd_` + 43 base64url karakter; tek tenant ve cihaza bağlı snapshot, olay gönderimi ve rotasyon. |
 
 Hepsi `Authorization: Bearer ...` başlığı kullanır, fakat birbirinin yerine geçmez. `X-Device-ID`, `X-Tenant-ID`, `X-Client-Cert` veya body alanı credential'ın bağlı olduğu cihazı değiştirmez. Enrollment ve device sırları 32 rastgele bayttır; DB'de SHA256 digest saklanır. Başarılı grant/enroll/rotate cevabı sırın gerekli tek seferlik gösterimidir; cevabı loglamayın. Cevaplarda `Cache-Control: no-store` bulunur.
 
@@ -34,13 +34,15 @@ JWKS yenilemesi: yöneticinin doğruladığı dosyaya eski+yeni public anahtarla
 | `POST /api/v1/tenants/{tenant_id}/enrollment-grants/{grant_id}/revoke` | Tenant admin | Boş body/`{}`; `grant_id`, `revoked:true`. Tüketilmiş hak 409. |
 | `GET /api/v1/tenants/{tenant_id}/devices` | Tenant viewer/admin | Sınırlı liste; tenant kapsamı zorunlu. |
 | `GET /api/v1/tenants/{tenant_id}/devices/{device_id}` | Tenant viewer/admin | Cihaz, son ürünler, eksik ürünler ve ayrı kaynak/bağlantı yaşları. |
+| `GET /api/v1/tenants/{tenant_id}/devices/{device_id}/events` | Tenant viewer/admin | Cihazın kendi beyanı olan olaylar; en yeni önce, `before_seq` ile anahtar tabanlı sayfa: `items`, `next_before_seq`, `cap_deleted_events`. |
 | `POST /api/v1/tenants/{tenant_id}/devices/{device_id}/revoke` | Tenant admin | Boş body/`{}`; bütün cihaz credential'larını etkisizleştirir. |
 | `GET /api/v1/tenants/{tenant_id}/audit` | Tenant admin | Bounded başarılı yönetim olayları; sır veya ham payload içermez. |
 | `POST /api/v1/enroll` | Enrollment grant | `{label:"..."}`; 201: `tenant_id`, `device_id`, `credential_id`, `credential_secret`, `credential_expires_at`. |
 | `PUT /api/v1/device/snapshot` | Device credential | Strict V1 snapshot; 200 kabul cevabı. |
+| `POST /api/v1/device/events` | Device credential | Strict `altay-edr-event/v1` olay batch'i; 200 kabul cevabı. |
 | `POST /api/v1/device/credentials/rotate` | Device credential | `{}` veya `ttl_seconds`; yeni credential cevabı (süre yapılandırılmış credential süresini aşmaz), eski sır aynı transaction'da iptal edilir. |
 
-Liste yolları `limit=1..100` (varsayılan 50), `offset=0..10000` alır. Cursor yolu yoktur; V1 offset sayfalaması kullanır. Liste ve detay aynı tenant üyeliğini uygular. Bilinmeyen extra body alanları reddedilir.
+Liste yolları `limit=1..100` (varsayılan 50), `offset=0..10000` alır ve offset sayfalaması kullanır. Tek istisna olay zaman çizelgesidir: offset yerine `before_seq` ile anahtar tabanlı sayfalanır (aşağıda). Liste ve detay aynı tenant üyeliğini uygular. Bilinmeyen extra body alanları reddedilir.
 
 Kayıt hakkı varsayılanı 600 saniye, API üst sınırı 3600 saniyedir; yapılandırılmış daha dar üst sınır da uygulanır. Credential süresi `SP_CREDENTIAL_TTL_SECONDS` ile ayarlanır (60–2592000, varsayılan 86400). Rotasyon body aralığı 60–2592000 saniyedir, fakat verilen süre yapılandırılmış credential süresiyle sınırlanır: daha uzun istek bu değere indirilir, daha kısa istek olduğu gibi uygulanır; gerçek süre cevaptaki `credential_expires_at` alanıdır. Snapshot credential süresini uzatmaz; süresi dolmuş credential rotasyon yapamaz (401). Yeni cihaz ilk snapshot'a kadar `never_seen` kalır. Enrollment veya rotasyon commit'inden sonra cevap kaybolursa plaintext sır yeniden üretilemez; yönetici cihazı iptal edip yeni grant ile kayıt yaptırır.
 
@@ -93,6 +95,102 @@ Termivar `latest_report` yalnız digest, sabit rapor şeması, yerel `imported_a
 
 Sunucu `received_at` atar. Son mesaj aynı sıra/UUID/kanonik içerikle tekrarlanırsa aynı cevap döner ve tazelik yenilenmez. Son sıra veya son UUID farklı içerikle 409; eski sıra 409'dur. V1 yalnız son kabulün retry penceresini tutar; bütün tarihsel mesaj UUID'leri için sınırsız tombstone deposu yoktur. Daha yüksek sıra önceki tam ürün durumunu atomik değiştirir. Credential rotasyonu cihazın son sırasını korur.
 
+## Olay batch'i (`altay-edr-event/v1`)
+
+`POST /api/v1/device/events` yalnız cihaz credential'ı kabul eder. Tenant ve cihaz yalnız bu credential'dan gelir; gövdede kimlik alanı yoktur ve bilinmeyen her alan reddedilir (422).
+
+```json
+{
+  "schema_version": 1,
+  "batch_id": "00000000-0000-4000-8000-000000000002",
+  "batch_sequence": 1,
+  "events": [
+    {"kind": "process_started", "event_seq": 1, "observed_at": "2030-01-01T00:00:00.000001Z",
+     "pid": 4321, "parent_pid": 1234, "session_id": 1,
+     "image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe"},
+    {"kind": "process_stopped", "event_seq": 2, "observed_at": "2030-01-01T00:00:05.000000Z",
+     "pid": 4321, "exit_code": 0, "image": "setup.exe"},
+    {"kind": "sensor_state", "event_seq": 3, "observed_at": "2030-01-01T00:00:06.000000Z",
+     "state": "lost", "error_code": "session_in_use"}
+  ]
+}
+```
+
+- `schema_version` strict integer `1`; `batch_id` lower-case kanonik UUID; `batch_sequence` strict integer `1..2^63-1`.
+- `events` 1–200 olaydır ve `kind` alanına göre ayrılır. `event_seq` ajanın giden kutusundaki kayıt numarasıdır; strict integer `1..2^63-1`'dir ve batch içinde kesin artar. Numaralardaki boşluk, olayların cihazda kaybolduğunu gösterir (kuyruk taşması, giden kutusundan atılan kayıt, okunamayan veya eşlenemeyen kayıt). Bir cihazın ilk batch'inde `batch_sequence` ve ilk `event_seq` 1'den büyük veya eşit herhangi bir değer olabilir (ör. yeniden kayıttan sonra kayıt numaraları kaldığı yerden sürer).
+- `observed_at` cihaz saatidir ve doğrulanmaz. Snapshot'taki UTC metin kuralı geçerlidir: yalnız `Z`, en çok 6 kesir hanesi; değer mikrosaniyeyle normalize edilip saklanır. Normalize edilmiş değer `1970-01-01T00:00:00Z <= observed_at < 9999-01-01T00:00:00Z` aralığında olmalıdır; dışındaki değer 422 alır. PostgreSQL zamanı oturumun saat diliminde döndürür ve Python sürücüsü 9999'dan sonraki veya 1'den önceki yılı okuyamaz; bu aralıktaki her an her saat diliminde okunur, böylece tek bir olay zaman çizelgesini okunamaz hâle getiremez. Veritabanı aynı sınırı `ck_endpoint_event_observed_at` CHECK kısıtıyla uygular.
+
+| Tür | Alanlar |
+|---|---|
+| `process_started` | `pid`, `parent_pid`, `session_id` (`0..4294967295`). `image`: çekirdeğin bildirdiği 1–1024 karakterlik süreç görüntüsü yolu; kontrol veya Unicode biçim karakteri (ör. yön değiştirme, sıfır genişlik) içermez. Yol ayırıcısı zorunlu değildir: `Registry` gibi yalın bir ad da kabul edilir. |
+| `process_stopped` | `pid`, `exit_code` (`0..4294967295` veya `null`). `image`: `null` ya da 1–260 karakterlik kısa süreç adı; `\`, `/`, kontrol veya biçim karakteri içeremez (aşağıdaki ajan dönüşümü). |
+| `sensor_state` | `state`: `started`, `lost`, `failed`, `stopped`. `error_code`: `null` ya da `session_name_invalid`, `session_in_use`, `access_denied`, `session_start_failed`, `session_stop_failed`, `unknown`; `started` ve `stopped` için `null` olmalıdır. |
+
+Reddedilen kontrol ve biçim karakterleri Unicode 16.0.0'ın Cc ve Cf genel kategorileridir. Küme sabit bir kod noktası tablosudur (`event_contracts.REFUSED_TEXT_RANGES`); sunucudaki Python'un Unicode veritabanından okunmaz. Böylece bir Python yükseltmesi, ajanın geçerli saydığı olayları sessizce reddetmeye başlayamaz. Çalışan yorumlayıcının veritabanı bu tablodan farklıysa birim testi başarısız olur.
+
+`null` olabilen alanlar (`exit_code`, kısa `image`, `error_code`) gövdede yazılmazsa `null` sayılır. Komut satırı, kullanıcı adı veya SID, dosya içeriği veya özeti, ağ verisi ve serbest metin alınmaz.
+
+**Kısa süreç adı (`process_stopped.image`):** çekirdeğin kısa adı dosya adındaki her UTF-16 biriminin yalnız düşük baytını tutar. Bu yüzden Kiril, Arapça, CJK veya Hangul adlarda `\` ya da `/` baytı oluşabilir (ör. `Яндекс.exe` → `/=45:A.exe`, `桜.exe` → `\.exe`) veya ad boş kalabilir. Ajan göndermeden önce kısa addaki her `\` ve `/` karakterini U+FFFD (`�`) ile değiştirir (`�=45:A.exe`, `�.exe`); sonuç boşsa `null` gönderir. Platform ayırıcı içeren kısa adı reddeder (422): bu yasak, maskelenmemiş bir tam yolun kısa ad alanında taşınmasını engeller.
+
+**Gizlilik kuralı (sözleşmede zorunlu):** `process_started.image` `\` ve `/` işaretlerinden bileşenlere ayrılır (Win32 `/` işaretini de ayırıcı sayar). Bütünüyle `Users` olan (ASCII, büyük/küçük harf duyarsız) ve son bileşen olmayan her bileşenden sonraki bileşenin ilk `:` işaretinden önceki kısmı tam olarak `*` olmalıdır. İlk `:` işaretinden sonrası (NTFS akış adı) ve sonraki bileşenler korunur. `Users` ile biten yolda maskelenecek bir şey yoktur. `Users:akış` bir `Users` bileşeni değildir; akışın alt bileşeni olmaz.
+
+- Kabul: `\Device\HarddiskVolume3\Users\*\Downloads\setup.exe`, `\Device\HarddiskVolume3\Users\*:payload.exe`, `\Users\*`, `\Users\*:`, `Registry`.
+- Ret (422): `\Device\HarddiskVolume3\Users\ahmet\Downloads\setup.exe`, `\Users\ahmet:payload.exe`, `\Users\**`, `\Users\*x:y`, `\Users\:x`, `\Users\` (ardından boş bileşen).
+- Bilinen sınır: kural `Users` altındaki bir dosyayı profil klasöründen ayıramaz. Doğrudan `Users` altındaki dosyanın adı da `*` olarak maskelenir: `\Users\setup.exe` → `\Users\*`, akışıyla `\Users\setup.exe:x` → `\Users\*:x`.
+
+Ajan göndermeden önce maskeler, Platform maskelenmemiş yolu reddeder. Bu bir sözleşme kuralıdır, veri sızıntısı önleme (DLP) değildir. Yalnız bütünüyle `Users` olan bileşenden hemen sonraki ad (ilk `:` öncesi) denetlenir. NTFS akış adı (`\Users\*:payload.exe`) tespit için korunur ve kişisel bilgi taşıyabilir. Klasör veya dosya adlarındaki kişisel bilgi, profil dışı konumlar (ör. `D:\ahmet\araç.exe`), Win32'nin eşdeğer saydığı başka yazımlar (sondaki nokta/boşluk, `Users::$INDEX_ALLOCATION` gibi akış nitelikli dizin yazımları, ASCII olmayan büyük/küçük harf eşdeğerleri) ve maskeyi uygulamayan kötü niyetli bir ajan tanınmaz. Ayrıntı [tehdit modelindedir](THREAT_MODEL.tr.md).
+
+**Güven:** her olay `source=self_reported` ve `producer_verification=not_verified` kalır. Batch güven iddiası taşıyamaz, sunucu bu değerleri hiçbir zaman yükseltmez. Olaylar cihazın heartbeat'ini ve snapshot tazeliğini yenilemez: cihaz listesindeki ve detayındaki `last_received_at`, `connection_status` ve kaynak yaşı yalnız snapshot ile değişir; yalnız olay gönderen cihaz `never_seen` veya `stale` kalır. Olay alımı audit kaydı yazmaz.
+
+**Kanonik biçim ve sınırlar:** içerik özeti snapshot'taki gibi hesaplanır: normalize edilmiş model, sıralı anahtarlar, boşluksuz ayırıcılar, UTF-8 ve SHA256. Kanonik biçim en çok 16 KiB olabilir. Normalizasyon (mikrosaniye, açık `null`) gövdeyi büyüttüğü için 16 KiB'lık gövdeye sığan bir batch bu sınırı aşabilir; o zaman `413 {"detail":"Event batch too large"}` döner. Her olayın PostgreSQL'de saklanan JSONB metni de en çok 4096 bayttır; aşan olay 422 alır (1024 karakterlik bir yol dört baytlık karakterlerle bu sınırı geçebilir). Genel gövde sınırları (16 KiB, 2048 düğüm, dakikada 120 istek) aynen geçerlidir.
+
+200 kabul cevabı (4 KiB'a sığar):
+
+```json
+{"accepted":true,"batch_id":"00000000-0000-4000-8000-000000000002","batch_sequence":1,"last_event_seq":3,"received_at":"2030-01-01T00:00:10Z"}
+```
+
+`received_at` sunucu zamanıdır ve snapshot cevabındaki gibi yazılır. Ajan aynı anda yalnız bir batch gönderir (dur ve bekle). Tekrar oynatma kuralları cihaz başına tek imleçle uygulanır:
+
+- Son batch aynı `batch_sequence`, `batch_id` ve kanonik içerikle tekrarlanırsa saklanan aynı cevap döner; satır eklenmez, `received_at` yenilenmez.
+- Aynı `batch_sequence` veya aynı `batch_id` farklı içerikle gelirse 409 (`Event batch identity or sequence conflicts with current state`).
+- Son kabulden küçük `batch_sequence` 409 (`Event batch sequence is stale`).
+- İlk `event_seq` son kabul edilen `last_event_seq`'ten büyük değilse 409 (`Event sequence does not follow the last accepted event`).
+
+Olay batch'inin her 409 cevabı cihazın imlecini taşır: `last_batch_sequence` son kabul edilen batch'in sırası, `last_event_seq` son kabul edilen olayın sırasıdır. Bu iki alan tanı içindir. Ajan 409 alınca bekleyen batch'i korur, aynı baytları daha sonra yeniden dener ve bunu kaydeder; imlece göre kendiliğinden ilerlemez. Kurtarma, heartbeat'te olduğu gibi cihazın yeniden kaydıdır. Bir sonraki batch'in kabul edilmesi için `batch_sequence` değeri `last_batch_sequence`'ten, ilk `event_seq` değeri `last_event_seq`'ten büyük olmalıdır. Diğer yolların 409 gövdesi yalnız `detail` içerir.
+
+```json
+{"detail":"Event sequence does not follow the last accepted event","last_batch_sequence":5,"last_event_seq":11}
+```
+
+İmleç cihaza aittir; credential rotasyonu onu sıfırlamaz. PostgreSQL'de (`tenant_id`, `device_id`, `event_seq`) birincil anahtardır.
+
+**`POST /api/v1/device/events` durum kodları:**
+
+| HTTP | Gövde ve anlam |
+|---|---|
+| 200 | Kabul veya son batch'in tam tekrarı (aynı cevap). |
+| 400 | Yalnız istek sınırı: geçersiz/tekrarlı JSON, düğüm/derinlik bütçesi, başlık veya HTTPS gereksinimi (ör. `{"detail":"invalid_json"}`). |
+| 401 | Eksik, yanlış amaçlı, süresi geçmiş, iptal edilmiş veya geçersiz cihaz credential'ı. |
+| 409 | Tekrar oynatma kuralı ihlali; gövde `{"detail","last_batch_sequence","last_event_seq"}` (imleç alanları tanı içindir; ajan batch'i bekletir, kurtarma yeniden kayıttır). |
+| 413 | Gövde 16 KiB'ı aşıyor (`{"detail":"request_too_large"}`) veya şemaya uyan batch'in kanonik biçimi 16 KiB'ı aşıyor (`{"detail":"Event batch too large"}`). |
+| 415 | JSON olmayan veya sıkıştırılmış gövde. |
+| 422 | Sözleşmeye uymayan gövde (`{"detail":"invalid_request"}`); servisin yeniden doğrulamasında bulunan sözleşme ihlali (`{"detail":"Invalid event batch"}`). Girdi geri döndürülmez. |
+| 429 | İstek bütçesi. |
+| 503 | DB kullanılamıyor; başarı uydurulmaz. |
+
+**Cihaz başına üst sınır:** `SP_MAX_EVENTS_PER_DEVICE` (varsayılan 250000, aralık 1000–10000000). Sınır aşılınca aynı işlemde cihazın en eski satırları (en küçük `event_seq`) silinir. Bir istek en çok batch'teki olay sayısı + 5000 satır siler ve batch'in kendi olaylarını hiçbir zaman silmez (sınır en az 1000, batch en çok 200 olaydır). Sınır düşürülürse fazlası tek istekte değil, sonraki batch'lerde bu parçalar hâlinde silinir; ayrıntı [OPERATIONS.tr.md](OPERATIONS.tr.md) içindedir. Sınırın sildiği satırların tam sayısı cihaz imlecinde `cap_deleted_events` olarak birikir ve zaman çizelgesi cevabında döner (aşağıda); zamana göre saklama bu sayacı değiştirmez. Zamana göre saklama ayrı `security-platform events prune` komutudur; tenant başına gün ayarı ve günlük zamanlama da [OPERATIONS.tr.md](OPERATIONS.tr.md) içindedir.
+
+## Cihaz olay zaman çizelgesi
+
+`GET /api/v1/tenants/{tenant_id}/devices/{device_id}/events?before_seq=&limit=` tenant viewer ve admin içindir. Cihaz bu tenant'ta yoksa cihaz detayındaki gibi 404 döner. Sonuç en yeni olay önce sıralanır. Offset 10.000'de durduğu için sayfalama anahtar tabanlıdır: `before_seq` (dahil değil, `1..2^63-1`) ve `limit` (`1..100`, varsayılan 50). Sonraki sayfa için cevaptaki `next_before_seq` verilir; son sayfada değer `null` olur.
+
+```json
+{"items":[{"event_seq":3,"kind":"sensor_state","observed_at":"2030-01-01T00:00:06Z","received_at":"2030-01-01T00:00:10Z","state":"lost","error_code":"session_in_use","source":"self_reported","producer_verification":"not_verified"}],"next_before_seq":null,"cap_deleted_events":0}
+```
+
+Her öğe `event_seq`, `kind`, `observed_at`, `received_at`, türün alanları ve sabit `source`/`producer_verification` değerlerini içerir. Üst düzeydeki `cap_deleted_events`, cihaz başına üst sınırın bu cihazın satırlarından alış sırasında sildiği satırların toplamıdır. Cihazın henüz kabul edilmiş bir olay batch'i yoksa (imleci yoksa) değer `0`'dır. `events prune` ile zamana göre silinen satırlar bu sayıya katılmaz. Değer sayfaya bağlı değildir ve sunucunun kendi sayımıdır, cihaz beyanı değildir. Operatör konsolu bu yolu henüz kullanmaz.
+
 ## Hatalar ve sınırlar
 
 | HTTP | Anlam |
@@ -101,9 +199,9 @@ Sunucu `received_at` atar. Son mesaj aynı sıra/UUID/kanonik içerikle tekrarla
 | 401 | Eksik, yanlış amaçlı, süresi geçmiş, iptal edilmiş veya geçersiz credential. |
 | 403 | Kendi tenant'ında yetersiz rol veya yabancı Origin. |
 | 404 | Kaynak yok veya bu tenant üyeliğiyle görünmez. |
-| 409 | Sıra/içerik çakışması, aşılmış mesaj veya tüketilmiş grant iptali. |
-| 408 / 413 / 415 | Body süresi / boyut-parça sayısı / JSON olmayan veya sıkıştırılmış body. |
-| 422 | DTO tipi, extra alan, ürün/semantik doğrulama hatası; girdinin tamamı geri döndürülmez. |
+| 409 | Sıra/içerik çakışması, aşılmış mesaj veya olay batch'i ya da tüketilmiş grant iptali. Olay batch'inin 409'u tanı için cihaz imlecini de (`last_batch_sequence`, `last_event_seq`) taşır. |
+| 408 / 413 / 415 | Body süresi / boyut-parça sayısı veya kanonik biçimi 16 KiB'ı aşan olay batch'i (`Event batch too large`) / JSON olmayan veya sıkıştırılmış body. |
+| 422 | DTO tipi, extra alan, ürün/semantik doğrulama hatası; olay servisinin yeniden doğrulamasındaki sözleşme ihlali (`Invalid event batch`); girdinin tamamı geri döndürülmez. |
 | 429 | İstek bütçesi veya tenant kotası. |
 | 503 | DB kullanılamıyor; başarı uydurulmaz. |
 

@@ -85,10 +85,74 @@ Runtime hakları mevcut tablo sözleşmesine göre açıkça verilir:
 | `enrollment_grants`, `device_credentials`, `product_states` | SELECT, INSERT, UPDATE, DELETE |
 | `devices` | SELECT, INSERT, UPDATE |
 | `audit_events` | SELECT, INSERT, DELETE; UPDATE verilmez |
+| `endpoint_events` | SELECT, INSERT, DELETE; UPDATE verilmez |
+| `device_event_cursors` | SELECT, INSERT, UPDATE (imleç satır kilidi dahil); DELETE verilmez |
+
+Olay satırlarındaki DELETE yalnız alış sırasındaki cihaz başına üst sınır ve `events prune` saklaması içindir; olay satırı güncellenemez. Runtime hesabı tenant'ın `event_retention_days` değerini değiştiremez (`tenants` üzerinde yalnız `UPDATE(id)` vardır).
 
 Audit DELETE yalnız uygulamanın tenant'a göre sınırlandırdığı eski kayıt temizliği için kullanılır; genel audit değiştirme/silme endpointi yoktur. Runtime DB credential'ının ele geçirilmesi, saldırganın SQL üzerinden audit kayıtlarını silmesine izin verebilir. Bu tasarım DB credential'ına veya DB yöneticisine karşı değişmez/kriptografik audit sağlamaz. Tenant sorgu kapsamı ve birleşik foreign key'ler ayrıca gerçek PostgreSQL üzerinde test edilir; mevcut uygulama RLS kullandığını iddia etmez.
 
-Migration sonrasında `grant` yeniden çalıştırılır. Araç tabloların migration hesabına ait olduğunu ve beklenen tablo kümesinin mevcut olduğunu denetler; bütün tablolara geniş `ALL` yetkisi vermez. Yeni migration yeni runtime ihtiyacı eklerse grant sözleşmesi ayrıca incelenmelidir.
+Migration sonrasında `grant` yeniden çalıştırılır. Araç tabloların migration hesabına ait olduğunu ve beklenen tablo kümesinin mevcut olduğunu denetler; bütün tablolara geniş `ALL` yetkisi vermez. Yeni migration yeni runtime ihtiyacı eklerse grant sözleşmesi ayrıca incelenmelidir. `0002_endpoint_events` migration'ı `endpoint_events` ve `device_event_cursors` tablolarını ve `tenants.event_retention_days` sütununu ekler; bu migration'dan sonra `grant` çalıştırılmadan olay uç noktaları runtime hesabıyla çalışmaz (503).
+
+## Olay saklama ve günlük temizlik
+
+Olaylar iki sınırla tutulur:
+
+- **Cihaz başına üst sınır**, alış sırasında: `SP_MAX_EVENTS_PER_DEVICE` (varsayılan 250000, aralık 1000–10000000). Aşılınca cihazın en eski satırları aynı işlemde silinir. Varsayılan, normal kullanımda 30 günlük saklama belirleyici olsun diye bu büyüklükte seçilmiştir.
+- **Zamana göre saklama**, tenant başına gün: varsayılan 30, en az 1, en çok 90. Silmeyi yalnız operatörün zamanladığı komut yapar.
+
+Üst sınırın sildiği satırların tam sayısı cihaz imlecinde `cap_deleted_events` olarak birikir ve cihazın olay zaman çizelgesi cevabında görünür. `events prune` bu sayacı değiştirmez; zamana göre silinen satırlar ona katılmaz. Sayaç yalnız sunucu tarafındaki silmeyi gösterir; cihazda kaybolan olaylar `event_seq` boşluğu olarak görünür. Dürüst bir ajan üzerinden yetkisiz yerel bir kullanıcı da kısa ömürlü süreç seliyle sınırı tetikleyebilir ([tehdit modeli](THREAT_MODEL.tr.md)).
+
+Bir alış en çok batch'teki olay sayısı + 5000 satır siler ve batch'in kendi olaylarını silmez. `SP_MAX_EVENTS_PER_DEVICE` düşürüldüğünde (veya daha yüksek bir değerden değişken kaldırılıp varsayılan 250000'e dönüldüğünde) fazlası tek istekte silinmez. Sınırın üstündeki bir cihazın her batch'i kendi satırlarını ekler ve en çok batch + 5000 eski satır siler; böylece fazlalık batch başına 5000 azalır ve `stored_events` yaklaşık fazlalık / 5000 batch içinde yeni sınıra iner. Örneğin 2.000.000 satır tutan bir cihazın sınırı 100.000'e indirilirse fazlalık 1.900.000'dir ve cihaz, batch boyutundan bağımsız olarak 1.900.000 / 5000 = 380 batch sonra sınıra ulaşır. Bu silmeler de `cap_deleted_events` sayacına eklenir. Bu sürede cihaz sınırdan fazla satır tutar, fakat her istek kısa kalır ve 5 saniyelik ifade zaman aşımına takılmaz. Olay göndermeyen cihazın fazlası yalnız `events prune` zamana göre sildikçe azalır. Disk alanı hesabını bu geçiş süresine göre yapın.
+
+Tenant'ın saklama gününü korunan yerel yönetim CLI'ı migration/owner hesabıyla (`SP_MIGRATION_DATABASE_URL`) ayarlar. Değişiklik audit'e `tenant_event_retention_set` olarak yazılır:
+
+```powershell
+./.venv/Scripts/python.exe -m security_platform.cli set-event-retention --tenant-id TENANT_UUID --days 30
+```
+
+Temizlik komutu `serve` gibi yalnız runtime hesabıyla (`SP_DATABASE_URL`) çalışır. Owner hesabına geri düşmez; owner bağlantısı verilirse reddeder:
+
+```powershell
+./.venv/Scripts/python.exe -m security_platform.cli events prune
+```
+
+Komut her tenant için sunucunun alış zamanı (`received_at`) şimdiden tenant'ın gün sayısı kadar eski olan olayları siler. Cihaz saati (`observed_at`) kullanılmaz. Silme en çok 5000 satırlık parçalar hâlinde, her parça kendi kısa transaction'ında yapılır; böylece hiçbir ifade 5 saniyelik zaman aşımına yaklaşmaz ve olay alımı uzun süre beklemez. Etkilenen cihazların `stored_events` sayısı aynı transaction'larda düzeltilir. Çıktı yalnız sayılardan oluşan tek satır JSON'dur: `{"tenants": …, "deleted_events": …, "devices": …, "failed_tenants": …}`. Tenant veya cihaz kimliği ve bağlantı bilgisi yazılmaz.
+
+Hatalar tenant başına ele alınır. Bir parça kilit veya ifade zaman aşımına ya da başka bir veritabanı hatasına düşerse yalnız o parçanın transaction'ı geri alınır; daha önce tamamlanan parçalar silinmiş kalır ve sayılara katılır. O tenant bu çalıştırmada atlanır, `failed_tenants` bir artar ve komut sıradaki tenant'la devam eder. En az bir tenant başarısız olursa komut sayıları yine stdout'a yazar, stderr'e `events prune incomplete: N tenant(s) failed and were skipped; ...` iletisini yazar ve 1 ile çıkar; sonraki çalıştırma atlanan tenant'ları yeniden dener. Bağlantı, runtime rol denetimi veya tenant listesi başlangıçta başarısız olursa hiçbir satır silinmemiştir; komut genel `Database operation failed; no success was recorded.` iletisiyle 1 döndürür.
+
+Komutu günde bir kez, etkileşimli oturum gerektirmeyen bir görevle zamanlayın. `/RU` ile birlikte `/RP` veya `/NP` verilmeden oluşturulan görev, oluşturan kullanıcının etkileşimli oturumuna bağlıdır ve yalnız o kullanıcı oturum açıkken çalışır; sunucuda oturum kapatılınca temizlik sessizce hiç çalışmaz. Görev hesabı yönetici olmayan ayrı bir hesap olmalı ve korunan runtime veritabanı bağlantı dosyasını (aşağıda `runtime.json`) okuyabilmelidir. Görevin ortamı `SP_DATABASE_URL` değerini sağlamalıdır; değeri komut satırına veya görev tanımına düz metin olarak yazmayın. Windows Görev Zamanlayıcı ile örnek (yollar ve hesap adı örnektir):
+
+```powershell
+schtasks /Create /TN "SecurityPlatform\EventsPrune" /SC DAILY /ST 03:30 /RU "SUNUCU\sp-prune" /RP /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\SecurityPlatform\events-prune.ps1"
+```
+
+`/RP` değersiz verilince parola komut satırına yazılmaz; `schtasks` parolayı sorar ve görev için Windows'ta saklar. Parola saklanmasını istemiyorsanız `/RP` yerine `/NP` kullanın: görev o hesapla etkileşimsiz çalışır, fakat yalnız yerel kaynaklara erişir. Bu belgedeki yerel diskteki `runtime.json` ve loopback PostgreSQL bağlantısı için bu yeterlidir. `-ExecutionPolicy Bypass` yalnız bu PowerShell süreci için geçerlidir; istemci Windows sürümlerindeki varsayılan `Restricted` ilkesi betiği aksi hâlde çalıştırmaz.
+
+`events-prune.ps1` yalnız görev hesabının okuyabildiği bir konumda tutulur ve runtime bağlantısını korunan bir dosyadan okur:
+
+```powershell
+$ErrorActionPreference = 'Stop'
+$runtime = Get-Content -LiteralPath 'C:\SecurityPlatform\private\runtime.json' -Raw | ConvertFrom-Json
+if (-not $runtime.runtime_url) { exit 2 }
+$env:SP_DATABASE_URL = $runtime.runtime_url
+& 'C:\SecurityPlatform\.venv\Scripts\python.exe' -m security_platform.cli events prune
+if ($null -eq $LASTEXITCODE) { exit 1 }
+exit $LASTEXITCODE
+```
+
+İlk satırdaki `$ErrorActionPreference = 'Stop'`, bağlantı dosyası okunamadığında veya Python başlatılamadığında (yol yanlış, sanal ortam taşınmış ya da görev hesabı ona erişemiyor) betiği durdurur; PowerShell bu durumda `1` ile çıkar. Bağlantı adresi boşsa betik komutu hiç çağırmadan `2` ile çıkar. Komut bir çıkış kodu bırakmadıysa (`$LASTEXITCODE` boş) sonuç başarısızlık (`1`) sayılır; boş değerle `exit` çağrısı `0`, yani başarı döndürürdü. Böylece betik başlayıp temizliği yapamadığında görevin son sonucu `0` olmaz.
+
+Görevin son çalışma zamanını ve sonucunu düzenli denetleyin. `0` başarıdır; başka her değer temizliğin tamamlanmadığını gösterir (`events prune` bir tenant'ı atladığında veya veritabanına ulaşamadığında `1` döner; betik, Python başlatılamadığında veya bağlantı dosyası okunamadığında `1`, bağlantı adresi boş olduğunda `2` ile çıkar):
+
+```powershell
+Get-ScheduledTaskInfo -TaskPath '\SecurityPlatform\' -TaskName 'EventsPrune' | Select-Object LastRunTime, LastTaskResult
+schtasks /Query /TN "SecurityPlatform\EventsPrune" /V /FO LIST
+```
+
+İlk komutta `LastTaskResult`, ikincisinde son çalışma sonucu alanı (İngilizce sistemlerde `Last Result`) bu değeri gösterir. Görev hiç başlamazsa (ör. görev devre dışı bırakıldıysa veya saklı parolanın süresi dolduysa) son sonuç önceki değerinde, çoğunlukla `0`'da kalır; bu yüzden `LastRunTime` değerinin son 24 saat içinde olduğunu da denetleyin.
+
+Komut çalıştırılmazsa yalnız cihaz başına üst sınır korur; zamana göre saklama uygulanmaz.
 
 ## Test, günlük ve durdurma
 
