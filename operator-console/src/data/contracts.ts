@@ -1,4 +1,4 @@
-/** GET response dictionaries in inventory.py/audit.py and contracts.py states. */
+/** GET response dictionaries in inventory.py/audit.py/events.py/alerts.py and contracts.py states. */
 export const PRODUCT_IDS = ["hostbasedfirewall", "termivar", "antivirus"] as const;
 export type ProductId = typeof PRODUCT_IDS[number];
 export type TenantRole = "tenant_admin" | "viewer";
@@ -118,8 +118,8 @@ export interface DeviceDetail extends Device {
 }
 export type AuditAction = "tenant_created" | "membership_set" | "membership_revoked" | "enrollment_grant_created"
   | "enrollment_grant_revoked" | "device_enrolled" | "device_revoked" | "device_credential_rotated"
-  | "tenant_event_retention_set";
-export type AuditObject = "tenant" | "membership" | "enrollment_grant" | "device" | "device_credential";
+  | "tenant_event_retention_set" | "alert_acknowledged" | "alert_closed";
+export type AuditObject = "tenant" | "membership" | "enrollment_grant" | "device" | "device_credential" | "alert";
 export interface AuditEvent {
   readonly id: string;
   readonly tenant_id: string;
@@ -138,8 +138,99 @@ export interface Page<T> {
 export type TenantPage = Page<Tenant>;
 export type DevicePage = Page<Device>;
 export type AuditPage = Page<AuditEvent>;
+
+/** altay-edr-event/v1 timeline items (events.py `_event_view`); every event stays a device claim. */
+export const SENSOR_STATES = ["started", "lost", "failed", "stopped"] as const;
+export type SensorStateValue = typeof SENSOR_STATES[number];
+export const SENSOR_ERROR_CODES = ["session_name_invalid", "session_in_use", "access_denied", "session_start_failed",
+  "session_stop_failed", "unknown"] as const;
+export type SensorErrorCode = typeof SENSOR_ERROR_CODES[number];
+interface TimelineEventBase extends SourceClaims {
+  readonly event_seq: number;
+  readonly observed_at: string;
+  readonly received_at: string;
+}
+export interface ProcessStartedEvent extends TimelineEventBase {
+  readonly kind: "process_started";
+  readonly pid: number;
+  readonly parent_pid: number;
+  readonly session_id: number;
+  readonly image: string;
+}
+export interface ProcessStoppedEvent extends TimelineEventBase {
+  readonly kind: "process_stopped";
+  readonly pid: number;
+  readonly exit_code: number | null;
+  readonly image: string | null;
+}
+export interface SensorStateEvent extends TimelineEventBase {
+  readonly kind: "sensor_state";
+  readonly state: SensorStateValue;
+  readonly error_code: SensorErrorCode | null;
+}
+export type TimelineEvent = ProcessStartedEvent | ProcessStoppedEvent | SensorStateEvent;
+export interface TimelinePage {
+  readonly items: readonly TimelineEvent[];
+  readonly next_before_seq: number | null;
+  readonly cap_deleted_events: number;
+  readonly suppressed_alerts: number;
+}
+
+/** Rule matches of alerts.py. A match is not a diagnosis; the source stays self_reported/not_verified. */
+export const ALERT_RULES = ["user_writable_launch", "office_browser_spawned_tool", "sensor_unstable", "event_loss"] as const;
+export type AlertRule = typeof ALERT_RULES[number];
+export const ALERT_STATUSES = ["open", "acknowledged", "closed"] as const;
+export type AlertStatus = typeof ALERT_STATUSES[number];
+export type AlertSeverity = "low" | "medium";
+interface AlertBase extends SourceClaims {
+  readonly id: string;
+  readonly device_id: string;
+  readonly status: AlertStatus;
+  readonly occurrences: number;
+  readonly first_event_seq: number;
+  readonly last_event_seq: number;
+  readonly first_seen_at: string;
+  readonly last_seen_at: string;
+  readonly acknowledged_at: string | null;
+  readonly closed_at: string | null;
+}
+export interface UserWritableLaunchAlert extends AlertBase {
+  readonly rule: "user_writable_launch";
+  readonly severity: "low";
+  readonly evidence: { readonly image: string; readonly pid: number };
+}
+export interface SpawnedToolAlert extends AlertBase {
+  readonly rule: "office_browser_spawned_tool";
+  readonly severity: "medium";
+  readonly evidence: { readonly image: string; readonly pid: number; readonly parent_image: string; readonly parent_pid: number };
+}
+export interface SensorUnstableAlert extends AlertBase {
+  readonly rule: "sensor_unstable";
+  readonly severity: "medium";
+  readonly evidence: { readonly state: "lost" | "failed"; readonly error_code: SensorErrorCode | null };
+}
+export interface EventLossAlert extends AlertBase {
+  readonly rule: "event_loss";
+  readonly severity: "medium";
+  readonly evidence: { readonly missing_events: number };
+}
+export type Alert = UserWritableLaunchAlert | SpawnedToolAlert | SensorUnstableAlert | EventLossAlert;
+/** Keyset position of the alert list: (last_seen_at, id), newest first. */
+export interface AlertCursor { readonly seen_at: string; readonly id: string }
+export interface AlertPage {
+  readonly items: readonly Alert[];
+  readonly next_before: AlertCursor | null;
+}
+
 export interface RequestOptions { readonly signal?: AbortSignal }
 export interface PageOptions extends RequestOptions { readonly limit?: number; readonly offset?: number }
+export interface TimelineOptions extends RequestOptions { readonly limit?: number; readonly beforeSeq?: number }
+export interface AlertOptions extends RequestOptions {
+  readonly limit?: number;
+  readonly status?: AlertStatus;
+  readonly deviceId?: string;
+  readonly before?: AlertCursor;
+}
 export interface DataClient {
   readonly mode: ClientMode;
   readonly sourceLabel: string;
@@ -150,5 +241,7 @@ export interface DataClient {
   listDevices(tenantId: string, options?: PageOptions): Promise<DevicePage>;
   getDevice(tenantId: string, deviceId: string, options?: RequestOptions): Promise<DeviceDetail>;
   listAudit(tenantId: string, options?: PageOptions): Promise<AuditPage>;
+  listDeviceEvents(tenantId: string, deviceId: string, options?: TimelineOptions): Promise<TimelinePage>;
+  listAlerts(tenantId: string, options?: AlertOptions): Promise<AlertPage>;
   disconnect(): void;
 }

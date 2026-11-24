@@ -1,8 +1,8 @@
 """Tenant-scoped SQL constraints supplement authorization in the service layer."""
 import uuid
 
-from sqlalchemy import (BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint,
-                        Index, Integer, JSON, SmallInteger, String, UniqueConstraint, Uuid, text)
+from sqlalchemy import (CHAR, BigInteger, Boolean, CheckConstraint, DateTime, ForeignKey, ForeignKeyConstraint,
+                        Index, Integer, JSON, SmallInteger, String, Text, UniqueConstraint, Uuid, text)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -123,6 +123,7 @@ class DeviceEventCursor(Base):
         CheckConstraint("last_event_seq >= 1", name="ck_event_cursor_event_seq"),
         CheckConstraint("stored_events >= 0", name="ck_event_cursor_stored_events"),
         CheckConstraint("cap_deleted_events >= 0", name="ck_event_cursor_cap_deleted_events"),
+        CheckConstraint("suppressed_alerts >= 0", name="ck_event_cursor_suppressed_alerts"),
     )
     tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
     device_id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True)
@@ -134,6 +135,8 @@ class DeviceEventCursor(Base):
     stored_events: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default=text("0"))
     # Rows the per-device cap deleted at ingestion, in total; retention prune leaves it alone.
     cap_deleted_events: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default=text("0"))
+    # Alerts the per-device open-alert cap kept from opening, in total.
+    suppressed_alerts: Mapped[int] = mapped_column(BigInteger, nullable=False, server_default=text("0"))
 
 
 class EndpointEvent(Base):
@@ -159,6 +162,58 @@ class EndpointEvent(Base):
     payload: Mapped[dict] = mapped_column(JSON().with_variant(JSONB(), "postgresql"), nullable=False)
 
 
+class Alert(Base):
+    """A server rule's match on a device's self-reported events; a rule match is not a diagnosis.
+
+    While an alert is not closed, later matches of the same (rule, dedup_key)
+    update it; the partial unique index below allows one such alert per key.
+    """
+    __tablename__ = "alerts"
+    __table_args__ = (
+        ForeignKeyConstraint(["tenant_id", "device_id"], ["devices.tenant_id", "devices.id"],
+                             name="fk_alert_tenant_device"),
+        ForeignKeyConstraint(["tenant_id", "acknowledged_by"], ["memberships.tenant_id", "memberships.principal_id"],
+                             name="fk_alert_acknowledger_membership"),
+        ForeignKeyConstraint(["tenant_id", "closed_by"], ["memberships.tenant_id", "memberships.principal_id"],
+                             name="fk_alert_closer_membership"),
+        CheckConstraint("rule IN ('user_writable_launch','office_browser_spawned_tool','sensor_unstable','event_loss')",
+                        name="ck_alert_rule"),
+        CheckConstraint("severity IN ('low','medium')", name="ck_alert_severity"),
+        CheckConstraint("dedup_key ~ '^[0-9a-f]{64}$'", name="ck_alert_dedup_key"),
+        CheckConstraint("status IN ('open','acknowledged','closed')", name="ck_alert_status"),
+        CheckConstraint("occurrences >= 1", name="ck_alert_occurrences"),
+        CheckConstraint("first_event_seq >= 1 AND last_event_seq >= first_event_seq", name="ck_alert_event_seq"),
+        CheckConstraint("jsonb_typeof(evidence) = 'object'", name="ck_alert_evidence_object"),
+        CheckConstraint("octet_length(evidence::text) <= 4096", name="ck_alert_evidence_bytes"),
+        CheckConstraint("(acknowledged_at IS NULL) = (acknowledged_by IS NULL)", name="ck_alert_acknowledgement"),
+        CheckConstraint("(closed_at IS NULL) = (closed_by IS NULL)", name="ck_alert_closure"),
+        CheckConstraint("(status = 'open' AND acknowledged_at IS NULL AND closed_at IS NULL) OR "
+                        "(status = 'acknowledged' AND acknowledged_at IS NOT NULL AND closed_at IS NULL) OR "
+                        "(status = 'closed' AND closed_at IS NOT NULL)", name="ck_alert_lifecycle"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    tenant_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    device_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    rule: Mapped[str] = mapped_column(Text, nullable=False)
+    severity: Mapped[str] = mapped_column(Text, nullable=False)
+    # Lowercase hex SHA-256 of the rule's key text.
+    dedup_key: Mapped[str] = mapped_column(CHAR(64), nullable=False)
+    status: Mapped[str] = mapped_column(Text, nullable=False)
+    occurrences: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    first_event_seq: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    last_event_seq: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    # The server's received_at of the first and the latest matching batch.
+    first_seen_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
+    last_seen_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
+    evidence: Mapped[dict] = mapped_column(JSON().with_variant(JSONB(), "postgresql"), nullable=False)
+    acknowledged_at: Mapped[object | None] = mapped_column(DateTime(timezone=True))
+    acknowledged_by: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    closed_at: Mapped[object | None] = mapped_column(DateTime(timezone=True))
+    closed_by: Mapped[uuid.UUID | None] = mapped_column(Uuid)
+    created_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
     __table_args__ = (
@@ -179,3 +234,9 @@ class AuditEvent(Base):
 
 Index("uq_credential_active_device", DeviceCredential.tenant_id, DeviceCredential.device_id,
       unique=True, postgresql_where=text("revoked_at IS NULL"))
+# One alert that is not closed per (tenant, device, rule, key); the ingestion upsert's arbiter.
+Index("uq_alert_not_closed_key", Alert.tenant_id, Alert.device_id, Alert.rule, Alert.dedup_key,
+      unique=True, postgresql_where=text("status <> 'closed'"))
+# The alert list: newest activity first, per tenant and per device.
+Index("ix_alert_tenant_seen", Alert.tenant_id, Alert.last_seen_at.desc(), Alert.id.desc())
+Index("ix_alert_device_seen", Alert.tenant_id, Alert.device_id, Alert.last_seen_at.desc(), Alert.id.desc())

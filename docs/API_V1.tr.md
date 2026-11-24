@@ -1,6 +1,6 @@
 # API V1 sözleşmesi
 
-Temel adres dağıtım yöneticisinin seçtiği HTTPS origin'idir. Uygulama 14 operation sunar; signup, komut, policy push, shell veya scan endpointi yoktur. Gerçek `app.openapi()` çıktısı [openapi.json](openapi.json) dosyasındadır. Public `/docs`, `/redoc` ve `/openapi.json` yolları kapalıdır; statik dosya inceleme içindir. Route/spec eşitliği entegrasyon testinde denetlenir.
+Temel adres dağıtım yöneticisinin seçtiği HTTPS origin'idir. Uygulama 17 operation sunar; signup, komut, policy push, shell veya scan endpointi yoktur. Gerçek `app.openapi()` çıktısı [openapi.json](openapi.json) dosyasındadır. Public `/docs`, `/redoc` ve `/openapi.json` yolları kapalıdır; statik dosya inceleme içindir. Route/spec eşitliği entegrasyon testinde denetlenir.
 
 ## Üç bearer türü
 
@@ -34,7 +34,10 @@ JWKS yenilemesi: yöneticinin doğruladığı dosyaya eski+yeni public anahtarla
 | `POST /api/v1/tenants/{tenant_id}/enrollment-grants/{grant_id}/revoke` | Tenant admin | Boş body/`{}`; `grant_id`, `revoked:true`. Tüketilmiş hak 409. |
 | `GET /api/v1/tenants/{tenant_id}/devices` | Tenant viewer/admin | Sınırlı liste; tenant kapsamı zorunlu. |
 | `GET /api/v1/tenants/{tenant_id}/devices/{device_id}` | Tenant viewer/admin | Cihaz, son ürünler, eksik ürünler ve ayrı kaynak/bağlantı yaşları. |
-| `GET /api/v1/tenants/{tenant_id}/devices/{device_id}/events` | Tenant viewer/admin | Cihazın kendi beyanı olan olaylar; en yeni önce, `before_seq` ile anahtar tabanlı sayfa: `items`, `next_before_seq`, `cap_deleted_events`. |
+| `GET /api/v1/tenants/{tenant_id}/devices/{device_id}/events` | Tenant viewer/admin | Cihazın kendi beyanı olan olaylar; en yeni önce, `before_seq` ile anahtar tabanlı sayfa: `items`, `next_before_seq`, `cap_deleted_events`, `suppressed_alerts`. |
+| `GET /api/v1/tenants/{tenant_id}/alerts` | Tenant viewer/admin | Kural uyarıları; en son etkinlik önce, `before_seen_at` + `before_id` ile anahtar tabanlı sayfa, isteğe bağlı `status` ve `device_id`: `items`, `next_before`. |
+| `POST /api/v1/tenants/{tenant_id}/alerts/{alert_id}/acknowledge` | Tenant admin | Boş body/`{}`; `open` → `acknowledged`, cevap uyarının `AlertView`'i. Kapalı uyarı 409. |
+| `POST /api/v1/tenants/{tenant_id}/alerts/{alert_id}/close` | Tenant admin | Boş body/`{}`; `open` veya `acknowledged` → `closed`, cevap uyarının `AlertView`'i. |
 | `POST /api/v1/tenants/{tenant_id}/devices/{device_id}/revoke` | Tenant admin | Boş body/`{}`; bütün cihaz credential'larını etkisizleştirir. |
 | `GET /api/v1/tenants/{tenant_id}/audit` | Tenant admin | Bounded başarılı yönetim olayları; sır veya ham payload içermez. |
 | `POST /api/v1/enroll` | Enrollment grant | `{label:"..."}`; 201: `tenant_id`, `device_id`, `credential_id`, `credential_secret`, `credential_expires_at`. |
@@ -42,7 +45,7 @@ JWKS yenilemesi: yöneticinin doğruladığı dosyaya eski+yeni public anahtarla
 | `POST /api/v1/device/events` | Device credential | Strict `altay-edr-event/v1` olay batch'i; 200 kabul cevabı. |
 | `POST /api/v1/device/credentials/rotate` | Device credential | `{}` veya `ttl_seconds`; yeni credential cevabı (süre yapılandırılmış credential süresini aşmaz), eski sır aynı transaction'da iptal edilir. |
 
-Liste yolları `limit=1..100` (varsayılan 50), `offset=0..10000` alır ve offset sayfalaması kullanır. Tek istisna olay zaman çizelgesidir: offset yerine `before_seq` ile anahtar tabanlı sayfalanır (aşağıda). Liste ve detay aynı tenant üyeliğini uygular. Bilinmeyen extra body alanları reddedilir.
+Liste yolları `limit=1..100` (varsayılan 50), `offset=0..10000` alır ve offset sayfalaması kullanır. İki istisna offset yerine anahtar tabanlı sayfalanır (aşağıda): olay zaman çizelgesi (`before_seq`) ve uyarı listesi (`before_seen_at` + `before_id`). Liste ve detay aynı tenant üyeliğini uygular. Bilinmeyen extra body alanları reddedilir.
 
 Kayıt hakkı varsayılanı 600 saniye, API üst sınırı 3600 saniyedir; yapılandırılmış daha dar üst sınır da uygulanır. Credential süresi `SP_CREDENTIAL_TTL_SECONDS` ile ayarlanır (60–2592000, varsayılan 86400). Rotasyon body aralığı 60–2592000 saniyedir, fakat verilen süre yapılandırılmış credential süresiyle sınırlanır: daha uzun istek bu değere indirilir, daha kısa istek olduğu gibi uygulanır; gerçek süre cevaptaki `credential_expires_at` alanıdır. Snapshot credential süresini uzatmaz; süresi dolmuş credential rotasyon yapamaz (401). Yeni cihaz ilk snapshot'a kadar `never_seen` kalır. Enrollment veya rotasyon commit'inden sonra cevap kaybolursa plaintext sır yeniden üretilemez; yönetici cihazı iptal edip yeni grant ile kayıt yaptırır.
 
@@ -78,14 +81,16 @@ Audit kaydı tenant başına sınırlıdır (`SP_MAX_AUDIT_EVENTS_PER_TENANT`, v
 
 `sequence` strict integer `1..2^63-1`; `message_id` lower-case kanonik UUID'dir. UTC metni `YYYY-MM-DDTHH:MM:SS[.fraction]Z` biçiminde doğrulanıp normalize edilir. En fazla üç benzersiz ürün: `hostbasedfirewall`, `termivar`, `antivirus`. Boş liste kabul edilir ve önceki ürün satırlarını kaldırır; detayda eksik ürünler `missing_products` ile bildirilir.
 
+Bilinen sınır (adım 4'ten önce de vardı): operatör konsolu yalnız `2^53-1`'e (`Number.MAX_SAFE_INTEGER`) kadar tamsayı okur. `2^53-1`'i aşan bir snapshot `sequence` cihaz kaydında `last_sequence` olarak döner; konsol o kaydı taşıyan cihaz listesi sayfasını ve cihaz ayrıntısını sözleşme hatası sayar, yani okuyamaz. Olay batch'indeki `event_seq` bu yüzden `2^53-1` ile sınırlıdır (aşağıda); snapshot `sequence` sınırı bu adımın dışında kaldı ve Snapshot V2'ye (Aşama 2, adım 3) not edildi.
+
 | Ürün | Alanlar ve yorum |
 |---|---|
 | Ortak | `catalog_available`, `version`, `source_observed_at`; gözlenmeyen değer `null`/`unknown`. `source=self_reported`, `producer_verification=not_verified` sabittir. Sürüm en fazla 64 güvenli karakterdir. |
 | HostBasedFirewall | `status`, `installed`, `reported_running`, `reported_stale`, `firewall_mode=enforce|sniff|unknown`, kapalı listeden en fazla 16 benzersiz `error_codes`. Merkezin enforcement doğrulaması değildir. |
-| Termivar | `status=experimental|unknown`, `scanner_installed`, `execution_available`, `report_presence=present|none|unknown`, `latest_report`. Çalıştırma iddiası `true` olamaz. Rapor varlığı scanner kurulumunu kanıtlamaz. |
+| Termivar Web | `status=experimental|unknown`, `scanner_installed`, `execution_available`, `report_presence=present|none|unknown`, `latest_report`. Çalıştırma iddiası `true` olamaz. Rapor varlığı scanner kurulumunu kanıtlamaz. |
 | Antivirüs | `status=planned|unknown`, `availability=unavailable|unknown`; aktif katalog/çalıştırma veya sürüm iddiası reddedilir. |
 
-Termivar `latest_report` yalnız digest, sabit rapor şeması, yerel `imported_at`, konu/kayıt sayıları, disposition ve severity sayıları, sabit kaynak/doğrulama/scope alanlarını içerir. `subject_count=1..1024`, `item_count` ve her sayaç `0..4096`; boolean sayı değildir. Her iki sayı grubunun toplamı `item_count` olmalıdır. `present` ile özet varlığı tutarlı olmalıdır. Ham hedef/URL/IP, kanıt, HTML, komut veya serbest metadata alanı yoktur.
+Termivar Web `latest_report` yalnız digest, sabit rapor şeması, yerel `imported_at`, konu/kayıt sayıları, disposition ve severity sayıları, sabit kaynak/doğrulama/scope alanlarını içerir. `subject_count=1..1024`, `item_count` ve her sayaç `0..4096`; boolean sayı değildir. Her iki sayı grubunun toplamı `item_count` olmalıdır. `present` ile özet varlığı tutarlı olmalıdır. Ham hedef/URL/IP, kanıt, HTML, komut veya serbest metadata alanı yoktur.
 
 200 kabul cevabı:
 
@@ -117,7 +122,8 @@ Sunucu `received_at` atar. Son mesaj aynı sıra/UUID/kanonik içerikle tekrarla
 ```
 
 - `schema_version` strict integer `1`; `batch_id` lower-case kanonik UUID; `batch_sequence` strict integer `1..2^63-1`.
-- `events` 1–200 olaydır ve `kind` alanına göre ayrılır. `event_seq` ajanın giden kutusundaki kayıt numarasıdır; strict integer `1..2^63-1`'dir ve batch içinde kesin artar. Numaralardaki boşluk, olayların cihazda kaybolduğunu gösterir (kuyruk taşması, giden kutusundan atılan kayıt, okunamayan veya eşlenemeyen kayıt). Bir cihazın ilk batch'inde `batch_sequence` ve ilk `event_seq` 1'den büyük veya eşit herhangi bir değer olabilir (ör. yeniden kayıttan sonra kayıt numaraları kaldığı yerden sürer).
+- `events` 1–200 olaydır ve `kind` alanına göre ayrılır. `event_seq` ajanın giden kutusundaki kayıt numarasıdır; strict integer `1..2^53-1`'dir (`9007199254740991`) ve batch içinde kesin artar. Numaralardaki boşluk, olayların cihazda kaybolduğunu gösterir (kuyruk taşması, giden kutusundan atılan kayıt, okunamayan veya eşlenemeyen kayıt). Bir cihazın ilk batch'inde `batch_sequence` ve ilk `event_seq` 1'den büyük veya eşit herhangi bir değer olabilir (ör. yeniden kayıttan sonra kayıt numaraları kaldığı yerden sürer).
+- **`event_seq` üst sınırı `2^53-1`:** operatör konsolunun tam okuyabildiği en büyük tamsayıdır (`Number.MAX_SAFE_INTEGER`); konsol daha büyük bir tamsayı içeren yanıtın tamamını sözleşme hatası sayar. Daha büyük bir `event_seq` taşıyan batch, diğer sözleşme ihlalleri gibi bütünüyle 422 alır: hiçbir olayı saklanmaz, hiçbir kural çalışmaz, imleç ilerlemez. Böylece Platform'un `event_seq`'ten türettiği sayılar da konsolun aralığında kalır: zaman çizelgesindeki `event_seq` ve `next_before_seq`, uyarının `first_event_seq`/`last_event_seq` değerleri ve `missing_events` (bir cihazın kesin artan numaraları arasındaki boşlukların birikimli toplamı, en çok `2^53-3`). `batch_sequence`, snapshot `sequence` ve zaman çizelgesinin `before_seq` parametresi `1..2^63-1` kalır. Numarası `2^53-1`'e ulaşmış bir cihazın sonraki her batch'i 422 alır; kurtarma yeniden kayıttır. Ajanın numaraları pratikte bu sınıra ulaşmaz.
 - `observed_at` cihaz saatidir ve doğrulanmaz. Snapshot'taki UTC metin kuralı geçerlidir: yalnız `Z`, en çok 6 kesir hanesi; değer mikrosaniyeyle normalize edilip saklanır. Normalize edilmiş değer `1970-01-01T00:00:00Z <= observed_at < 9999-01-01T00:00:00Z` aralığında olmalıdır; dışındaki değer 422 alır. PostgreSQL zamanı oturumun saat diliminde döndürür ve Python sürücüsü 9999'dan sonraki veya 1'den önceki yılı okuyamaz; bu aralıktaki her an her saat diliminde okunur, böylece tek bir olay zaman çizelgesini okunamaz hâle getiremez. Veritabanı aynı sınırı `ck_endpoint_event_observed_at` CHECK kısıtıyla uygular.
 
 | Tür | Alanlar |
@@ -186,10 +192,64 @@ Olay batch'inin her 409 cevabı cihazın imlecini taşır: `last_batch_sequence`
 `GET /api/v1/tenants/{tenant_id}/devices/{device_id}/events?before_seq=&limit=` tenant viewer ve admin içindir. Cihaz bu tenant'ta yoksa cihaz detayındaki gibi 404 döner. Sonuç en yeni olay önce sıralanır. Offset 10.000'de durduğu için sayfalama anahtar tabanlıdır: `before_seq` (dahil değil, `1..2^63-1`) ve `limit` (`1..100`, varsayılan 50). Sonraki sayfa için cevaptaki `next_before_seq` verilir; son sayfada değer `null` olur.
 
 ```json
-{"items":[{"event_seq":3,"kind":"sensor_state","observed_at":"2030-01-01T00:00:06Z","received_at":"2030-01-01T00:00:10Z","state":"lost","error_code":"session_in_use","source":"self_reported","producer_verification":"not_verified"}],"next_before_seq":null,"cap_deleted_events":0}
+{"items":[{"event_seq":3,"kind":"sensor_state","observed_at":"2030-01-01T00:00:06Z","received_at":"2030-01-01T00:00:10Z","state":"lost","error_code":"session_in_use","source":"self_reported","producer_verification":"not_verified"}],"next_before_seq":null,"cap_deleted_events":0,"suppressed_alerts":0}
 ```
 
-Her öğe `event_seq`, `kind`, `observed_at`, `received_at`, türün alanları ve sabit `source`/`producer_verification` değerlerini içerir. Üst düzeydeki `cap_deleted_events`, cihaz başına üst sınırın bu cihazın satırlarından alış sırasında sildiği satırların toplamıdır. Cihazın henüz kabul edilmiş bir olay batch'i yoksa (imleci yoksa) değer `0`'dır. `events prune` ile zamana göre silinen satırlar bu sayıya katılmaz. Değer sayfaya bağlı değildir ve sunucunun kendi sayımıdır, cihaz beyanı değildir. Operatör konsolu bu yolu henüz kullanmaz.
+Her öğe `event_seq`, `kind`, `observed_at`, `received_at`, türün alanları ve sabit `source`/`producer_verification` değerlerini içerir. Üst düzeydeki `cap_deleted_events`, cihaz başına üst sınırın bu cihazın satırlarından alış sırasında sildiği satırların toplamıdır; `events prune` ile zamana göre silinen satırlar bu sayıya katılmaz. `suppressed_alerts`, cihazın kapanmamış uyarı sınırı dolu olduğu için açılmayan uyarıların toplamıdır (aşağıda, "Uyarılar"). Cihazın henüz kabul edilmiş bir olay batch'i yoksa (imleci yoksa) iki değer de `0`'dır. Değerler sayfaya bağlı değildir ve sunucunun kendi sayımıdır, cihaz beyanı değildir. Operatör konsolu bu yolu cihaz ayrıntısındaki olay zaman çizelgesinde okur.
+
+## Uyarılar
+
+**Kural tespiti teşhis değildir.** Bir uyarı, cihazın kendi beyanı olan olayların yerleşik ve basit bir kurala uyduğunu söyler; kötü amaçlı yazılım, saldırı veya ihlal kanıtı değildir. Kötü niyetli bir cihaz kendi uyarılarını üretebilir veya bastırabilir ([tehdit modeli](THREAT_MODEL.tr.md)). Her uyarı, olaylar gibi `source=self_reported` ve `producer_verification=not_verified` kalır.
+
+**Nerede çalışır.** Kurallar olay alımının içinde, aynı transaction'da ve yalnız yeni kabul edilen batch'in olayları için çalışır; olaylar ve uyarıları birlikte commit edilir ya da birlikte geri alınır. Son batch'in tam tekrarı, 409, 413 ve 422 hiçbir kural çalıştırmaz. Kurallar yalnız sözleşme alanlarını okur: saklanan maskeli görüntü yolu, pid'ler, tür, durum ve kodlar. Kullanıcı tanımlı kural yoktur.
+
+| Kural | Önem | Eşleşme | Anahtar metni | `evidence` |
+|---|---|---|---|---|
+| `user_writable_launch` | `low` | Kullanıcının yazabildiği bir konumdan başlayan `process_started` | Görüntü yolu, casefold | `{"image","pid"}` |
+| `office_browser_spawned_tool` | `medium` | Ofis uygulamasının veya tarayıcının başlattığı sistem aracı | `<üst dosya adı>><çocuk dosya adı>` | `{"image","pid","parent_image","parent_pid"}` |
+| `sensor_unstable` | `medium` | `state` değeri `lost` veya `failed` olan `sensor_state` | Durum (`lost` / `failed`) | `{"state","error_code"}` |
+| `event_loss` | `medium` | `event_seq` boşluğu | `event_loss` | `{"missing_events"}` |
+
+- **`user_writable_launch`:** görüntü yolu `\` ve `/` işaretlerinden bileşenlere ayrılır; her bileşenin yalnız ilk `:` öncesi kısmı büyük/küçük harf duyarsız (Unicode casefold) karşılaştırılır. Bir `Users` bileşeninden sonra maskeli profil `*` ve ardından `AppData` veya `Downloads` geliyorsa, `Users`'tan hemen sonra `Public` geliyorsa ya da herhangi bir bileşen `Temp` ise eşleşir. `\Users\*\AppData\Local\x.exe`, `\Users\*:akış\Downloads\x.exe` ve `\Windows\Temp\x.exe` eşleşir; `\Windows\Temporary\x.exe`, `\Tools\temp.exe` ve `\Users\*\Documents\x.exe` eşleşmez. Ajan `Users\Public`'i de profil klasörü gibi maskeler (`Users\*`); bu yüzden `Public` dalı yalnız alışılmadık `Users` yazımlarında (ör. `Users:x`) çalışır ve `C:\Users\Public\Documents` gibi bir konum yakalanmaz.
+- **`office_browser_spawned_tool`:** dosya adı (son bileşen, casefold, ilk `:` öncesi) `mshta.exe`, `regsvr32.exe`, `rundll32.exe`, `wscript.exe`, `cscript.exe`, `powershell.exe`, `pwsh.exe`, `cmd.exe`, `certutil.exe`, `bitsadmin.exe`, `msbuild.exe`, `installutil.exe`, `wmic.exe` veya `schtasks.exe` olan bir `process_started`. Üst sürecin dosya adı `winword.exe`, `excel.exe`, `powerpnt.exe`, `outlook.exe`, `msaccess.exe`, `mspub.exe`, `onenote.exe`, `visio.exe`, `chrome.exe`, `msedge.exe`, `firefox.exe`, `brave.exe`, `opera.exe` veya `iexplore.exe` olmalıdır. Üst süreç, aynı cihazın `pid == parent_pid` olan ve daha küçük `event_seq`'li en son `process_started` olayıdır; ikisinin arasında o pid'in `process_stopped` olayı olmamalıdır. pid yeniden kullanılmışsa en son başlangıç geçerlidir. Önce bu batch'e, sonra saklanan olaylara bakılır. Arama cihazın önceki 2000 `event_seq` değeriyle sınırlıdır (çocuk `n` ise `n−2000 … n−1`). Bu pencerenin dışındaki ya da zamana göre saklama veya cihaz başına üst sınır nedeniyle silinmiş bir üst süreç bulunmaz ve kural sessiz kalır.
+- **`sensor_unstable`:** `lost` ve `failed` ayrı anahtarlardır. `occurrences` tekrarları ("tekrar tekrar düşme") sayar; `evidence` en son eşleşmenin durumu ve kodudur (kod `null` olabilir).
+- **`event_loss`:** batch içinde ardışık iki olay arasında birden büyük fark ya da imlecin `last_event_seq` değeri ile batch'in ilk olayı arasındaki boşluk. Yalnız imleci olan cihazda çalışır: cihazın ilk batch'i 1'den büyük başlayabilir ve içindeki boşluklar kayıp sayılmaz. `occurrences` boşluk sayısı kadar artar; `missing_events` kayıp numaraların uyarı kapanana kadar birikimli toplamıdır.
+
+**Tekilleştirme.** Bir (tenant, cihaz, kural, anahtar) için kapanmamış (`open` veya `acknowledged`) bir uyarı varken yeni eşleşme yenisini açmaz, onu günceller: `occurrences` eşleşme sayısı kadar artar, `last_event_seq` en yüksek eşleşen `event_seq`, `last_seen_at` bu batch'in `received_at` değeri olur, `evidence` en son eşleşmeninkiyle değişir (`missing_events` birikir), durum değişmez. Kapatılmış bir uyarıdan sonraki eşleşme yeni bir uyarı açar. `dedup_key`, anahtar metninin küçük harfli onaltılık SHA-256 özetidir. Batch'teki her farklı anahtar tek bir `INSERT … ON CONFLICT` deyimidir; kısmi tekil indeks (`status <> 'closed'`) anahtar başına kapanmamış tek uyarıyı garanti eder. Bir kapatma ile aynı anahtarın alımı yarışırsa sonuç ya kapalı uyarı ile yeni açık bir uyarı ya da eşleşmeyi içeren kapalı uyarıdır; iki kapanmamış uyarı veya hata olmaz.
+
+**Kanıt sınırı.** `evidence` PostgreSQL'de en çok 4096 bayttır (`ck_alert_evidence_bytes`). Yalnız `office_browser_spawned_tool` iki olayın yolunu taşıdığı için bunu aşabilir; o zaman iki yol başlarından kısaltılır, önlerine `…` konur ve dosya adları korunur. Baştan kısaltma maskeli bir profil klasörünü açığa çıkarmaz.
+
+**Cihaz başına sınır.** `SP_MAX_OPEN_ALERTS_PER_DEVICE` (varsayılan 500, aralık 10–100000): cihazın kapanmamış uyarı sayısı bu değere ulaşmışsa yeni bir uyarı açacak eşleşme hiçbir şey açmaz ve cihaz imlecindeki `suppressed_alerts` sayacı bir artar (batch ve anahtar başına bir). Mevcut uyarıların güncellenmesi hiçbir zaman bastırılmaz; onaylanmış uyarı da sınıra sayılır; kapatma yer açar. Sayaç olay zaman çizelgesi cevabında döner.
+
+**Saklama yok.** Uyarılar bu adımda silinmez: runtime hesabının `alerts` üzerinde DELETE hakkı yoktur ve `events prune` uyarılara dokunmaz. Olayları silinmiş bir uyarı kalır; kanıtı uyarının kendi satırındadır.
+
+### Uyarı listesi
+
+`GET /api/v1/tenants/{tenant_id}/alerts` tenant'ın her üyesi (viewer veya admin) içindir. Sorgu parametreleri:
+
+- `status`: isteğe bağlı; `open`, `acknowledged` veya `closed`.
+- `device_id`: isteğe bağlı cihaz UUID'si. Cihaz bu tenant'ta yoksa (bilinmeyen ya da başka tenant'ın) olay zaman çizelgesindeki gibi 404.
+- `limit`: `1..100`, varsayılan 50.
+- `before_seen_at` ve `before_id`: anahtar tabanlı sayfa; ikisi birlikte verilir ya da hiç verilmez. `before_seen_at` tam altı kesir haneli UTC metnidir (`2030-01-01T00:00:10.000000Z`).
+
+Sıra en son etkinlik öncedir: (`last_seen_at` azalan, `id` azalan). Aynı batch'in uyarıları aynı `last_seen_at` değerini paylaşır; eşitliği `id` bozar. Sonraki sayfa için cevaptaki `next_before` (`{"seen_at","id"}`) değerleri `before_seen_at` ve `before_id` olarak verilir; son sayfada `null` olur. İki sayfa okuması arasında yeni eşleşme alan bir uyarı başa geçer ve sonraki sayfalarda tekrar görünmez. Geçersiz parametre (tek başına cursor değeri, başka biçimde ya da var olmayan bir zaman, aralık dışı `limit`, bilinmeyen `status`) olay zaman çizelgesindeki gibi `422 {"detail":"invalid_request"}` alır. `offset` bir sayfalama denetimi değildir.
+
+```json
+{"items":[{"id":"00000000-0000-4000-8000-000000000003","device_id":"00000000-0000-4000-8000-000000000004","rule":"office_browser_spawned_tool","severity":"medium","status":"open","occurrences":2,"first_event_seq":41,"last_event_seq":57,"first_seen_at":"2030-01-01T00:00:10Z","last_seen_at":"2030-01-01T00:05:10.250000Z","evidence":{"image":"\\Device\\HarddiskVolume3\\Windows\\System32\\cmd.exe","pid":4400,"parent_image":"\\Device\\HarddiskVolume3\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE","parent_pid":4321},"acknowledged_at":null,"closed_at":null,"source":"self_reported","producer_verification":"not_verified"}],"next_before":null}
+```
+
+**`AlertView`** anahtarları tam olarak `id`, `device_id`, `rule`, `severity`, `status`, `occurrences`, `first_event_seq`, `last_event_seq`, `first_seen_at`, `last_seen_at`, `evidence`, `acknowledged_at`, `closed_at`, `source` ve `producer_verification`'dır. `first_seen_at` ve `last_seen_at` eşleşen batch'lerin sunucu alım zamanıdır (`received_at`), cihaz saati değildir; zamanlar diğer cevaplardaki gibi yazılır. `evidence` kurala göre yukarıdaki anahtarları taşır. `acknowledged_at` ve `closed_at` geçiş zamanlarıdır, yoksa `null`. Onaylayan ve kapatan operatörün kimliği satırda tutulur, cevapta yoktur.
+
+### Onaylama ve kapatma
+
+`POST /api/v1/tenants/{tenant_id}/alerts/{alert_id}/acknowledge` ve `POST /api/v1/tenants/{tenant_id}/alerts/{alert_id}/close` yalnız `tenant_admin` içindir; rol cihaz iptalindeki gibi güncel üyelikten okunur (viewer 403). Body boş veya `{}`'dur; başka alan 422 alır. Geçiş için uyarı satırı kilitlenir. Cevap uyarının `AlertView`'idir.
+
+| İstek | `open` uyarı | `acknowledged` uyarı | `closed` uyarı |
+|---|---|---|---|
+| `acknowledge` | `acknowledged` olur; audit `alert_acknowledged` | 200, değişmez, audit yok | `409 {"detail":"Alert is closed"}` |
+| `close` | `closed` olur; audit `alert_closed` | `closed` olur; audit `alert_closed` | 200, değişmez, audit yok |
+
+Bilinmeyen ya da başka tenant'ın uyarısı 404'tür. Audit satırı nesneyi `alert` türü ve uyarının kimliğiyle (`object_id`) adlandırır; kanıtı hiçbir zaman taşımaz. Audit tablosunda ayrıntı sütunu olmadığı için uyarının cihazı ve kuralı audit satırında değil, silinmeyen uyarı satırındadır. Konsol Aşama 2'de salt okunurdur; onaylama ve kapatma yalnız bu API ile yapılır.
 
 ## Hatalar ve sınırlar
 
@@ -199,9 +259,9 @@ Her öğe `event_seq`, `kind`, `observed_at`, `received_at`, türün alanları v
 | 401 | Eksik, yanlış amaçlı, süresi geçmiş, iptal edilmiş veya geçersiz credential. |
 | 403 | Kendi tenant'ında yetersiz rol veya yabancı Origin. |
 | 404 | Kaynak yok veya bu tenant üyeliğiyle görünmez. |
-| 409 | Sıra/içerik çakışması, aşılmış mesaj veya olay batch'i ya da tüketilmiş grant iptali. Olay batch'inin 409'u tanı için cihaz imlecini de (`last_batch_sequence`, `last_event_seq`) taşır. |
+| 409 | Sıra/içerik çakışması, aşılmış mesaj veya olay batch'i, tüketilmiş grant iptali ya da kapalı uyarının onaylanması (`Alert is closed`). Olay batch'inin 409'u tanı için cihaz imlecini de (`last_batch_sequence`, `last_event_seq`) taşır. |
 | 408 / 413 / 415 | Body süresi / boyut-parça sayısı veya kanonik biçimi 16 KiB'ı aşan olay batch'i (`Event batch too large`) / JSON olmayan veya sıkıştırılmış body. |
-| 422 | DTO tipi, extra alan, ürün/semantik doğrulama hatası; olay servisinin yeniden doğrulamasındaki sözleşme ihlali (`Invalid event batch`); girdinin tamamı geri döndürülmez. |
+| 422 | DTO tipi, extra alan, geçersiz sorgu parametresi (ör. uyarı listesinin eksik veya bozuk cursor'ı), ürün/semantik doğrulama hatası; olay servisinin yeniden doğrulamasındaki sözleşme ihlali (`Invalid event batch`); girdinin tamamı geri döndürülmez. |
 | 429 | İstek bütçesi veya tenant kotası. |
 | 503 | DB kullanılamıyor; başarı uydurulmaz. |
 

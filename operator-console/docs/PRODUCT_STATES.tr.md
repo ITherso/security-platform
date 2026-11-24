@@ -9,7 +9,7 @@ Bu ekran güvenlik skoru veya enforcement denetimi değildir. Kayda erişim, ba�
 | Konsolun son yükleme saati | Kullanıcının son GET/görünüm okuması | Cihazdan yeni rapor geldiğini kanıtlamaz. |
 | `last_received_at` / ürün `received_at` | Merkezin son snapshot kabulü | Ürünün o anda sağlıklı veya enforcement'ın etkin olduğunu kanıtlamaz. |
 | `source_observed_at` / `observation` | Cihazın bildirdiği kaynak zaman ve API yaş zarfı | Bağımsız saat doğrulaması değildir. |
-| Termivar `imported_at` / `report_import_age` | Cihazdaki yerel rapor içe aktarması | Rapor üretim, tarama veya scanner çalışma zamanı değildir. |
+| Termivar Web `imported_at` / `report_import_age` | Cihazdaki yerel rapor içe aktarması | Rapor üretim, tarama veya scanner çalışma zamanı değildir. |
 
 Ekranı yenilemek yalnız konsolun okuma bilgisini değiştirir. API'nin `connection_status` değeri aynen korunur; UI yeni stale eşiği veya SLA icat etmez. Tarayıcı saatinden ek yaş gösterilirse yalnız görüntüleme bilgisidir. `clock_state=future` pozitif bir tazelik/sağlık işareti değildir; yaş bilinmiyor kalır.
 
@@ -34,7 +34,7 @@ Ekranı yenilemek yalnız konsolun okuma bilgisini değiştirir. API'nin `connec
 
 `firewall_mode=enforce` bildirilen uygulama modu, `sniff` gözlem modu, `unknown` bilinmeyen moddur. Tek başına “trafik korunuyor” rozeti oluşturmaz. Hata kodunun yokluğu veya boş hata listesi olumlu güvenlik kabulü değildir. Kaynak/alım eskiliği ayrıca görünür kalır.
 
-## Termivar
+## Termivar Web
 
 `experimental/unknown` ürün durumu; `scanner_installed`, `execution_available` ve `report_presence` birbirinden ayrıdır. `present` yalnız son rapor özetinin varlığını, `none` bu snapshot'ta rapor olmadığını, `unknown` bilinmediğini söyler. Rapor olması scanner'ın kurulu/çalışır olduğu veya merkezden tarama yapıldığı kanıtı değildir. Bu ürün arayüzünde scan/import/target/ham kanıt görünümü yoktur.
 
@@ -49,6 +49,19 @@ Ekranı yenilemek yalnız konsolun okuma bilgisini değiştirir. API'nin `connec
 Runtime doğrulama gerekli alanları/türleri ve ilişkileri kontrol eder. Bilinmeyen güven/koruma enum'u olumluya çevrilmez; eksik/uygunsuz yanıt açık hatadır. JavaScript'in kesin temsil sınırını aşan BIGINT/sayaç değerleri yuvarlanmaz: fail closed sözleşme hatası gösterilir. 401 bağlantıyı temizler, 403 erişimi reddeder; ikisi “kayıt yok” değildir. Canlı API hatasında sentetik kayda geçilmez.
 
 Örnek veri kipinde bu senaryolar yalnız ürün görünümünü anlatır. Gerçek Windows kabulü, IdP, üretim API, policy revision otoritesi veya enforcement kanıtı oluşturmaz.
+
+## Olaylar ve uyarılar
+
+| Görünen bilgi | Anlamı | Ne kanıtlamaz? |
+|---|---|---|
+| Olay satırı | Cihazın bildirdiği süreç veya sensör olayı (`self_reported`, `not_verified`). | Olayın gerçekten olduğunu veya cihazın tam kayıt tuttuğunu. |
+| Gözlem / alım zamanı | Cihaz saati / sunucunun batch'i aldığı an. | Cihaz saatinin doğruluğunu. |
+| “n olay kayıp” satırı | Yüklenen iki olay arasında platformun tutmadığı sıra numaraları. | Kaybın nedenini (cihaz kaybı, sınır veya saklama silmesi). |
+| Sınırın sildiği olaylar, bastırılan uyarılar | Platformun cihaz başına sayaçları. | Cihazın davranışının zararsız veya zararlı olduğunu. |
+| Uyarı | Cihaz olaylarının basit bir sunucu kuralına uyması; tekrarlar bir uyarıda sayılır. | Teşhis, kötü amaçlı yazılım, saldırı veya ihlal. Kötü niyetli bir cihaz kendi uyarılarını tetikleyebilir veya bastırabilir. |
+| Açık / onaylandı / kapatıldı | API'de yapılan operatör geçişi; konsol bunu değiştirmez. | Olayın incelendiğini veya çözüldüğünü. |
+
+Uyarı yokluğu “temiz cihaz” değildir: kurallar dar ve basittir, olaylar eksik olabilir ve uyarıların saklama süresi henüz yoktur.
 
 ## Seçili cihaz raporu
 

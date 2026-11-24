@@ -87,12 +87,13 @@ Runtime hakları mevcut tablo sözleşmesine göre açıkça verilir:
 | `audit_events` | SELECT, INSERT, DELETE; UPDATE verilmez |
 | `endpoint_events` | SELECT, INSERT, DELETE; UPDATE verilmez |
 | `device_event_cursors` | SELECT, INSERT, UPDATE (imleç satır kilidi dahil); DELETE verilmez |
+| `alerts` | SELECT, INSERT, UPDATE (alışta açma ve güncelleme, onaylama/kapatma satır kilidi dahil); DELETE verilmez |
 
-Olay satırlarındaki DELETE yalnız alış sırasındaki cihaz başına üst sınır ve `events prune` saklaması içindir; olay satırı güncellenemez. Runtime hesabı tenant'ın `event_retention_days` değerini değiştiremez (`tenants` üzerinde yalnız `UPDATE(id)` vardır).
+Olay satırlarındaki DELETE yalnız alış sırasındaki cihaz başına üst sınır ve `events prune` saklaması içindir; olay satırı güncellenemez. Runtime hesabı tenant'ın `event_retention_days` değerini değiştiremez (`tenants` üzerinde yalnız `UPDATE(id)` vardır). Uyarıların bu sürümde saklama süresi yoktur: runtime hesabı uyarı silemez, `events prune` uyarılara dokunmaz.
 
 Audit DELETE yalnız uygulamanın tenant'a göre sınırlandırdığı eski kayıt temizliği için kullanılır; genel audit değiştirme/silme endpointi yoktur. Runtime DB credential'ının ele geçirilmesi, saldırganın SQL üzerinden audit kayıtlarını silmesine izin verebilir. Bu tasarım DB credential'ına veya DB yöneticisine karşı değişmez/kriptografik audit sağlamaz. Tenant sorgu kapsamı ve birleşik foreign key'ler ayrıca gerçek PostgreSQL üzerinde test edilir; mevcut uygulama RLS kullandığını iddia etmez.
 
-Migration sonrasında `grant` yeniden çalıştırılır. Araç tabloların migration hesabına ait olduğunu ve beklenen tablo kümesinin mevcut olduğunu denetler; bütün tablolara geniş `ALL` yetkisi vermez. Yeni migration yeni runtime ihtiyacı eklerse grant sözleşmesi ayrıca incelenmelidir. `0002_endpoint_events` migration'ı `endpoint_events` ve `device_event_cursors` tablolarını ve `tenants.event_retention_days` sütununu ekler; bu migration'dan sonra `grant` çalıştırılmadan olay uç noktaları runtime hesabıyla çalışmaz (503).
+Migration sonrasında `grant` yeniden çalıştırılır. Araç tabloların migration hesabına ait olduğunu ve beklenen tablo kümesinin mevcut olduğunu denetler; bütün tablolara geniş `ALL` yetkisi vermez. Yeni migration yeni runtime ihtiyacı eklerse grant sözleşmesi ayrıca incelenmelidir. `0002_endpoint_events` migration'ı `endpoint_events` ve `device_event_cursors` tablolarını ve `tenants.event_retention_days` sütununu ekler; bu migration'dan sonra `grant` çalıştırılmadan olay uç noktaları runtime hesabıyla çalışmaz (503). `0003_alerts` migration'ı `alerts` tablosunu ve `device_event_cursors.suppressed_alerts` sütununu (mevcut imleçlerde 0) ekler. Kurallar olay alımının içinde çalıştığı için bu migration'dan sonra `grant` çalıştırılmadan bir kurala uyan her olay batch'i ve uyarı yolları 503 alır.
 
 ## Olay saklama ve günlük temizlik
 
@@ -153,6 +154,16 @@ schtasks /Query /TN "SecurityPlatform\EventsPrune" /V /FO LIST
 İlk komutta `LastTaskResult`, ikincisinde son çalışma sonucu alanı (İngilizce sistemlerde `Last Result`) bu değeri gösterir. Görev hiç başlamazsa (ör. görev devre dışı bırakıldıysa veya saklı parolanın süresi dolduysa) son sonuç önceki değerinde, çoğunlukla `0`'da kalır; bu yüzden `LastRunTime` değerinin son 24 saat içinde olduğunu da denetleyin.
 
 Komut çalıştırılmazsa yalnız cihaz başına üst sınır korur; zamana göre saklama uygulanmaz.
+
+## Uyarı sınırı
+
+Uyarı kuralları olay alımının içinde çalışır ([API V1](API_V1.tr.md), "Uyarılar"). Kötü niyetli ama kayıtlı bir cihazın operatörleri uyarıya boğmaması için cihaz başına kapanmamış (`open` veya `acknowledged`) uyarı sayısı sınırlıdır:
+
+- `SP_MAX_OPEN_ALERTS_PER_DEVICE` (varsayılan 500, aralık 10–100000; aralık dışı veya tam sayı olmayan değerle servis başlamaz). Cihaz bu sayıda kapanmamış uyarı tutarken yeni bir uyarı açacak eşleşme hiçbir şey açmaz; cihaz imlecindeki `suppressed_alerts` sayacı batch ve anahtar başına bir artar ve olay zaman çizelgesi cevabında görünür. Açık bir uyarının güncellenmesi hiçbir zaman bastırılmaz. `tenant_admin`'in kapattığı her uyarı bir yer açar.
+- Sınır düşürülürse mevcut uyarılar kapanmaz veya silinmez; cihaz sınırın altına inene kadar yeni anahtarlar bastırılır.
+- Uyarıların saklama süresi yoktur. Runtime hesabı uyarı silemez; kapalı uyarılar da tabloda kalır. Bu açık bir iştir; disk alanı hesabında cihaz başına en çok bu sınır kadar kapanmamış uyarı ve operatör kapattıkça biriken kapalı uyarılar düşünülmelidir.
+
+`suppressed_alerts` toplam bir sayaçtır ve hiç azalmaz. Değeri artıyorsa cihaz sınırdadır: operatörün o cihazın uyarılarını incelemesi ve kapatması gerekir. Sayaç cihazın kendi beyanından türeyen bir sunucu sayımıdır; kötü niyetli bir cihaz sınırı bilerek doldurabilir ([tehdit modeli](THREAT_MODEL.tr.md)).
 
 ## Test, günlük ve durdurma
 

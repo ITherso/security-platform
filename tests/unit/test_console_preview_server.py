@@ -199,7 +199,7 @@ def test_host_header_guard_accepts_loopback_names(preview, host):
 # --- Static checks for the operator-console strictJson profiles (TypeScript is not compiled here).
 
 SRC = CONSOLE / "src"
-PROFILES = {"default", "termivar-comparison-v1", "termivar-assessment-v1", "sp-hbf-preview-v1"}
+PROFILES = {"default", "termivar-comparison-v1", "termivar-assessment-v1", "sp-hbf-preview-v1", "sp-events-alerts-v1"}
 BUDGET = re.compile(r'^\s*"?([a-z0-9-]+)"?: \{ depth: (\d+), nodes: (\d+), stringUnits: (\d+), arrayItems: (\d+), '
                     r'objectKeys: (\d+), tokens: (\d+) \},$', re.M)
 TOKEN = re.compile(r'"(?:\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|[^"\\\x00-\x1f])*"|[{}\[\]:,]'
@@ -248,6 +248,80 @@ def test_strict_json_profiles_are_closed_and_wired():
     assert 'strictJson(contents, "sp-hbf-preview-v1")' in policy and "strictJson(contents)" not in policy
     assert budgets["default"] == {"depth": 12, "nodes": 12000, "stringUnits": 1024, "arrayItems": 100,
                                   "objectKeys": 32, "tokens": 60000}
+    # The live adapter picks the profile from the fixed route: timeline and alert pages get the event profile.
+    adapter = (SRC / "adapters" / "platformReadOnly.ts").read_text(encoding="utf-8")
+    assert ('return operation.type === "events" || operation.type === "alerts" ? "sp-events-alerts-v1" : "default";'
+            in adapter)
+    assert "normalize(await bodyJson(response, responseProfile(operation)))" in adapter
+    assert 'decode(bytes), profile); }' in adapter and adapter.count("strictJson(") == 1
+    assert budgets["sp-events-alerts-v1"] == {**budgets["default"], "stringUnits": 2048}
+
+
+def _largest_contract_image(prefix, suffix, fields):
+    """The contract-valid process_started image with the most UTF-16 units for these event fields.
+
+    1,024 code points, as many of them non-BMP (two UTF-16 units, four UTF-8 bytes) as the 4 KiB stored-event
+    bound allows; the real Platform contract decides.
+    """
+    from pydantic import ValidationError
+
+    from security_platform.event_contracts import ProcessStarted
+
+    longest = None
+    for astral in range(1024 - len(prefix) - len(suffix) + 1):
+        image = prefix + "\U0001F512" * astral + "x" * (1024 - len(prefix) - len(suffix) - astral) + suffix
+        try:
+            ProcessStarted.model_validate({**fields, "image": image})
+        except ValidationError:
+            break
+        longest = image
+    return longest
+
+
+def test_event_profile_fits_contract_maximum_non_bmp_images_in_full_pages():
+    from datetime import datetime, timezone
+    from types import SimpleNamespace
+    from uuid import UUID
+
+    from security_platform.event_contracts import MAX_EVENT_SEQ, ProcessStarted
+    from security_platform.services.alerts import alert_view, keyset_time
+    from security_platform.services.events import _event_view
+
+    source, budgets = _budgets()
+    profile = budgets["sp-events-alerts-v1"]
+    # The contract bound: an image of at most 1,024 code points is at most 2,048 UTF-16 units, the profile's budget,
+    # and the console's image normalizer (maskedImage -> text) accepts exactly that.
+    [limit] = [item.max_length for item in ProcessStarted.model_fields["image"].metadata if hasattr(item, "max_length")]
+    assert limit == 1024 and profile["stringUnits"] == 2 * limit
+    assert "const image = eventText(value, 1024);" in source
+    assert "value.length <= maximum * 2 && [...value].length <= maximum" in source
+    assert "image: maskedImage(value.image)" in source and "maskedImage(evidence.parent_image)" in source
+    fields = {"kind": "process_started", "event_seq": MAX_EVENT_SEQ, "observed_at": "2030-01-02T03:04:05.000006Z",
+              "pid": 2**32 - 1, "parent_pid": 2**32 - 1, "session_id": 2**32 - 1}
+    image = _largest_contract_image("\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\", ".exe", fields)
+    units = len(image.encode("utf-16-le")) // 2
+    assert len(image) == 1024 and budgets["default"]["stringUnits"] < units <= profile["stringUnits"], units
+    # Full 100-item pages exactly as the Platform's view functions render them.
+    when = datetime(2030, 1, 2, 3, 4, 6, tzinfo=timezone.utc)
+    events = [SimpleNamespace(event_seq=MAX_EVENT_SEQ - index, kind="process_started", observed_at=when,
+                              received_at=when, payload=ProcessStarted.model_validate(
+                                  {**fields, "event_seq": MAX_EVENT_SEQ - index, "image": image}).model_dump(mode="json"))
+              for index in range(100)]
+    alerts = [SimpleNamespace(id=UUID(int=1000 - index), device_id=UUID(int=7), rule="user_writable_launch",
+                              severity="low", status="open", occurrences=2**31, first_event_seq=MAX_EVENT_SEQ - 100,
+                              last_event_seq=MAX_EVENT_SEQ - index, first_seen_at=when, last_seen_at=when,
+                              evidence={"image": image, "pid": 2**32 - 1}, acknowledged_at=None, closed_at=None)
+              for index in range(100)]
+    pages = [{"items": [_event_view(row) for row in events], "next_before_seq": events[-1].event_seq,
+              "cap_deleted_events": 0, "suppressed_alerts": 0},
+             {"items": [alert_view(row) for row in alerts],
+              "next_before": {"seen_at": keyset_time(when), "id": str(alerts[-1].id)}}]
+    for page in pages:
+        text = json.dumps(page, ensure_ascii=False, separators=(",", ":"))
+        assert len(text.encode("utf-8")) <= 512 * 1024
+        assert not _fits(text, budgets["default"])[0]
+        fits, usage = _fits(text, profile)
+        assert fits, usage
 
 
 def test_policy_profile_fits_cli_maximum_preview_within_512_kib():

@@ -28,6 +28,7 @@ const AUDIT_ACTIONS: Readonly<Record<string, ProductTextKey>> = {
   enrollment_grant_revoked: "product.audit.action.enrollment_grant_revoked", device_enrolled: "product.audit.action.device_enrolled",
   device_revoked: "product.audit.action.device_revoked", device_credential_rotated: "product.audit.action.device_credential_rotated",
   tenant_event_retention_set: "product.audit.action.tenant_event_retention_set",
+  alert_acknowledged: "product.audit.action.alert_acknowledged", alert_closed: "product.audit.action.alert_closed",
 };
 const ACTOR_LABELS: Readonly<Record<string, ProductTextKey>> = {
   operator: "product.audit.actor.operator", device: "product.audit.actor.device", local_admin: "product.audit.actor.local_admin",
@@ -35,6 +36,7 @@ const ACTOR_LABELS: Readonly<Record<string, ProductTextKey>> = {
 const OBJECT_LABELS: Readonly<Record<string, ProductTextKey>> = {
   tenant: "product.audit.object.tenant", membership: "product.audit.object.membership", enrollment_grant: "product.audit.object.enrollment_grant",
   device: "product.audit.object.device", device_credential: "product.audit.object.device_credential",
+  alert: "product.audit.object.alert",
 };
 const SEVERITIES = [
   ["critical", "product.severity.critical"], ["high", "product.severity.high"], ["medium", "product.severity.medium"],

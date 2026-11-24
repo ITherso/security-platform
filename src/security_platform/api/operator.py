@@ -1,12 +1,14 @@
-from typing import Annotated
+from typing import Annotated, Literal
 from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Query, Request
+from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel, ConfigDict, Field
 
 from security_platform.auth.principals import OperatorPrincipal
 from security_platform.contracts import MAX_SEQUENCE
-from security_platform.services import audit, enrollment, events, inventory
+from security_platform.services import alerts, audit, enrollment, events, inventory
+from security_platform.services.common import ServiceError
 from .dependencies import SessionDependency, operator_principal
 
 router = APIRouter(prefix="/api/v1", tags=["operator"])
@@ -69,3 +71,33 @@ def revoke_device(tenant_id: UUID, device_id: UUID, actor: OperatorDependency, s
 def audit_log(tenant_id: UUID, actor: OperatorDependency, session: SessionDependency, request: Request,
               limit: int = Query(50, ge=1, le=100), offset: int = Query(0, ge=0, le=10000)):
     return audit.list_audit(session, actor, tenant_id, limit=limit, offset=offset, limits=request.app.state.limits)
+
+
+@router.get("/tenants/{tenant_id}/alerts")
+def alert_list(tenant_id: UUID, actor: OperatorDependency, session: SessionDependency, request: Request,
+               status: Literal["open", "acknowledged", "closed"] | None = Query(None),
+               device_id: UUID | None = Query(None),
+               before_seen_at: str | None = Query(None, max_length=27, pattern=alerts.KEYSET_TIME_PATTERN),
+               before_id: UUID | None = Query(None), limit: int = Query(50, ge=1, le=100)):
+    try:
+        alerts.parse_keyset(before_seen_at, before_id)
+    except ServiceError:
+        # Only one of the pair, or an impossible instant: refused like every
+        # other invalid query value (422), never as a 400 request-boundary error.
+        raise RequestValidationError([{"type": "value_error", "loc": ("query", "before_seen_at"),
+                                       "msg": "Invalid pagination", "input": None}]) from None
+    return alerts.list_alerts(session, actor, tenant_id, status=status, device_id=device_id,
+                              before_seen_at=before_seen_at, before_id=before_id, limit=limit,
+                              limits=request.app.state.limits)
+
+
+@router.post("/tenants/{tenant_id}/alerts/{alert_id}/acknowledge")
+def acknowledge_alert(tenant_id: UUID, alert_id: UUID, actor: OperatorDependency, session: SessionDependency,
+                      request: Request, body: EmptyRequest = Body(default=EmptyRequest())):
+    return alerts.acknowledge_alert(session, actor, tenant_id, alert_id, limits=request.app.state.limits)
+
+
+@router.post("/tenants/{tenant_id}/alerts/{alert_id}/close")
+def close_alert(tenant_id: UUID, alert_id: UUID, actor: OperatorDependency, session: SessionDependency,
+                request: Request, body: EmptyRequest = Body(default=EmptyRequest())):
+    return alerts.close_alert(session, actor, tenant_id, alert_id, limits=request.app.state.limits)

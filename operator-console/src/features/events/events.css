@@ -1,0 +1,12 @@
+.event-timeline .panel-heading{align-items:flex-start;flex-wrap:wrap}.event-actions{display:flex;flex-wrap:wrap;gap:8px}.event-actions .btn{white-space:normal;text-align:left}
+.event-counters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}.event-note{margin:0 22px 14px;font-size:11px;line-height:1.7;color:#7b6c88}.detail-dialog .event-note{margin-left:26px;margin-right:26px}
+.event-table td,.alert-table td{vertical-align:top}.event-sequence{font-variant-numeric:tabular-nums;font-weight:600;color:#53425f}
+.event-image-cell,.alert-rule-cell,.alert-evidence-cell{white-space:normal}.event-image-cell{min-width:15rem;max-width:26rem}
+.event-path{font-family:"Cascadia Code",Consolas,monospace;font-size:11px;line-height:1.6;overflow-wrap:anywhere;word-break:break-word}.event-code{font-family:"Cascadia Code",Consolas,monospace;font-size:11px}
+.event-gap td{padding:9px 18px;text-align:center;font-weight:600;color:#8a5a12;background:repeating-linear-gradient(135deg,#fff8ec 0 8px,#fdf0d9 8px 16px);border-top:1px dashed #d9a85a;border-bottom:1px dashed #d9a85a}
+.event-inline-error{margin:0 22px 14px}.detail-dialog .event-timeline .empty-state{padding:30px 24px}.event-timeline h4{margin:0 0 8px;font-size:14px;color:#766780}
+.alerts-page{display:grid;gap:20px;min-width:0}.alerts-boundary{padding:18px 22px;border-left:4px solid #d9a85a}.alerts-boundary h2{margin:0 0 8px;font-size:15px;color:#6f4a12}.alerts-boundary p{margin:0;font-size:12px;line-height:1.8;color:#6d617a}.alerts-boundary .alerts-read-only{margin-top:8px;color:#5f4c72;font-weight:550}
+.alert-rule-cell{min-width:12rem;max-width:18rem}.alert-rule-cell strong{display:block;font-weight:600;color:#493357}.alert-evidence-cell{min-width:16rem;max-width:28rem}
+.alert-evidence{display:grid;gap:6px;margin:0}.alert-evidence>div{display:grid;gap:2px;min-width:0}.alert-evidence dt{font-size:10px;color:#807489}.alert-evidence dd{margin:0;color:#53425f;overflow-wrap:anywhere}.alert-evidence-text{margin:0;color:#53425f}
+.list-toolbar .alerts-device-filter{max-width:min(100%,22rem)}
+@media(max-width:650px){.event-counters{grid-template-columns:minmax(0,1fr)}.event-note,.event-inline-error{margin-left:17px;margin-right:17px}.alerts-boundary{padding:16px 17px}.list-toolbar .alerts-device-filter{max-width:none}}

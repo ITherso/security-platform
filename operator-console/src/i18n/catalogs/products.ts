@@ -12,7 +12,7 @@ export const productsTr = {
   "display.hoursAgo": (amount: string, _count: number) => `${amount} saat önce`,
   "display.daysAgo": (amount: string, _count: number) => `${amount} gün önce`,
   "product.name.hostbasedfirewall": "HostBasedFirewall",
-  "product.name.termivar": "Termivar",
+  "product.name.termivar": "Termivar Web",
   "product.name.antivirus": "Antivirüs",
   "product.catalog.localFirewall": "Yerel firewall",
   "product.catalog.experimental": "Deneysel",
@@ -141,6 +141,8 @@ export const productsTr = {
   "product.audit.action.device_revoked": "Cihaz kaydı iptal edildi",
   "product.audit.action.device_credential_rotated": "Cihaz kimliği yenilendi",
   "product.audit.action.tenant_event_retention_set": "Olay saklama süresi değiştirildi",
+  "product.audit.action.alert_acknowledged": "Uyarı onaylandı",
+  "product.audit.action.alert_closed": "Uyarı kapatıldı",
   "product.audit.actor.operator": "Operatör",
   "product.audit.actor.device": "Cihaz",
   "product.audit.actor.local_admin": "Yerel yönetici",
@@ -149,6 +151,7 @@ export const productsTr = {
   "product.audit.object.enrollment_grant": "Kayıt hakkı",
   "product.audit.object.device": "Cihaz",
   "product.audit.object.device_credential": "Cihaz kimliği",
+  "product.audit.object.alert": "Uyarı",
 };
 
 export const productsEn = {
@@ -163,7 +166,7 @@ export const productsEn = {
   "display.hoursAgo": (amount: string, count: number) => `${amount} ${count === 1 ? "hour" : "hours"} ago`,
   "display.daysAgo": (amount: string, count: number) => `${amount} ${count === 1 ? "day" : "days"} ago`,
   "product.name.hostbasedfirewall": "HostBasedFirewall",
-  "product.name.termivar": "Termivar",
+  "product.name.termivar": "Termivar Web",
   "product.name.antivirus": "Antivirus",
   "product.catalog.localFirewall": "Local firewall",
   "product.catalog.experimental": "Experimental",
@@ -292,6 +295,8 @@ export const productsEn = {
   "product.audit.action.device_revoked": "Device registration revoked",
   "product.audit.action.device_credential_rotated": "Device credential rotated",
   "product.audit.action.tenant_event_retention_set": "Event retention changed",
+  "product.audit.action.alert_acknowledged": "Alert acknowledged",
+  "product.audit.action.alert_closed": "Alert closed",
   "product.audit.actor.operator": "Operator",
   "product.audit.actor.device": "Device",
   "product.audit.actor.local_admin": "Local administrator",
@@ -300,6 +305,7 @@ export const productsEn = {
   "product.audit.object.enrollment_grant": "Enrollment grant",
   "product.audit.object.device": "Device",
   "product.audit.object.device_credential": "Device credential",
+  "product.audit.object.alert": "Alert",
 } satisfies CatalogShape<typeof productsTr>;
 
 export type ProductTextKey = {

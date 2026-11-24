@@ -52,6 +52,10 @@ TABLE_GRANTS = {
     "endpoint_events": ("SELECT", "INSERT", "DELETE"),
     # One cursor per device, never deleted; UPDATE also covers SELECT FOR UPDATE.
     "device_event_cursors": ("SELECT", "INSERT", "UPDATE"),
+    # Raised and updated at ingestion, acknowledged and closed by tenant admins
+    # (UPDATE also covers SELECT FOR UPDATE). Never deleted: alerts have no
+    # retention yet.
+    "alerts": ("SELECT", "INSERT", "UPDATE"),
 }
 
 

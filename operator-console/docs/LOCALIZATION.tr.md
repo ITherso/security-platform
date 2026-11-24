@@ -8,7 +8,7 @@ Dil değişimi yalnız sunumdur. Tenant, veri kipi, örnek senaryosu, mevcut ekr
 
 Kaynaklar `src/i18n/` altındadır: `messages.tr.ts`, `messages.en.ts`, ortak `types.ts`, çeviri erişimi ve `formatters.ts`. Sözlük yapısı aynı anahtarları ve string/fonksiyon parametre şekillerini bağlar; İngilizce değerleri Türkçe literal metinlere eşit olmaya zorlamaz.
 
-`catalogs/app.ts`, `catalogs/products.ts` ve `catalogs/reports.ts` ekran alanlarının TR/EN metinlerini tutar; iki `messages.*` dosyası bunları birleştirir. React bileşeni `useLocale()` üzerinden `locale`, `setLocale` ve tipli `t` alır. React dışı sunumda `translate(locale, key, ...args)` kullanılır; saklanan istemci mesajı `message(key, ...args)` ile kod/parametre olarak tutulup `renderMessage` ile seçilen dilde çizilir. Örneğin mevcut `t('app.inspect', deviceName)` çağrısında isim string parametredir; yanlış parametre türü sözlük sözleşmesine uymaz.
+`catalogs/app.ts`, `catalogs/products.ts`, `catalogs/reports.ts` ve olay zaman çizelgesiyle uyarılar için `catalogs/events.ts` ekran alanlarının TR/EN metinlerini tutar; iki `messages.*` dosyası bunları birleştirir. Kural kodları (`user_writable_launch` vb.), olay türleri ve sensör hata kodları veri olarak çevrilmeden de gösterilir; yanlarındaki TR/EN etiket yalnız sunumdur. React bileşeni `useLocale()` üzerinden `locale`, `setLocale` ve tipli `t` alır. React dışı sunumda `translate(locale, key, ...args)` kullanılır; saklanan istemci mesajı `message(key, ...args)` ile kod/parametre olarak tutulup `renderMessage` ile seçilen dilde çizilir. Örneğin mevcut `t('app.inspect', deviceName)` çağrısında isim string parametredir; yanlış parametre türü sözlük sözleşmesine uymaz.
 
 1. Kullanıcıya gösterilecek yeni metin için ortak sözlük yapısında bir anahtar belirleyin. Bir durum/route/filtre kimliği gerekiyorsa sabit iç kodu görünen etiketten ayrı tutun.
 2. Aynı anahtarı iki sözlüğe ekleyin. Sayı veya isim içeren cümleyi kelime parçalarıyla birleştirmek yerine tipli parametre alan bir mesaj fonksiyonu kullanın; her dil cümleyi doğal kurabilsin.
@@ -32,7 +32,7 @@ Tenant/device adı, hostname, kullanıcı/API içeriği ve örnek fixture adlar�
 | Cihaz kaydı iptal edildi | Device registration revoked |
 | Planlanan ürün — kullanıma hazır değil | Planned product — unavailable |
 
-`not_verified`, invalid/trusted/verified anlamına gelmez. Cihaz kaydının iptali firewall'ın kapatıldığı anlamına çevrilmez; credential iptalinden söz ediliyorsa özne credential olarak kalır. 404 bir dilde “bulunamadı/kapsam dışında”, diğerinde kesin “membership revoked” olamaz. Null/eksik, veri yok, hata ve gerçek sıfır ayrı kalır. Termivar özeti çalışır scanner/merkezî tarama kanıtı değildir; AV planned/unavailable etkin koruma olmaz.
+`not_verified`, invalid/trusted/verified anlamına gelmez. Cihaz kaydının iptali firewall'ın kapatıldığı anlamına çevrilmez; credential iptalinden söz ediliyorsa özne credential olarak kalır. 404 bir dilde “bulunamadı/kapsam dışında”, diğerinde kesin “membership revoked” olamaz. Null/eksik, veri yok, hata ve gerçek sıfır ayrı kalır. Termivar Web özeti çalışır scanner/merkezî tarama kanıtı değildir; AV planned/unavailable etkin koruma olmaz.
 
 ## Tarih ve sayı politikası
 

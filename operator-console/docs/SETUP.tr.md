@@ -1,6 +1,6 @@
 # Kurulum ve yerel çalışma
 
-Bu dizin, Security Platform backend'inden bağımsız React + TypeScript + Vite frontend'idir. Python wheel, API, veri tabanı veya HBF kurulumu gerektirmeyen örnek veri kipiyle açılır. Bu tur gerçek operatör token'ı üretilmez/aranmaz, IdP veya backend başlatılmaz ve canlı bağlantı kabulü yapılmaz.
+Bu dizin, Termivar Platform backend'inden bağımsız React + TypeScript + Vite frontend'idir. Python wheel, API, veri tabanı veya HBF kurulumu gerektirmeyen örnek veri kipiyle açılır. Bu tur gerçek operatör token'ı üretilmez/aranmaz, IdP veya backend başlatılmaz ve canlı bağlantı kabulü yapılmaz.
 
 ## Araç sürümleri ve komutlar
 
@@ -45,7 +45,7 @@ Token yalnız açık sayfanın oturum belleğindedir. Bağlanınca parola tipi t
 
 ## Taşıma ve veri sınırları
 
-Adapter yalnız [dört mevcut operatör GET'ini](API_UI_MAPPING.tr.md) kullanır. İstekler açık `Authorization` başlığı, `credentials: omit`, `cache: no-store`, `redirect: error` ve fetch + body için toplam **12 saniye** sınırıyla yapılır. Tek JSON yanıtının okunan gövdesi en fazla **512 KiB**'dır; boyut/süre/biçim aşımı görünür hatadır. API'nin `next_offset` değeri aynı sabit route üzerinde izin verilen query'ye çevrilir; yanıttan keyfî URL takip edilmez. Fetch/CORS/redirect davranışının dayanağı [WHATWG Fetch Standardı](https://fetch.spec.whatwg.org/)dır; bu frontend tarayıcının erişim sınırını kaldırmaz.
+Adapter yalnız [altı operatör GET'ini](API_UI_MAPPING.tr.md) kullanır: tenant listesi, cihaz listesi, cihaz ayrıntısı, audit, cihaz olay zaman çizelgesi ve uyarı listesi. İstekler açık `Authorization` başlığı, `credentials: omit`, `cache: no-store`, `redirect: error` ve fetch + body için toplam **12 saniye** sınırıyla yapılır. Tek JSON yanıtının okunan gövdesi en fazla **512 KiB**'dır; boyut/süre/biçim aşımı görünür hatadır. API'nin `next_offset`, `next_before_seq` ve `next_before` değerleri doğrulandıktan sonra aynı sabit route üzerinde izin verilen query'ye çevrilir; yanıttan keyfî URL takip edilmez. Fetch/CORS/redirect davranışının dayanağı [WHATWG Fetch Standardı](https://fetch.spec.whatwg.org/)dır; bu frontend tarayıcının erişim sınırını kaldırmaz.
 
 Runtime doğrulama gerekli alanları, null/enum ilişkilerini, UUID/tenant/device bağını ve tam sayı kesinliğini denetler. Backend BIGINT sayaçları `2^63−1` değerine kadar çıkabilse de frontend yalnız JavaScript'in tam temsil ettiği **0…2^53−1** aralığını kabul eder; pozitif sequence alanlarında alt sınır 1'dir. Büyük/uygunsuz sayılar yuvarlanmaz veya sıfır yapılmaz: ilgili yanıt kapalı hata üretir. Ek alanlar yetki veya olumlu güven sonucuna çevrilmez. Bilinmeyen güven/koruma enum'u sağlıklı kabul edilmez.
 

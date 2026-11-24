@@ -69,6 +69,7 @@ class ServiceLimits:
     credential_ttl_seconds: int = 86400
     max_credential_ttl_seconds: int = 2592000
     max_events_per_device: int = 250000
+    max_open_alerts_per_device: int = 500
 
     def __post_init__(self):
         if any(type(value) is not int or value < 1 or value > 10000000 for value in vars(self).values()):

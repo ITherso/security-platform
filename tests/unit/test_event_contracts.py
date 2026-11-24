@@ -9,7 +9,7 @@ from pydantic import ValidationError
 import pytest
 
 from security_platform.contracts import MAX_SEQUENCE
-from security_platform.event_contracts import (EVENT_FIELDS, MAX_BATCH_EVENTS, MAX_EVENT_BATCH_BYTES,
+from security_platform.event_contracts import (EVENT_FIELDS, MAX_BATCH_EVENTS, MAX_EVENT_BATCH_BYTES, MAX_EVENT_SEQ,
     MAX_STORED_EVENT_BYTES, REFUSED_TEXT_RANGES, REFUSED_TEXT_UNICODE_VERSION, EventBatch, EventBatchTooLarge,
     ProcessStarted, ProcessStopped, SensorState, canonical_event_batch, event_batch_digest, stored_event_bytes)
 
@@ -276,17 +276,29 @@ def test_sensor_state_values_are_closed(changes):
 
 
 def test_event_seq_must_strictly_increase_but_may_have_gaps():
-    model = EventBatch.model_validate(batch(started(1), stopped(5), sensor(MAX_SEQUENCE)))
-    assert [event.event_seq for event in model.events] == [1, 5, MAX_SEQUENCE]
+    model = EventBatch.model_validate(batch(started(1), stopped(5), sensor(MAX_EVENT_SEQ)))
+    assert [event.event_seq for event in model.events] == [1, 5, MAX_EVENT_SEQ]
     for events in ([started(1), stopped(1)], [started(2), stopped(1)], [started(1), stopped(3), sensor(2)]):
         with pytest.raises(ValidationError, match="event_seq_not_increasing"):
             EventBatch.model_validate(batch(*events))
 
 
-@pytest.mark.parametrize("value", [0, -1, MAX_SEQUENCE + 1, True, 1.0, "1", None])
-def test_event_seq_is_a_strict_positive_63_bit_integer(value):
+@pytest.mark.parametrize("value", [0, -1, MAX_EVENT_SEQ + 1, MAX_SEQUENCE, MAX_SEQUENCE + 1, True, 1.0, "1", None])
+def test_event_seq_is_a_strict_integer_from_one_to_2_53_minus_1(value):
     with pytest.raises(ValidationError):
         EventBatch.model_validate(batch(sensor(seq=value)))
+
+
+@pytest.mark.parametrize("factory", [started, stopped, sensor])
+def test_event_seq_stops_at_the_consoles_safe_integer_limit(factory):
+    # Number.MAX_SAFE_INTEGER: the operator console reads every larger integer as malformed.
+    assert MAX_EVENT_SEQ == 2**53 - 1 == 9007199254740991 < MAX_SEQUENCE
+    assert EventBatch.model_validate(batch(factory(MAX_EVENT_SEQ))).events[0].event_seq == MAX_EVENT_SEQ
+    with pytest.raises(ValidationError) as refused:
+        EventBatch.model_validate(batch(factory(2**53)))
+    assert [error["loc"][-1] for error in refused.value.errors()] == ["event_seq"]
+    # The batch envelope keeps the 63-bit range.
+    assert EventBatch.model_validate(batch(factory(1), batch_sequence=MAX_SEQUENCE)).batch_sequence == MAX_SEQUENCE
 
 
 def test_batch_holds_one_to_two_hundred_events():

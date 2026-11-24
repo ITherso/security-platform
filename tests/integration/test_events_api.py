@@ -92,7 +92,8 @@ def test_malformed_event_bodies_are_422_without_echo_or_write(api_context):
         response = client.post(EVENTS, json=payload, headers=headers)
         assert response.status_code == 422, response.text
         assert response.json() == {"detail": "invalid_request"} and CANARY not in response.text
-    assert timeline(ctx, device) == {"items": [], "next_before_seq": None, "cap_deleted_events": 0}
+    assert timeline(ctx, device) == {"items": [], "next_before_seq": None, "cap_deleted_events": 0,
+                                     "suppressed_alerts": 0}
     assert client.post(EVENTS, json=body(), headers=headers).status_code == 200
 
 
@@ -260,7 +261,8 @@ def test_operator_timeline_authorization_paging_and_bounds(api_context):
         assert client.get(path, headers=headers).status_code == 401
     admin = auth(ctx["token"]())
     first = client.get(path + "?limit=2", headers=admin).json()
-    assert set(first) == {"items", "next_before_seq", "cap_deleted_events"} and first["cap_deleted_events"] == 0
+    assert set(first) == {"items", "next_before_seq", "cap_deleted_events", "suppressed_alerts"}
+    assert first["cap_deleted_events"] == 0 and first["suppressed_alerts"] == 0
     assert [item["event_seq"] for item in first["items"]] == [3, 2] and first["next_before_seq"] == 2
     second = client.get(path + "?limit=2&before_seq=2", headers=admin).json()
     assert [item["event_seq"] for item in second["items"]] == [1] and second["next_before_seq"] is None

@@ -4,7 +4,7 @@ Durum: **ticari hazırlık taslağı; ücretli pilot onayı veya satın alınabi
 
 ## Ürün ve çözülen problem
 
-Termivar Web & API Security Assessment, açıkça yetkilendirilmiş bir web/API kapsamını Termivar'ın desteklenen yollarıyla değerlendirme, ortaya çıkan kayıtları uzman tarafından inceleme ve kapsam/belirsizlikleri koruyan anlaşılır bir raporla teslim etme **hizmet modeli adayıdır**. Müşterinin işi; hangi kaydın gözlem, hangisinin inceleme adayı olduğunu anlamak, eksik çalışmayı görmek ve sonraki değerlendirmeyle değişimi takip edebilmektir.
+Termivar Web & API Security Assessment, açıkça yetkilendirilmiş bir web/API kapsamını Termivar Web'in desteklenen yollarıyla değerlendirme, ortaya çıkan kayıtları uzman tarafından inceleme ve kapsam/belirsizlikleri koruyan anlaşılır bir raporla teslim etme **hizmet modeli adayıdır**. Müşterinin işi; hangi kaydın gözlem, hangisinin inceleme adayı olduğunu anlamak, eksik çalışmayı görmek ve sonraki değerlendirmeyle değişimi takip edebilmektir.
 
 Mevcut teknoloji; kapsamı ve kaynak tüketimi sınırlı CLI değerlendirmesi, tipli assessment/evidence modeli, rapor üretimi ve hazır raporların çevrimdışı karşılaştırılmasıdır. İnsan incelemesi, teslim toplantısı ve takip planı bu belgede tanımlanan işletim sürecidir; otomatik çalışan yeni ürün özellikleri veya hâlihazırda verilmiş hizmet değildir. Kaynak **experimental / not production-ready** olarak tanımlanır ve bağımsız güvenlik denetimi tamamlanmış değildir. Kaynaktaki işlev, üretim güvenilirliği kanıtı olarak sunulmaz. [Kaynak README, 12–20 ve 70–80](https://github.com/ITherso/termivar/blob/6a2639348c2366d0bf71b9a34e5484d40aa393a3/README.md#L12-L80), [iddia envanteri](CAPABILITY_CLAIMS.tr.md).
 
@@ -22,7 +22,7 @@ A profili, ürünün bugünkü inceleme ağırlıklı sınırıyla daha yakın o
 ## Dahil edilmesi tasarlanan işler
 
 1. Hedef sahibinin yetkisi, tam hedef listesi, hariçler, değerlendirme penceresi ve durdurma sorumluları üzerinden yazılı kapsam hazırlığı.
-2. Seçilmiş ve kimliği kayıtlı Termivar build'iyle desteklenen değerlendirme yolunun, onaylı sınırlar içinde operatör tarafından çalıştırılması. **Bu teslimatta çalıştırılmadı.**
+2. Seçilmiş ve kimliği kayıtlı Termivar Web build'iyle desteklenen değerlendirme yolunun, onaylı sınırlar içinde operatör tarafından çalıştırılması. **Bu teslimatta çalıştırılmadı.**
 3. Üretilen assessment'ın tamamlanma/eksiklik durumu, evidence referansları ve kayıt sınıflarının uzman tarafından incelenmesi. `NeedsReview` doğrudan zafiyet ilan edilmez; `KnowledgeOnly` bir yetki sınırıdır. İnsan değerlendirmesi kaynak kaydı değiştirmeyen ayrı not olarak tutulur.
 4. Yönetici özeti, yöntem/kapsam, incelenen kayıtlar, sınırlamalar, takip maddeleri ve ham kaynakla ilişkisi açık bir teslim raporu.
 5. Önceki ve sonraki kaynaklar gerçekten uygunsa, operatörün kapsam beyanı ayrıca kayıtlı çevrimdışı rapor karşılaştırması. Kaybolan kayıt düzeltilmiş sayılmaz.
@@ -81,7 +81,7 @@ Mevcut artefact'lardan hazırlanmış [sentetik teslimat](examples/README.tr.md)
 |---|---|---|
 | **Assessment** | Tek, açıkça sınırlandırılmış kapsam; desteklenen değerlendirme, uzman incelemesi, rapor ve tanımlı takip. | İlk pilot için aday hizmet modeli; henüz pilot/satış onayı yok. |
 | **Continuous Review** | Ayrı kabul edilen dönemlerde tekrar assessment, uzman incelemesi ve uygun raporların değişim takibi. | Manuel planlama ve her çalışmada yeniden kapsam/yetki değerlendirmesi. Mevcut üründe bu teklife ait otomatik scheduler/polling veya abonelik uygulaması yok. |
-| **Enterprise Integration — Future** | Gelecekte ortak Security Ecosystem, envanter ve uygun ürün entegrasyonlarının kapsamlandırılması. | Gelecek paket; bugün satın alınabilir veya production-ready değildir. SSO/çok kiracılı SaaS/enforcement taahhüdü içermez. |
+| **Enterprise Integration — Future** | Gelecekte ortak Termivar ekosistemi, envanter ve uygun ürün entegrasyonlarının kapsamlandırılması. | Gelecek paket; bugün satın alınabilir veya production-ready değildir. SSO/çok kiracılı SaaS/enforcement taahhüdü içermez. |
 
 Fiyat ve ciro tahmini üretilmedi. Fiyatlandırma öncesi ölçülecek değişkenler: uygulama/origin/API ve kaynak sayısı; seçilen inceleme yolları ve kapsam karmaşıklığı; erişim/kurulum hazırlığı; uzman inceleme ve rapor emeği; kanıt/veri işleme yükü; destek ve açıklama görüşmeleri; yeniden değerlendirme sayısı/sıklığı; karşılaştırılabilirlik analizi ve teslimat revizyonları. Teknik istek bütçesi tek başına işçilik veya maliyet ölçüsü değildir. Gerçek maliyet/kapasite ölçümü `not_validated`.
 
@@ -89,10 +89,10 @@ Fiyat ve ciro tahmini üretilmedi. Fiyatlandırma öncesi ölçülecek değişke
 
 | Bileşen | Bu teklif içindeki konumu |
 |---|---|
-| **Termivar** | İlk ticari web/API değerlendirme ürünü adayı; uzman liderliğinde ayrı, dar kapsamlı pilot hazırlanabilir. |
-| Security Platform | Ortak yönetim temeli ve mevcut envanter/yerel inceleme konsolu; production/API/IdP kabulü bekliyor. İlk bağımsız Termivar hizmeti bu kabulün tamamlanmasına bağlanmaz. |
-| HostBasedFirewall | Ayrı endpoint ürünü; gerçek Windows kabulü bekliyor. Termivar assessment hizmetine kurulu firewall veya policy enforcement olarak eklenmez. |
+| **Termivar Web** | İlk ticari web/API değerlendirme ürünü adayı; uzman liderliğinde ayrı, dar kapsamlı pilot hazırlanabilir. |
+| Termivar Platform | Ortak yönetim temeli ve mevcut envanter/yerel inceleme konsolu; production/API/IdP kabulü bekliyor. İlk bağımsız Termivar Web hizmeti bu kabulün tamamlanmasına bağlanmaz. |
+| HostBasedFirewall | Ayrı endpoint ürünü; gerçek Windows kabulü bekliyor. Termivar Web assessment hizmetine kurulu firewall veya policy enforcement olarak eklenmez. |
 | Policy Impact Workbench | Önceden üretilmiş offline preview inceleyicisi; uygulama/yürütme yetkisi yok. |
 | Antivirus | Planlanan ürün; çalışan motor sunulmuyor. |
 
-Bu ayrım mevcut platform `aa643d40797998d5f615cb5ba5b71b972596abc9` [ürün kataloğu](../../operator-console/src/features/productHub/productCatalog.ts) ve [yetenek matrisiyle](../../operator-console/docs/CAPABILITY_MATRIX.tr.md) aynıdır. Bütün ekosistemin hazır olması ilk Termivar adayının şartı yapılmaz; kullanılan Termivar yolu ve hizmet işletiminin kendi açık kapıları da tamamlanmış gösterilmez.
+Bu ayrım mevcut platform `aa643d40797998d5f615cb5ba5b71b972596abc9` [ürün kataloğu](../../operator-console/src/features/productHub/productCatalog.ts) ve [yetenek matrisiyle](../../operator-console/docs/CAPABILITY_MATRIX.tr.md) aynıdır. Bütün ekosistemin hazır olması ilk Termivar Web adayının şartı yapılmaz; kullanılan Termivar Web yolu ve hizmet işletiminin kendi açık kapıları da tamamlanmış gösterilmez.

@@ -416,7 +416,7 @@ def test_cap_deletions_are_shown_in_the_timeline_and_left_alone_by_prune(event_t
     assert [item["event_seq"] for item in first["items"]] == [10, 9] and first["cap_deleted_events"] == 5
     assert timeline(device, before_seq=first["next_before_seq"])["cap_deleted_events"] == 5
     # A device without a cursor reports zero.
-    assert timeline(quiet) == {"items": [], "next_before_seq": None, "cap_deleted_events": 0}
+    assert timeline(quiet) == {"items": [], "next_before_seq": None, "cap_deleted_events": 0, "suppressed_alerts": 0}
     # Retention removes the three rows received two days ago; the counter stays.
     assert prune(ctx)["failed_tenants"] == 0
     rows, cursor = stored(ctx.owner, device)
@@ -520,7 +520,7 @@ def test_timeline_pages_newest_first_with_a_keyset_cursor(event_tenants):
         everything = events.list_device_events(session, ctx.admin_a, ctx.a, device_id, limit=7)
         assert everything["next_before_seq"] is None and len(everything["items"]) == 7
         assert events.list_device_events(session, ctx.admin_a, ctx.a, device_id, before_seq=1) == {
-            "items": [], "next_before_seq": None, "cap_deleted_events": 0}
+            "items": [], "next_before_seq": None, "cap_deleted_events": 0, "suppressed_alerts": 0}
     by_seq = {item["event_seq"]: item for item in everything["items"]}
     for item in by_seq.values():
         assert set(item) == {"event_seq", "kind", "observed_at", "received_at", "source", "producer_verification",
@@ -875,21 +875,35 @@ def test_cap_deletion_counter_is_defined_alike_in_migration_and_model(pg_service
             and item.name == "ck_event_cursor_cap_deleted_events"] == ["cap_deleted_events >= 0"]
 
 
-def test_migration_0002_downgrades_and_upgrades_in_a_rolled_back_transaction(pg_service_databases):
-    owner, _ = pg_service_databases
-    spec = importlib.util.spec_from_file_location("migration_0002", PROJECT / "migrations/versions/0002_endpoint_events.py")
+def migration_module(name):
+    spec = importlib.util.spec_from_file_location("migration_" + name, PROJECT / "migrations/versions" / (name + ".py"))
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    return module
+
+
+def test_migration_0002_downgrades_and_upgrades_in_a_rolled_back_transaction(pg_service_databases):
+    owner, _ = pg_service_databases
+    module, alerts_migration = migration_module("0002_endpoint_events"), migration_module("0003_alerts")
     assert (module.revision, module.down_revision) == ("0002_endpoint_events", "0001_initial")
+    assert alerts_migration.down_revision == module.revision
     expected = model_schema()
+    # 0003 adds suppressed_alerts and its CHECK to the cursor table; the rest is 0002's.
+    columns, checks, foreign_keys, indexes, primary_key = expected["device_event_cursors"]
+    at_0002 = {**expected, "device_event_cursors": (columns - {"suppressed_alerts"},
+        checks - {"ck_event_cursor_suppressed_alerts"}, foreign_keys, indexes, primary_key)}
     with owner.engine.connect() as connection:
         transaction = connection.begin()
         try:
             with Operations.context(MigrationContext.configure(connection)):
                 assert event_schema(connection) == expected
+                alerts_migration.downgrade()
+                assert event_schema(connection) == at_0002
                 module.downgrade()
                 assert event_schema(connection) == {"tenants": (set(), set())}
                 module.upgrade()
+                assert event_schema(connection) == at_0002
+                alerts_migration.upgrade()
                 assert event_schema(connection) == expected
         finally:
             transaction.rollback()

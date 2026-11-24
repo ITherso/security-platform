@@ -1,8 +1,9 @@
 /** Closed runtime validation shared by fixtures and the real GET adapter. */
-import { ClientError, HBF_ERROR_CODES, PRODUCT_IDS } from "./contracts";
-import type { AgeObservation, AuditAction, AuditEvent, AuditObject, ClientErrorCode, Device, DeviceDetail,
-  DispositionCounts, Page, ProductId, ProductRecord, ProductState, SeverityCounts, SourceClaims,
-  Tenant, TermivarSummary } from "./contracts";
+import { ALERT_RULES, ALERT_STATUSES, ClientError, HBF_ERROR_CODES, PRODUCT_IDS, SENSOR_ERROR_CODES,
+  SENSOR_STATES } from "./contracts";
+import type { AgeObservation, Alert, AlertCursor, AlertPage, AlertRule, AlertSeverity, AlertStatus, AuditAction,
+  AuditEvent, AuditObject, ClientErrorCode, Device, DeviceDetail, DispositionCounts, Page, ProductId, ProductRecord,
+  ProductState, SeverityCounts, SourceClaims, Tenant, TermivarSummary, TimelineEvent, TimelinePage } from "./contracts";
 
 const CLAIM_KEYS = ["source", "producer_verification"];
 const DEVICE_KEYS = ["id", "tenant_id", "label", "identity_status", "connection_status", "created_at", "revoked_at",
@@ -12,7 +13,7 @@ const AUDIT_OBJECTS: Readonly<Record<AuditAction, AuditObject>> = {
   tenant_created: "tenant", membership_set: "membership", membership_revoked: "membership",
   enrollment_grant_created: "enrollment_grant", enrollment_grant_revoked: "enrollment_grant",
   device_enrolled: "device", device_revoked: "device", device_credential_rotated: "device_credential",
-  tenant_event_retention_set: "tenant",
+  tenant_event_retention_set: "tenant", alert_acknowledged: "alert", alert_closed: "alert",
 };
 
 export function requireValue(ok: unknown, code: ClientErrorCode = "malformed"): asserts ok {
@@ -202,6 +203,165 @@ export const normalizeDevicePage = (input: unknown, options: Pagination, tenantI
 export const normalizeAuditPage = (input: unknown, options: Pagination, tenantId: string): Page<AuditEvent> =>
   page(input, options, (value) => auditEvent(value, tenantId));
 
+const UINT32_MAX = 4294967295;
+const EVENT_KINDS = ["process_started", "process_stopped", "sensor_state"] as const;
+const EVENT_KEYS: Readonly<Record<TimelineEvent["kind"], readonly string[]>> = {
+  process_started: ["pid", "parent_pid", "session_id", "image"],
+  process_stopped: ["pid", "exit_code", "image"],
+  sensor_state: ["state", "error_code"],
+};
+const ALERT_KEYS = ["id", "device_id", "rule", "severity", "status", "occurrences", "first_event_seq", "last_event_seq",
+  "first_seen_at", "last_seen_at", "evidence", "acknowledged_at", "closed_at", ...CLAIM_KEYS];
+/** Rule codes and severities are fixed together by the Platform. */
+const ALERT_SEVERITY: Readonly<Record<AlertRule, AlertSeverity>> = {
+  user_writable_launch: "low", office_browser_spawned_tool: "medium", sensor_unstable: "medium", event_loss: "medium",
+};
+// The Unicode 16.0.0 Cc/Cf code points the Platform refuses in event text, as inclusive ranges; the same
+// numbers as event_contracts.REFUSED_TEXT_RANGES. Unpaired surrogates are refused too. Bidirectional
+// overrides or zero-width marks never reach the screen.
+const REFUSED_TEXT_RANGES: readonly (readonly [number, number])[] = [
+  [0x0000, 0x001f], [0x007f, 0x009f], [0x00ad, 0x00ad], [0x0600, 0x0605], [0x061c, 0x061c], [0x06dd, 0x06dd],
+  [0x070f, 0x070f], [0x0890, 0x0891], [0x08e2, 0x08e2], [0x180e, 0x180e], [0x200b, 0x200f], [0x202a, 0x202e],
+  [0x2060, 0x2064], [0x2066, 0x206f], [0xfeff, 0xfeff], [0xfff9, 0xfffb], [0x110bd, 0x110bd], [0x110cd, 0x110cd],
+  [0x13430, 0x1343f], [0x1bca0, 0x1bca3], [0x1d173, 0x1d17a], [0xe0001, 0xe0001], [0xe0020, 0xe007f],
+];
+
+function eventText(value: unknown, maximum: number): string {
+  const result = text(value, maximum);
+  for (const character of result) {
+    const point = character.codePointAt(0) ?? 0;
+    requireValue(!(point >= 0xd800 && point <= 0xdfff)
+      && !REFUSED_TEXT_RANGES.some(([first, last]) => point >= first && point <= last));
+  }
+  return result;
+}
+/** event_contracts.masked_image_path: after every non-final `Users` component comes `*` (before its first `:`). */
+function maskedImage(value: unknown): string {
+  const image = eventText(value, 1024);
+  const parts = image.replace(/\//g, "\\").split("\\");
+  parts.slice(0, -1).forEach((part, index) => {
+    if (/^[\x00-\x7f]*$/.test(part) && part.toLowerCase() === "users") {
+      requireValue((parts[index + 1] ?? "").split(":")[0] === "*");
+    }
+  });
+  return image;
+}
+/** process_stopped.image: the kernel's short name, never a path. */
+function shortImage(value: unknown): string {
+  const image = eventText(value, 260);
+  requireValue(!image.includes("\\") && !image.includes("/"));
+  return image;
+}
+function processId(value: unknown): number {
+  return integer(value, 0, UINT32_MAX);
+}
+function timelineEvent(input: unknown): TimelineEvent {
+  requireValue(input !== null && typeof input === "object" && !Array.isArray(input));
+  const kind = choice((input as Record<string, unknown>).kind, EVENT_KINDS);
+  const value = shape(input, ["event_seq", "kind", "observed_at", "received_at", ...EVENT_KEYS[kind], ...CLAIM_KEYS]);
+  const common = { event_seq: integer(value.event_seq, 1), observed_at: timestamp(value.observed_at),
+    received_at: timestamp(value.received_at), ...claims(value) };
+  if (kind === "process_started") return { ...common, kind, pid: processId(value.pid), parent_pid: processId(value.parent_pid),
+    session_id: processId(value.session_id), image: maskedImage(value.image) };
+  if (kind === "process_stopped") return { ...common, kind, pid: processId(value.pid),
+    exit_code: value.exit_code === null ? null : processId(value.exit_code),
+    image: value.image === null ? null : shortImage(value.image) };
+  const state = choice(value.state, SENSOR_STATES);
+  const errorCode = value.error_code === null ? null : choice(value.error_code, SENSOR_ERROR_CODES);
+  requireValue(errorCode === null || state === "lost" || state === "failed");
+  return { ...common, kind, state, error_code: errorCode };
+}
+interface TimelineQuery { readonly limit: number; readonly beforeSeq: number | null }
+/** Newest first, strictly below `before_seq`; next_before_seq is the last item's sequence on a full page. */
+export function normalizeTimelinePage(input: unknown, query: TimelineQuery): TimelinePage {
+  const value = shape(input, ["items", "next_before_seq", "cap_deleted_events", "suppressed_alerts"]);
+  const items = array(value.items, query.limit, timelineEvent);
+  let newer = query.beforeSeq;
+  for (const item of items) {
+    requireValue(newer === null || item.event_seq < newer);
+    newer = item.event_seq;
+  }
+  const last = items[items.length - 1];
+  const next = value.next_before_seq === null ? null : integer(value.next_before_seq, 1);
+  requireValue(next === null || (items.length === query.limit && last !== undefined && next === last.event_seq));
+  return { items, next_before_seq: next, cap_deleted_events: integer(value.cap_deleted_events),
+    suppressed_alerts: integer(value.suppressed_alerts) };
+}
+
+/** Fixed-width UTC text with six fraction digits; string order equals instant order. */
+export function utcSortKey(value: string): string {
+  return value.replace(/(?:\.(\d{1,6}))?Z$/, (_match, fraction: string | undefined) => `.${(fraction ?? "").padEnd(6, "0")}Z`);
+}
+/** The list order (last_seen_at DESC, id DESC) as one comparable string. */
+export function alertOrderKey(seenAt: string, id: string): string {
+  return `${utcSortKey(seenAt)} ${id}`;
+}
+export function isAlertStatus(value: unknown): value is AlertStatus {
+  return typeof value === "string" && ALERT_STATUSES.some((status) => status === value);
+}
+export function alertCursor(input: unknown, code: ClientErrorCode = "malformed"): AlertCursor {
+  try {
+    const value = shape(input, ["seen_at", "id"]);
+    return { seen_at: timestamp(value.seen_at), id: identifier(value.id) };
+  } catch { throw new ClientError(code); }
+}
+function alert(input: unknown): Alert {
+  const value = shape(input, ALERT_KEYS);
+  const rule = choice(value.rule, ALERT_RULES);
+  requireValue(value.severity === ALERT_SEVERITY[rule]);
+  const status = choice(value.status, ALERT_STATUSES);
+  const acknowledgedAt = timestamp(value.acknowledged_at, true), closedAt = timestamp(value.closed_at, true);
+  // open -> acknowledged -> closed, or open -> closed; a closed alert never reopens.
+  requireValue((status === "closed") === (closedAt !== null) && (status !== "open" || acknowledgedAt === null)
+    && (status !== "acknowledged" || acknowledgedAt !== null));
+  const firstSeq = integer(value.first_event_seq, 1), lastSeq = integer(value.last_event_seq, 1);
+  requireValue(firstSeq <= lastSeq);
+  const common = { id: identifier(value.id), device_id: identifier(value.device_id), status,
+    occurrences: integer(value.occurrences, 1), first_event_seq: firstSeq, last_event_seq: lastSeq,
+    first_seen_at: timestamp(value.first_seen_at), last_seen_at: timestamp(value.last_seen_at),
+    acknowledged_at: acknowledgedAt, closed_at: closedAt, ...claims(value) };
+  if (rule === "user_writable_launch") {
+    const evidence = shape(value.evidence, ["image", "pid"]);
+    return { ...common, rule, severity: "low", evidence: { image: maskedImage(evidence.image), pid: processId(evidence.pid) } };
+  }
+  if (rule === "office_browser_spawned_tool") {
+    const evidence = shape(value.evidence, ["image", "pid", "parent_image", "parent_pid"]);
+    return { ...common, rule, severity: "medium", evidence: { image: maskedImage(evidence.image), pid: processId(evidence.pid),
+      parent_image: maskedImage(evidence.parent_image), parent_pid: processId(evidence.parent_pid) } };
+  }
+  if (rule === "sensor_unstable") {
+    const evidence = shape(value.evidence, ["state", "error_code"]);
+    return { ...common, rule, severity: "medium", evidence: { state: choice(evidence.state, ["lost", "failed"]),
+      error_code: evidence.error_code === null ? null : choice(evidence.error_code, SENSOR_ERROR_CODES) } };
+  }
+  const evidence = shape(value.evidence, ["missing_events"]);
+  return { ...common, rule, severity: "medium", evidence: { missing_events: integer(evidence.missing_events, 1) } };
+}
+interface AlertQuery {
+  readonly limit: number;
+  readonly status: AlertStatus | null;
+  readonly deviceId: string | null;
+  readonly before: AlertCursor | null;
+}
+/** Newest activity first, strictly below the cursor; next_before is the last item's key on a full page. */
+export function normalizeAlertPage(input: unknown, query: AlertQuery): AlertPage {
+  const value = shape(input, ["items", "next_before"]);
+  const items = array(value.items, query.limit, alert);
+  unique(items.map((item) => item.id));
+  let newer = query.before === null ? null : alertOrderKey(query.before.seen_at, query.before.id);
+  for (const item of items) {
+    const key = alertOrderKey(item.last_seen_at, item.id);
+    requireValue((newer === null || key < newer) && (query.status === null || item.status === query.status)
+      && (query.deviceId === null || item.device_id === query.deviceId));
+    newer = key;
+  }
+  const next = value.next_before === null ? null : alertCursor(value.next_before);
+  const last = items[items.length - 1];
+  requireValue(next === null || (items.length === query.limit && last !== undefined && next.id === last.id
+    && utcSortKey(next.seen_at) === utcSortKey(last.last_seen_at)));
+  return { items, next_before: next };
+}
+
 const STRICT_JSON_BUDGETS = {
   default: { depth: 12, nodes: 12000, stringUnits: 1024, arrayItems: 100, objectKeys: 32, tokens: 60000 },
   "termivar-comparison-v1": { depth: 12, nodes: 250000, stringUnits: 1024, arrayItems: 4096, objectKeys: 32, tokens: 750000 },
@@ -209,6 +369,9 @@ const STRICT_JSON_BUDGETS = {
   "termivar-assessment-v1": { depth: 12, nodes: 300000, stringUnits: 1024, arrayItems: 4096, objectKeys: 32, tokens: 600000 },
   // CLI maxima within 512 KiB: 32 scenarios x 2 x 64 trace rows ~42k nodes / ~128k tokens; 1,024 code points = 2,048 units.
   "sp-hbf-preview-v1": { depth: 12, nodes: 50000, stringUnits: 2048, arrayItems: 100, objectKeys: 32, tokens: 160000 },
+  // Device timeline and alert pages: the default limits, but an event image may hold 1,024 code points = 2,048
+  // UTF-16 units (event_contracts.ProcessStarted.image), exactly what maskedImage()/text() accept.
+  "sp-events-alerts-v1": { depth: 12, nodes: 12000, stringUnits: 2048, arrayItems: 100, objectKeys: 32, tokens: 60000 },
 } as const;
 export type StrictJsonProfile = keyof typeof STRICT_JSON_BUDGETS;
 type StrictJsonBudget = typeof STRICT_JSON_BUDGETS[StrictJsonProfile];
@@ -242,7 +405,8 @@ export function freeze<T>(value: T): T {
 }
 export function strictJson(textValue: string, profile: StrictJsonProfile = "default"): unknown {
   // A trusted caller selects a closed profile; JSON never supplies arbitrary limits.
-  requireValue(profile === "default" || profile === "termivar-comparison-v1" || profile === "termivar-assessment-v1" || profile === "sp-hbf-preview-v1");
+  requireValue(profile === "default" || profile === "termivar-comparison-v1" || profile === "termivar-assessment-v1" || profile === "sp-hbf-preview-v1"
+    || profile === "sp-events-alerts-v1");
   const budget = STRICT_JSON_BUDGETS[profile];
   // Native JSON.parse loses duplicate keys and rounds unsafe/fractional values.
   const token = /"(?:\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|[^"\\\u0000-\u001f])*"|[{}\[\]:,]|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null/gy;

@@ -1,4 +1,4 @@
-# Termivar ticari pilot hazırlık paketi — Phase14
+# Termivar Web ticari pilot hazırlık paketi — Phase14
 
 **Termivar Web & API Security Assessment**, ilk ticari ürün adayı olarak tanımlanır. Bu dizin hizmet modeli ve teslimat belgeleridir; satış, müşteri iletişimi, canlı değerlendirme veya üretime çıkış yetkisi vermez.
 

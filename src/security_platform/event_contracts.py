@@ -30,7 +30,14 @@ MIN_OBSERVED_AT = datetime(1970, 1, 1, tzinfo=timezone.utc)
 MAX_OBSERVED_AT = datetime(9999, 1, 1, tzinfo=timezone.utc)
 MAX_UINT32 = 2**32 - 1
 UInt32 = Annotated[int, Field(strict=True, ge=0, le=MAX_UINT32)]
-EventSequence = Annotated[int, Field(strict=True, ge=1, le=MAX_SEQUENCE)]
+# The largest event_seq: 2^53-1, the operator console's safe-integer limit
+# (Number.MAX_SAFE_INTEGER). The numbers the Platform derives from event_seq
+# stay within it too: timeline event_seq and next_before_seq, alert
+# first/last_event_seq, and event_loss missing_events, a sum of gaps between
+# one device's strictly increasing accepted values (at most 2^53-3).
+# batch_sequence and the snapshot sequence keep MAX_SEQUENCE.
+MAX_EVENT_SEQ = 2**53 - 1
+EventSequence = Annotated[int, Field(strict=True, ge=1, le=MAX_EVENT_SEQ)]
 SensorErrorCode = Literal["session_name_invalid", "session_in_use", "access_denied", "session_start_failed",
                           "session_stop_failed", "unknown"]
 # Control and format characters (bidirectional overrides, zero-width marks):

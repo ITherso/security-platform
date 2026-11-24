@@ -1,10 +1,12 @@
-# Security Platform — product guide
+# Termivar Platform — product guide
 
-Start here to evaluate, install and demonstrate Security Platform 0.1.0. This guide covers what is implemented today, how to run it, and what is not ready yet. The detailed Turkish reference documents are listed at the end. Türkçe: [PRODUCT_GUIDE.tr.md](PRODUCT_GUIDE.tr.md).
+Start here to evaluate, install and demonstrate Termivar Platform 0.1.0. This guide covers what is implemented today, how to run it, and what is not ready yet. The detailed Turkish reference documents are listed at the end. Türkçe: [PRODUCT_GUIDE.tr.md](PRODUCT_GUIDE.tr.md).
+
+Since 2026-11-23 the display name is Termivar; the technical names are unchanged: the `security_platform` package, the `security-platform` command, the `SP_` settings, the product ids (`hostbasedfirewall`, `termivar`, `antivirus`) and the database names.
 
 ## What the product is
 
-Security Platform is a set of security-operations components. Every result keeps its evidence level visible:
+Termivar Platform is a set of security-operations components. Every result keeps its evidence level visible:
 
 - a device report stays "reported by the device";
 - a hash match stays "consistent bytes";
@@ -12,9 +14,9 @@ Security Platform is a set of security-operations components. Every result keeps
 
 | Component | What it does today | Demo status |
 | --- | --- | --- |
-| **Operator console** (`operator-console/`) | Read-only web console in Turkish and English, opening on clearly labelled sample data. It covers the device inventory and comparison, a status report draft, policy impact review, and Termivar assessment and comparison review. Local JSON files are read in the browser only. | Ready when a built console is available ([section 3](#3-operator-console-sample-data)). |
+| **Operator console** (`operator-console/`) | Read-only web console in Turkish and English, opening on clearly labelled sample data. It covers the device inventory and comparison, a status report draft, policy impact review, and Termivar Web assessment and comparison review. Local JSON files are read in the browser only. | Ready when a built console is available ([section 3](#3-operator-console-sample-data)). |
 | **Offline policy impact preview** (`security-policy`) | Compares a base and a candidate firewall policy over explicit scenarios, using the local HostBasedFirewall evaluator source. It also checks fixture CAS preconditions and simulates a rollout that cannot be executed. | Ready, offline. |
-| **Offline Termivar analyst toolchain** (`tools/commercial_*`, phases 16–44) | Takes a Termivar assessment through intake to an analyst review packet, a self-contained HTML review desk and a client handoff draft. Later phases add case bundles, a portfolio, scope and traceability, composition, license and dependency evidence, a guarded reference capsule, and a minimal task capsule that can be exchanged and reconciled. | Reproducible with one command ([section 5](#5-termivar-offline-analyst-chain)). |
+| **Offline Termivar Web analyst toolchain** (`tools/commercial_*`, phases 16–44) | Takes a Termivar Web assessment through intake to an analyst review packet, a self-contained HTML review desk and a client handoff draft. Later phases add case bundles, a portfolio, scope and traceability, composition, license and dependency evidence, a guarded reference capsule, and a minimal task capsule that can be exchanged and reconciled. | Reproducible with one command ([section 5](#5-termivar-web-offline-analyst-chain)). |
 | **Inventory API** (`security-platform` service) | FastAPI and PostgreSQL. It stores tenant memberships, one-time device enrollments, device credentials and the last product status each device reports. Operators sign in with RS256 RFC 9068 access tokens. | Needs PostgreSQL, an identity provider and TLS ([section 6](#6-inventory-api-advanced)). |
 | **Device sender** (`security-snapshot`) | Sends an exported HostBasedFirewall ecosystem summary once, or rotates the device credential when explicitly asked. | Needs the inventory API. |
 
@@ -27,7 +29,7 @@ The product does **not**:
 - enroll devices automatically;
 - verify that a device's report is true.
 
-HostBasedFirewall and Termivar are separate products. This repository reads their outputs or source code; it does not ship them.
+HostBasedFirewall and Termivar Web are separate products. This repository reads their outputs or source code; it does not ship them.
 
 ## 1. Install
 
@@ -103,7 +105,7 @@ Suggested 10-minute walkthrough:
 2. **Devices**: open a device and read the separate registration, receipt and product-claim sections. Add it to the **Status report** and open the preview.
 3. **Comparison**: open two device details and compare them.
 4. **Policy previews**: load the built-in example, or a `policy-preview.json` produced in [section 4](#4-policy-impact-preview).
-5. **Termivar assessments**: load the completed and incomplete examples. On the **Report comparison** tab, load the comparison example.
+5. **Termivar Web assessments**: load the completed and incomplete examples. On the **Report comparison** tab, load the comparison example.
 6. Switch to English with **Dil / Language**.
 
 The console never contacts a device or a scanner. Live API mode needs the inventory API on the same HTTPS origin and an externally issued operator token. It has not been accepted against a real identity provider.
@@ -137,7 +139,7 @@ What the examples show:
 
 **The evaluator under `--hbf-root` is local Python code that the tool executes.** Point it only at a HostBasedFirewall checkout you trust.
 
-## 5. Termivar offline analyst chain
+## 5. Termivar Web offline analyst chain
 
 ```powershell
 python -B scripts/run_offline_chain.py --workspace <new empty dir outside the repository> [--termivar-root <Termivar checkout>] [--phase30-delivery-zip <Phase30 delivery ZIP>]
@@ -244,8 +246,8 @@ Highest impact first:
    - a real identity provider;
    - a reverse proxy for the console's live mode;
    - backups, high availability and monitoring.
-2. **Console build not refreshed.** This release raises the console's import limits so that Termivar assessments with more than 100 items and policy previews up to the CLI maximum can be opened. That source change has not been compiled, because Node is not available on the build machine. Rebuild (`pnpm typecheck`, `pnpm build`) and re-check before demonstrating with large real files.
-3. **Analyst chain limited to the demonstration dataset.** Intake accepts only the capability and category set of the bundled sample. The scope planner accepts one pinned Termivar commit. Later phases pin the hashes of earlier outputs. Processing a customer's own Termivar output needs these allow-lists and pins to become reviewed data inputs.
+2. **Console build not refreshed.** This release raises the console's import limits so that Termivar Web assessments with more than 100 items and policy previews up to the CLI maximum can be opened. That source change has not been compiled, because Node is not available on the build machine. Rebuild (`pnpm typecheck`, `pnpm build`) and re-check before demonstrating with large real files.
+3. **Analyst chain limited to the demonstration dataset.** Intake accepts only the capability and category set of the bundled sample. The scope planner accepts one pinned Termivar commit. Later phases pin the hashes of earlier outputs. Processing a customer's own Termivar Web output needs these allow-lists and pins to become reviewed data inputs.
 4. **Case bundles refuse cases with review decisions** (phase 22). The client draft can carry attributed decisions, but the case and portfolio views show unreviewed cases only.
 5. **Manual credential lifecycle.** Rotation is explicit and manual. A lost rotation reply means re-enrollment. Revoked device rows are kept, and there is no purge command. After more than about 10,000 device rows in one tenant, the paged device list can no longer reach the newest devices; they stay reachable by device ID and through the audit log.
 6. **No license or commercial terms.** No product license file or commercial terms are included; that is an owner decision.

@@ -1,10 +1,10 @@
-# Termivar assessment comparison
+# Termivar Web assessment comparison
 
 This view reads **precomputed JSON from the existing `termivar report compare` CLI** in the local browser. It does not repeat the CLI's offline operation, combine two assessments, run a scanner or introduce a comparison algorithm. [Türkçe kullanım](TERMIVAR_COMPARISON.tr.md).
 
 ## Opening and reviewing a file
 
-1. Open comparison review within **Termivar Assessments**. Use **Open comparison file** to select one local `termivar-report-comparison/v1` JSON, up to **8 MiB**. An assessment, manifest, HTML document or before/after pair is not this importer's input.
+1. Open comparison review within **Termivar Web Assessments**. Use **Open comparison file** to select one local `termivar-report-comparison/v1` JSON, up to **8 MiB**. An assessment, manifest, HTML document or before/after pair is not this importer's input.
 2. Read the before/after source metadata and scope limits. The four group cards count the actual validated arrays; no fictional top-level `counts` field is expected.
 3. Group cards, filtering and search operate only on loaded records. Select an item to inspect its supplied before/after projections. An empty filter says there are no displayed records in that group, not that there are no security problems.
 4. **Show permitted comparison metadata** is an explicit choice for this import. Titles/capability/category/CWE/summary/remediation and source/item fingerprints are omitted from the initial DOM. When enabled, only permitted plain text appears; fingerprints start abbreviated and need a separate expansion for the full value. Text is not interpreted as HTML, links or commands. A “redacted” field name does not guarantee that an untrusted file contains no secrets.
@@ -51,7 +51,7 @@ The reviewed native source contains `control_reference_mapping_comparison` and `
 
 ## Bounds and local privacy
 
-Only explicit File API selection is read. **8 MiB** is the UI byte limit, not native CLI capacity. The closed `termivar-comparison-v1` parser profile bounds **depth 12**, **250,000 nodes**, **750,000 tokens**, **4,096 elements per array**, **32 object keys** and **1,024 UTF-16 code units per string**, plus native field-specific UTF-8 limits. UTF-8, duplicate keys, NaN/Infinity, wrong numeric types, safe integers, versions, fields and record-binding consistency are checked. Some larger valid CLI outputs may be rejected; no first-N view is silently substituted. The API parser default is unchanged. Termivar assessment import and policy preview import use their own closed profiles (`termivar-assessment-v1`, `sp-hbf-preview-v1`), described in their guides.
+Only explicit File API selection is read. **8 MiB** is the UI byte limit, not native CLI capacity. The closed `termivar-comparison-v1` parser profile bounds **depth 12**, **250,000 nodes**, **750,000 tokens**, **4,096 elements per array**, **32 object keys** and **1,024 UTF-16 code units per string**, plus native field-specific UTF-8 limits. UTF-8, duplicate keys, NaN/Infinity, wrong numeric types, safe integers, versions, fields and record-binding consistency are checked. Some larger valid CLI outputs may be rejected; no first-N view is silently substituted. The API parser default is unchanged. Termivar Web assessment import and policy preview import use their own closed profiles (`termivar-assessment-v1`, `sp-hbf-preview-v1`), described in their guides.
 
 Raw JSON is not put in the global store or inventory DTOs. A closed immutable view model contains only permitted fields. Filename/private target/raw data are not written to titles, URLs, logs, audit, telemetry or persistent browser storage. There is no upload/network, extra-file lookup, URL/path/HTML/command execution, raw request/response or evidence opening, copy/export/print/PDF. Hidden values are omitted from DOM/attributes rather than concealed with CSS, and hidden free text is not a search oracle.
 

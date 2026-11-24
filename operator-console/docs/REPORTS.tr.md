@@ -25,7 +25,7 @@ Sayfa yenilenince taslak geri gelmez. localStorage/sessionStorage/IndexedDB/cook
 
 ## İçerik ve zamanlar
 
-Rapor yalnız açık alan listesinden oluşturulan, iç içe değişebilir referans taşımayan bir sunum kopyasıdır. Mevcut ad/kimlik tercihi, veri kipi, cihaz kayıt durumu, HBF/Termivar/AV'nin ürün bildirimleri, sağlanan sürümler, sınırlı sayısal özetler, zamanlar ve eksik/bilinmiyor/güven açıklamaları kullanılır. Sonraki API veya görünüm değişimi seçilmiş kaydı sessizce değiştirmez.
+Rapor yalnız açık alan listesinden oluşturulan, iç içe değişebilir referans taşımayan bir sunum kopyasıdır. Mevcut ad/kimlik tercihi, veri kipi, cihaz kayıt durumu, HBF/Termivar Web/AV'nin ürün bildirimleri, sağlanan sürümler, sınırlı sayısal özetler, zamanlar ve eksik/bilinmiyor/güven açıklamaları kullanılır. Sonraki API veya görünüm değişimi seçilmiş kaydı sessizce değiştirmez.
 
 | Zaman | Anlamı |
 |---|---|
@@ -34,11 +34,11 @@ Rapor yalnız açık alan listesinden oluşturulan, iç içe değişebilir refer
 | Konsol okuma zamanı | Kullanıcının ayrıntıyı okuduğu zaman. Farklı cihazlar farklı okuma zamanlarından gelebilir. |
 | Rapor oluşturulma zamanı | Önizleme hazırlanırken alınan sabit tarayıcı metadata'sı; cihaz verisini tazelemez. |
 
-Eksik zaman **Bilinmiyor / sağlanmıyor** kalır. Aynı önizlemede rapor oluşturulma zamanı sabittir; varsa yaş gösterimi bu referansa bağlıdır. Yazdırma sırasında değişen sayaç veya yeni stale/SLA eşiği oluşturulmaz. Termivar'ın sağlanan içe aktarma zamanı varsa tarama/rapor üretim zamanı gibi adlandırılmaz.
+Eksik zaman **Bilinmiyor / sağlanmıyor** kalır. Aynı önizlemede rapor oluşturulma zamanı sabittir; varsa yaş gösterimi bu referansa bağlıdır. Yazdırma sırasında değişen sayaç veya yeni stale/SLA eşiği oluşturulmaz. Termivar Web'in sağlanan içe aktarma zamanı varsa tarama/rapor üretim zamanı gibi adlandırılmaz.
 
 Token/Authorization, API adresi ve bağlantı ayarı, JWT claim'leri, credential/enrollment bilgileri, audit/aktör verisi, hata body'si, tarama hedefi, ham rapor/kanıt veya policy içeriği rapora girmez. Session/token nesnesi rapor oluşturucuya verilmez. HTML/JSON/CSV indirme, import/arşiv, otomatik dosya kaydı, e-posta, zamanlama veya paylaşım sunucusu yoktur.
 
-Ürün anlamları değişmez: **Cihazın bildirdiği / Bağımsız doğrulanmadı**; veri yok/unknown/stale ayrıdır; eksik sayı sıfır değildir. İptal edilmiş cihaz kaydı HBF'nin kaldırıldığı/durduğu anlamına gelmez. Termivar özeti çalışır scanner/merkezî tarama kanıtı değildir. AV **Planlanan ürün — kullanıma hazır değil** kalır. Politika uygulandı/verified, korunuyor, güvenlik skoru, uyumluluk sertifikası veya hazırlanmış/onaylanmış imza sonucu üretilmez. Ayrıntılar [PRODUCT_STATES](PRODUCT_STATES.tr.md) içindedir.
+Ürün anlamları değişmez: **Cihazın bildirdiği / Bağımsız doğrulanmadı**; veri yok/unknown/stale ayrıdır; eksik sayı sıfır değildir. İptal edilmiş cihaz kaydı HBF'nin kaldırıldığı/durduğu anlamına gelmez. Termivar Web özeti çalışır scanner/merkezî tarama kanıtı değildir. AV **Planlanan ürün — kullanıma hazır değil** kalır. Politika uygulandı/verified, korunuyor, güvenlik skoru, uyumluluk sertifikası veya hazırlanmış/onaylanmış imza sonucu üretilmez. Ayrıntılar [PRODUCT_STATES](PRODUCT_STATES.tr.md) içindedir.
 
 ## Yazdırma ve PDF
 

@@ -6,4 +6,5 @@ import { policyReviewTr } from './catalogs/policyReview';
 import { termivarReviewTr } from './catalogs/termivarReview';
 import { termivarComparisonTr } from './catalogs/termivarComparison';
 import { productHubTr } from './catalogs/productHub';
-export const messagesTr = { ...appTr, ...productsTr, ...reportsTr, ...compareTr, ...policyReviewTr, ...termivarReviewTr, ...termivarComparisonTr, ...productHubTr };
+import { eventsTr } from './catalogs/events';
+export const messagesTr = { ...appTr, ...productsTr, ...reportsTr, ...compareTr, ...policyReviewTr, ...termivarReviewTr, ...termivarComparisonTr, ...productHubTr, ...eventsTr };

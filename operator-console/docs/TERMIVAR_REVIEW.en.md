@@ -1,10 +1,10 @@
-# Termivar Assessment Review
+# Termivar Web Assessment Review
 
-**Termivar Assessments** reads supported, previously prepared Termivar JSON artefacts in the local browser. It is not a scanner, evaluator or report generator. **An assessment result is not verified security status.** It proves neither that Termivar is installed/running on a device nor authority to act on a target. [Türkçe kullanım](TERMIVAR_REVIEW.tr.md).
+**Termivar Web Assessments** reads supported, previously prepared Termivar Web JSON artefacts in the local browser. It is not a scanner, evaluator or report generator. **An assessment result is not verified security status.** It proves neither that Termivar Web is installed/running on a device nor authority to act on a target. [Türkçe kullanım](TERMIVAR_REVIEW.tr.md).
 
 ## Using the workspace
 
-1. Open **Termivar Assessments** and explicitly select one local assessment JSON file, up to **1 MiB**. Example buttons load separately labelled synthetic data; an example never silently replaces an invalid file.
+1. Open **Termivar Web Assessments** and explicitly select one local assessment JSON file, up to **1 MiB**. Example buttons load separately labelled synthetic data; an example never silently replaces an invalid file.
 2. Read the version, completion, scope and missing-information statements. Search/filter only the loaded records and select one. A diagnostic whose item projection is unavailable is not shown as a completed empty assessment.
 3. Free-text titles/descriptions and metadata start hidden. Showing details is an explicit choice for this import only; values remain plain text. A field named “redacted” does not guarantee that an untrusted file contains no secrets.
 4. Optionally select a manifest of at most **64 KiB**, **separately and explicitly**. This native manifest ceiling is separate from the assessment's 1 MiB UI limit. Only the selected JSON's exact byte length, SHA256 and summary relationship to its manifest entry are checked. No HTML or other file is located or read.
@@ -68,6 +68,6 @@ Filenames and private targets are not written to titles, URLs, logs or analytics
 
 The local `ITherso/termivar` checkout was reviewed read-only at commit `6a2639348c2366d0bf71b9a34e5484d40aa393a3`: [reporting.md](https://github.com/ITherso/termivar/blob/6a2639348c2366d0bf71b9a34e5484d40aa393a3/docs/reporting.md), [assessment_scan.rs](https://github.com/ITherso/termivar/blob/6a2639348c2366d0bf71b9a34e5484d40aa393a3/crates/termivar-cli/src/assessment_scan.rs), [report_bundle.rs](https://github.com/ITherso/termivar/blob/6a2639348c2366d0bf71b9a34e5484d40aa393a3/crates/termivar-cli/src/report_bundle.rs), [import.rs](https://github.com/ITherso/termivar/blob/6a2639348c2366d0bf71b9a34e5484d40aa393a3/crates/termivar-scanner/src/reporting/comparison/import.rs), and [scan_profile.rs](https://github.com/ITherso/termivar/blob/6a2639348c2366d0bf71b9a34e5484d40aa393a3/crates/termivar-scanner/src/web_runtime/scan_profile.rs). Local paths and exact example byte/SHA256 provenance are in the [example record](../src/features/termivarReview/examples/README.md).
 
-The built-in complete/incomplete files are hand-authored: **Example Termivar assessment — no scan was performed against a real target.** Separate `bundle-assessment.json` and `bundle-manifest.json` are unchanged copies of a historical benign numeric-loopback fixture, not scanner outputs generated this phase. They include no HTML. Examples never automatically replace invalid user input.
+The built-in complete/incomplete files are hand-authored: **Example Termivar Web assessment — no scan was performed against a real target.** Separate `bundle-assessment.json` and `bundle-manifest.json` are unchanged copies of a historical benign numeric-loopback fixture, not scanner outputs generated this phase. They include no HTML. Examples never automatically replace invalid user input.
 
 Actual typecheck/build and limited manual product observations are recorded separately in [Phase11 delivery](DELIVERY.tr.md). No tests/runners/coverage, scanner/runtime or fixture server, live API/IdP/PostgreSQL, Windows/VM/driver/admin operations, remote actions, print/PDF/export or deployment/push/release were run this phase. Historical test counts are not new workspace acceptance. Backend, HBF, wheel, auth, policy and dependency locks remain unchanged.

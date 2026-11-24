@@ -5,6 +5,8 @@ device, an exact retry of the last batch returns the stored acceptance, and any
 other reuse of the last batch identity or an older position is a conflict that
 reports the device's accepted position. Events are never upgraded beyond
 self_reported/not_verified and, like snapshot ingestion, write no audit row.
+The alert rules (services/alerts.py) run on a newly accepted batch only, in
+the same transaction, so events and their alerts commit together.
 """
 from collections import Counter
 from datetime import datetime, timedelta
@@ -17,6 +19,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from security_platform.contracts import MAX_SEQUENCE
 from security_platform.event_contracts import EVENT_FIELDS, EventBatch, EventBatchTooLarge, canonical_event_batch
 from security_platform.models import Device, DeviceEventCursor, EndpointEvent, Tenant
+from security_platform.services.alerts import raise_alerts
 from security_platform.services.common import (DEFAULT_LIMITS, ContentTooLarge, EventCursorConflict, NotFound,
     ServiceError, UnprocessableContent, iso, locked_device_credential, require_membership, utc_now)
 
@@ -100,16 +103,22 @@ def ingest_events(session, device_principal, batch, *, limits=DEFAULT_LIMITS, no
         "event_seq": event.event_seq, "kind": event.kind, "received_at": received_at,
         "observed_at": datetime.fromisoformat(event.observed_at.replace("Z", "+00:00")),
         "payload": event.model_dump(mode="json")} for event in batch.events])
+    # Before the cap trim, so that a parent stored just before this batch is still found.
+    suppressed = raise_alerts(session, device, batch.events, received_at=received_at,
+                              previous_event_seq=cursor.last_event_seq if cursor is not None else None, limits=limits)
     stored = (cursor.stored_events if cursor is not None else 0) + len(batch.events)
     deleted = _trim_to_cap(session, device, stored, len(batch.events), limits)
     if cursor is None:
-        cursor = DeviceEventCursor(tenant_id=device.tenant_id, device_id=device.id, cap_deleted_events=0)
+        cursor = DeviceEventCursor(tenant_id=device.tenant_id, device_id=device.id, cap_deleted_events=0,
+                                   suppressed_alerts=0)
         session.add(cursor)
     cursor.last_batch_sequence, cursor.last_batch_id, cursor.last_batch_digest = batch.batch_sequence, batch_id, digest
     cursor.last_event_seq, cursor.last_received_at = batch.events[-1].event_seq, received_at
     cursor.stored_events = stored - deleted
     # The exact number of rows the cap deleted; the cursor row lock keeps the sum exact.
     cursor.cap_deleted_events += deleted
+    # Alert openings the per-device open-alert cap suppressed, under the same lock.
+    cursor.suppressed_alerts += suppressed
     session.flush()
     return _acceptance(cursor)
 
@@ -126,7 +135,8 @@ def list_device_events(session, operator, tenant_id, device_id, *, before_seq=No
 
     cap_deleted_events is the number of the device's rows the per-device cap
     has deleted at ingestion (0 until the device's first batch is accepted).
-    Retention prune does not change it.
+    Retention prune does not change it. suppressed_alerts is the number of
+    alert openings the per-device open-alert cap suppressed (0 likewise).
     """
     require_membership(session, operator, tenant_id)
     if (type(limit) is not int or not 1 <= limit <= limits.max_page_size or (before_seq is not None
@@ -138,11 +148,12 @@ def list_device_events(session, operator, tenant_id, device_id, *, before_seq=No
     if before_seq is not None:
         query = query.where(EndpointEvent.event_seq < before_seq)
     rows = session.scalars(query.order_by(EndpointEvent.event_seq.desc()).limit(limit + 1)).all()
-    cap_deleted = session.scalar(select(DeviceEventCursor.cap_deleted_events).where(
-        DeviceEventCursor.tenant_id == tenant_id, DeviceEventCursor.device_id == device_id))
+    counters = session.execute(select(DeviceEventCursor.cap_deleted_events, DeviceEventCursor.suppressed_alerts).where(
+        DeviceEventCursor.tenant_id == tenant_id, DeviceEventCursor.device_id == device_id)).first()
+    cap_deleted, suppressed = (0, 0) if counters is None else counters
     return {"items": [_event_view(row) for row in rows[:limit]],
             "next_before_seq": rows[limit - 1].event_seq if len(rows) > limit else None,
-            "cap_deleted_events": 0 if cap_deleted is None else cap_deleted}
+            "cap_deleted_events": cap_deleted, "suppressed_alerts": suppressed}
 
 
 def _prune_chunk(session, tenant_id, cutoff, batch_size):

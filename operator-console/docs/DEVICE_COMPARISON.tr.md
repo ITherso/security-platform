@@ -29,7 +29,7 @@ Normal ekran gezintisi, arama, filtre, sıralama ve sayfalama seçilmiş kopyala
 |---|---|
 | Cihaz ve kayıt | Görüntülenen ad/izin verilen kimlikler, cihaz kayıt durumu ve mevcut bildirim zamanları. DTO'nun vermediği ayrı agent sürümü uydurulmaz. |
 | HostBasedFirewall | Bildirilen ürün/çalışma/mod bilgileri, varsa mevcut ürün sürümü ve sınırlı durum alanları. Policy içeriği karşılaştırılmaz. |
-| Termivar | Mevcut durum, rapor varlığı ve sınırlı sayısal özetler. Ham rapor, tarama hedefi ve kanıt taşınmaz. |
+| Termivar Web | Mevcut durum, rapor varlığı ve sınırlı sayısal özetler. Ham rapor, tarama hedefi ve kanıt taşınmaz. |
 | Antivirüs ve veri güvenilirliği | Planned/unavailable anlamı, kaynak, bağımsız doğrulanmadı ve eksik bilgi alanları. |
 
 Token/Authorization, API base, principal/session nesnesi, enrollment/credential, JWT, audit payload/aktör, ham hata body’si, gizli yapılandırma, istek epoch/sequence/bağlantı sırrı veya serbest JSON metadata modele alınmaz. Ürün/agent sürümü veya başka bir alan kaynak DTO'da yoksa **Bilinmiyor / sağlanmıyor** kalır.
@@ -45,9 +45,9 @@ Kaynak gözlem zamanı, sunucu alım zamanı ve konsol okuma zamanı ayrı göst
 | **Eksik bilgi** | Bir veya iki tarafta gerekli değer yok/bilinmiyor. İki eksik/unknown değer “Aynı” değildir. Gerçek sıfır eksik değer değildir. |
 | **Karşılaştırılamıyor** | Değerlerin anlamı veya gözlem kapsamı eşleştirilemiyor. Sayısal eşitlik tek başına yeterli değildir. |
 
-İki tarafta HBF `enforce` olması yalnız aynı bildirilen mod olabilir; aynı koruma düzeyi değildir. Aynı `not_verified`, aynı **bağımsız doğrulanmamış beyan** düzeyidir; trusted/verified anlamı kazanmaz. Cihaz kaydının `revoked` olması firewall'ın durduğu/kaldırıldığı anlamına gelmez. İki planned/unavailable AV aktif koruma değildir. Termivar özeti scanner'ın kurulu/çalışır olduğunu veya merkezden tarama yapıldığını kanıtlamaz.
+İki tarafta HBF `enforce` olması yalnız aynı bildirilen mod olabilir; aynı koruma düzeyi değildir. Aynı `not_verified`, aynı **bağımsız doğrulanmamış beyan** düzeyidir; trusted/verified anlamı kazanmaz. Cihaz kaydının `revoked` olması firewall'ın durduğu/kaldırıldığı anlamına gelmez. İki planned/unavailable AV aktif koruma değildir. Termivar Web özeti scanner'ın kurulu/çalışır olduğunu veya merkezden tarama yapıldığını kanıtlamaz.
 
-**Termivar sayıları:** Kaynak özetler iki cihazda aynı değerlendirme/hedef/zaman penceresini kanıtlamaz. Bu nedenle iki tarafta sayı bulunsa bile kapsamın aynı olduğu gösterilemiyorsa sonuç **Karşılaştırılamıyor** olur; artış/azalış, performans, güvenlik farkı veya risk puanı türetilmez. Bir tarafta sayı yoksa eksiklik ayrıca görünürdür. Sayıların aynı olması kapsam kanıtı değildir. Legacy policy hash eşitliği de eşit enforcement davranışı sayılmaz; gizli policy/config karşılaştırması eklenmez.
+**Termivar Web sayıları:** Kaynak özetler iki cihazda aynı değerlendirme/hedef/zaman penceresini kanıtlamaz. Bu nedenle iki tarafta sayı bulunsa bile kapsamın aynı olduğu gösterilemiyorsa sonuç **Karşılaştırılamıyor** olur; artış/azalış, performans, güvenlik farkı veya risk puanı türetilmez. Bir tarafta sayı yoksa eksiklik ayrıca görünürdür. Sayıların aynı olması kapsam kanıtı değildir. Legacy policy hash eşitliği de eşit enforcement davranışı sayılmaz; gizli policy/config karşılaştırması eklenmez.
 
 **Yalnız farklı alanları göster** varsayılan kapalıdır. Açıldığında yalnız görünüm süzülür; yakalanmış kayıtlar değişmez. Eksik ve karşılaştırılamayan alanlar görünür kalır. Varsa fark/eksiklik sayacı yalnız görüntülenen alanların sayısıdır; bulgu sayısı, güvenlik skoru veya kurum toplamı değildir.
 

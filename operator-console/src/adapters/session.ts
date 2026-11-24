@@ -1,15 +1,19 @@
 /** Ephemeral request state. No persistence, token decoding, refresh or discovery. */
 import { ClientError } from "../data/contracts";
-import type { ClientErrorCode, DataClient, PageOptions, RequestOptions } from "../data/contracts";
-import { freeze, identifier, normalizeAuditPage, normalizeDeviceDetail, normalizeDevicePage,
-  normalizeTenantPage, requireValue } from "../data/normalize";
+import type { AlertCursor, AlertOptions, AlertStatus, ClientErrorCode, DataClient, PageOptions, RequestOptions,
+  TimelineOptions } from "../data/contracts";
+import { alertCursor, freeze, identifier, isAlertStatus, normalizeAlertPage, normalizeAuditPage, normalizeDeviceDetail,
+  normalizeDevicePage, normalizeTenantPage, normalizeTimelinePage, requireValue, utcSortKey } from "../data/normalize";
 
 export { ClientError } from "../data/contracts";
 export const REQUEST_TIMEOUT_MS = 12000;
 export interface ResolvedOptions { readonly limit: number; readonly offset: number; readonly signal?: AbortSignal }
 export type ReadOperation = { readonly type: "tenants" }
   | { readonly type: "devices" | "audit"; readonly tenantId: string }
-  | { readonly type: "detail"; readonly tenantId: string; readonly deviceId: string };
+  | { readonly type: "detail"; readonly tenantId: string; readonly deviceId: string }
+  | { readonly type: "events"; readonly tenantId: string; readonly deviceId: string; readonly beforeSeq: number | null }
+  | { readonly type: "alerts"; readonly tenantId: string; readonly status: AlertStatus | null;
+      readonly deviceId: string | null; readonly before: AlertCursor | null };
 export type ReadTransport = <T>(operation: ReadOperation, options: ResolvedOptions,
   normalize: (body: unknown) => T) => Promise<T>;
 type Metadata = Pick<DataClient, "mode" | "sourceLabel" | "referenceTime" | "apiBase" | "scenario">;
@@ -25,8 +29,19 @@ function options(input: unknown = {}, paged = false): ResolvedOptions {
     && typeof offset === "number" && Number.isInteger(offset) && offset >= 0 && offset <= 10000, "invalid_input");
   return { limit, offset, signal };
 }
+/** Keyset reads take no offset: only signal, limit (1..100, default 50) and the named cursor/filter keys. */
+function keysetOptions(input: unknown, extra: readonly string[]): { readonly resolved: ResolvedOptions; readonly value: Record<string, unknown> } {
+  requireValue(input !== null && typeof input === "object" && !Array.isArray(input), "invalid_input");
+  const value = input as Record<string, unknown>;
+  requireValue(Object.keys(value).every((key) => key === "signal" || key === "limit" || extra.includes(key)), "invalid_input");
+  const signal = value.signal;
+  requireValue(signal === undefined || (typeof AbortSignal !== "undefined" && signal instanceof AbortSignal), "invalid_input");
+  const limit = value.limit === undefined ? 50 : value.limit;
+  requireValue(typeof limit === "number" && Number.isInteger(limit) && limit >= 1 && limit <= 100, "invalid_input");
+  return { resolved: { limit, offset: 0, signal }, value };
+}
 
-/** Fixed four-method public surface used by both transports. */
+/** Fixed six-method public surface used by both transports. */
 export function createReadOnlyClient(read: ReadTransport, disconnect: () => void, metadata: Metadata): DataClient {
   return Object.freeze({ ...metadata, disconnect,
     async listTenants(value: PageOptions = {}) {
@@ -49,6 +64,26 @@ export function createReadOnlyClient(read: ReadTransport, disconnect: () => void
       const opts = options(value, true);
       return freeze(await read({ type: "audit", tenantId }, opts, (body) => normalizeAuditPage(body, opts, tenantId)));
     },
+    async listDeviceEvents(tenantId: string, deviceId: string, value: TimelineOptions = {}) {
+      identifier(tenantId, "invalid_input"); identifier(deviceId, "invalid_input");
+      const { resolved, value: raw } = keysetOptions(value, ["beforeSeq"]);
+      const before = raw.beforeSeq;
+      requireValue(before === undefined || (typeof before === "number" && Number.isSafeInteger(before) && before >= 1), "invalid_input");
+      const beforeSeq = before === undefined ? null : before;
+      return freeze(await read({ type: "events", tenantId, deviceId, beforeSeq }, resolved,
+        (body) => normalizeTimelinePage(body, { limit: resolved.limit, beforeSeq })));
+    },
+    async listAlerts(tenantId: string, value: AlertOptions = {}) {
+      identifier(tenantId, "invalid_input");
+      const { resolved, value: raw } = keysetOptions(value, ["status", "deviceId", "before"]);
+      const requested = raw.status;
+      requireValue(requested === undefined || isAlertStatus(requested), "invalid_input");
+      const status = requested === undefined ? null : requested;
+      const deviceId = raw.deviceId === undefined ? null : identifier(raw.deviceId, "invalid_input");
+      const before = raw.before === undefined ? null : alertCursor(raw.before, "invalid_input");
+      return freeze(await read({ type: "alerts", tenantId, status, deviceId, before }, resolved,
+        (body) => normalizeAlertPage(body, { limit: resolved.limit, status, deviceId, before })));
+    },
   });
 }
 
@@ -59,6 +94,17 @@ export function readPath(operation: ReadOperation, opts: ResolvedOptions): strin
     case "devices": return `/tenants/${encodeURIComponent(operation.tenantId)}/devices${query}`;
     case "audit": return `/tenants/${encodeURIComponent(operation.tenantId)}/audit${query}`;
     case "detail": return `/tenants/${encodeURIComponent(operation.tenantId)}/devices/${encodeURIComponent(operation.deviceId)}`;
+    case "events": return `/tenants/${encodeURIComponent(operation.tenantId)}/devices/${encodeURIComponent(operation.deviceId)}`
+      + `/events?limit=${opts.limit}${operation.beforeSeq === null ? "" : `&before_seq=${operation.beforeSeq}`}`;
+    case "alerts": {
+      // Keyset values come only from a validated response; before_seen_at is sent with six fraction digits.
+      const parameters = [`limit=${opts.limit}`];
+      if (operation.status !== null) parameters.push(`status=${operation.status}`);
+      if (operation.deviceId !== null) parameters.push(`device_id=${encodeURIComponent(operation.deviceId)}`);
+      if (operation.before !== null) parameters.push(`before_seen_at=${encodeURIComponent(utcSortKey(operation.before.seen_at))}`,
+        `before_id=${encodeURIComponent(operation.before.id)}`);
+      return `/tenants/${encodeURIComponent(operation.tenantId)}/alerts?${parameters.join("&")}`;
+    }
   }
 }
 

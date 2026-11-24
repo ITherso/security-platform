@@ -1,15 +1,15 @@
-# Product Hub
+# Termivar Product Hub
 
-**Product Hub / Ürün Merkezi** links the existing Security Ecosystem products and workspaces. It is a small typed frontend catalogue, not a calculation of installation, device health, protection, licence entitlement or independent verification. [Türkçe kullanım](PRODUCT_HUB.tr.md), [capability matrix](CAPABILITY_MATRIX.tr.md).
+**Termivar Product Hub / Termivar Ürün Merkezi** links the existing products and workspaces of the Termivar ecosystem. It is a small typed frontend catalogue, not a calculation of installation, device health, protection, licence entitlement or independent verification. [Türkçe kullanım](PRODUCT_HUB.tr.md), [capability matrix](CAPABILITY_MATRIX.tr.md).
 
 ## Five entries and existing destinations
 
 | Kind / stable ID | Product or component | Console destination | Source and boundary |
 |---|---|---|---|
 | product `hostbasedfirewall` | HostBasedFirewall | Devices (`devices`) | HBF state reported by a sample or explicitly connected API device. The local Windows product is separate; no central policy push/enforcement or completed live Windows acceptance is implied. |
-| product `termivar` | Termivar | Assessment review (`termivarReview`) and sibling comparison | Supported precomputed local JSON. The console starts no scanner and authenticates neither target nor producer by opening an artefact. |
+| product `termivar` | Termivar Web | Assessment review (`termivarReview`) and sibling comparison | Supported precomputed local JSON. The console starts no scanner and authenticates neither target nor producer by opening an artefact. |
 | component `policy-impact-workbench` | Policy Impact Workbench | Policy previews (`policyReview`) | Existing CLI preview output; no real policy revision/lineage authority, application or verification. |
-| component `security-platform` | Security Platform | Overview (`overview`) | Existing tenant/device/product inventory and audit contracts. Example mode works and the API adapter exists; corporate IdP/production live acceptance has not been performed. |
+| component `security-platform` | Termivar Platform | Overview (`overview`) | Existing tenant/device/product inventory and audit contracts. Example mode works and the API adapter exists; corporate IdP/production live acceptance has not been performed. |
 | product `antivirus` | Antivirus | Products (`products`) | Planned-product information only: `planned/unavailable`. No engine, scanning, malware detection or real-time AV protection. |
 
 The first four entries use `availability=available_workspace`; antivirus uses `planned_unavailable`. These describe **console workspace availability**. Separate `verification=not_verified` remains unchanged; it does not mean installed/protected/verified. Component IDs are frontend catalogue IDs, not additions to the backend's three-product DTO.

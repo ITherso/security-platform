@@ -27,7 +27,7 @@ Kaynak dayanakları: [README16–20](https://github.com/ITherso/termivar/blob/6a
 | Efor/destek kapasitesi | Hazırlık, yürütme, inceleme, rapor, destek ve revizyonların gerçek zaman/iş yükü kaydı | `not_measured`; otomatik analytics sistemi eklenmedi |
 | Talep ve değer | Teknik ekibin raporu kullanabilmesi, destek ihtiyacı, memnuniyet ve ödeme isteği | `not_validated`; görüşme veya satış yapılmadı |
 
-İlk bağımsız Termivar hizmeti için bunlar somut hazırlık gereksinimleridir. [Kapsam taslağı](PILOT_SCOPE.tr.md) doldurulmadan gerçek hedef seçilmiş sayılmaz. İnsan incelemesi native JSON'u değiştirerek source disposition'ını yükseltmez; ayrı not ve gerekçeyle tutulur.
+İlk bağımsız Termivar Web hizmeti için bunlar somut hazırlık gereksinimleridir. [Kapsam taslağı](PILOT_SCOPE.tr.md) doldurulmadan gerçek hedef seçilmiş sayılmaz. İnsan incelemesi native JSON'u değiştirerek source disposition'ını yükseltmez; ayrı not ve gerekçeyle tutulur.
 
 ## 3. Hukuki ve kurumsal kararlar
 
@@ -62,14 +62,14 @@ Hiçbir süre, doğruluk, maliyet veya verim artışı yüzdesi ölçülmeden ya
 
 ## 5. İlk pilotu bekletmeyen ayrı ekosistem kapıları
 
-| Alan | Korunan durum | Bu bağımsız Termivar pilotuna etkisi |
+| Alan | Korunan durum | Bu bağımsız Termivar Web pilotuna etkisi |
 |---|---|---|
-| Security Platform production API/IdP/PG | Gerçek kurumsal kabul bekliyor | Yerel CLI + dosya + insan incelemesi hizmetinin otomatik önkoşulu değil. Entegrasyon istenirse Enterprise Future için ayrı kapı. |
-| HostBasedFirewall Windows/native yaşam döngüsü | 12 gerçek vaka NOT_RUN; ayrı endpoint ürünü | Temel Termivar assessment'ın önkoşulu değil; kabulü tamamlanmış gibi tanıtılmaz. |
+| Termivar Platform production API/IdP/PG | Gerçek kurumsal kabul bekliyor | Yerel CLI + dosya + insan incelemesi hizmetinin otomatik önkoşulu değil. Entegrasyon istenirse Enterprise Future için ayrı kapı. |
+| HostBasedFirewall Windows/native yaşam döngüsü | 12 gerçek vaka NOT_RUN; ayrı endpoint ürünü | Temel Termivar Web assessment'ın önkoşulu değil; kabulü tamamlanmış gibi tanıtılmaz. |
 | HBF policy revision/lineage ve sorumlusu | Kararlaştırılmadı / not_established | Burada yeniden sorulmaz veya seçilmez. Offline Policy Impact Workbench uygulama yetkisi kazanmaz. |
 | Antivirus | Planned/unavailable, motor yok | İlk teklife çalışan ürün olarak dahil edilmez. |
 
-Bu ayrım platform `aa643d40797998d5f615cb5ba5b71b972596abc9` [yetenek/açık kapılar matrisine](../../operator-console/docs/CAPABILITY_MATRIX.tr.md) ve [statik ürün kataloğuna](../../operator-console/src/features/productHub/productCatalog.ts) dayanır. Bütün ekosistemin hazır olması ilk ürünün şartı yapılmaz. Termivar ve hizmet sürecinin yukarıdaki kendi kapıları ise açık kalır.
+Bu ayrım platform `aa643d40797998d5f615cb5ba5b71b972596abc9` [yetenek/açık kapılar matrisine](../../operator-console/docs/CAPABILITY_MATRIX.tr.md) ve [statik ürün kataloğuna](../../operator-console/src/features/productHub/productCatalog.ts) dayanır. Bütün ekosistemin hazır olması ilk ürünün şartı yapılmaz. Termivar Web ve hizmet sürecinin yukarıdaki kendi kapıları ise açık kalır.
 
 ## 6. Bu fazın gerçek teslim durumu
 

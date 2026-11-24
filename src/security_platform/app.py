@@ -38,7 +38,8 @@ def create_app(settings=None):
         max_active_grants=settings.max_active_grants_per_tenant, max_grant_records=settings.max_active_grants_per_tenant * 2,
         max_audits=settings.max_audit_events_per_tenant, stale_seconds=settings.stale_after_seconds,
         grant_ttl_seconds=settings.enrollment_ttl_seconds, max_grant_ttl_seconds=settings.max_enrollment_ttl_seconds,
-        credential_ttl_seconds=settings.credential_ttl_seconds, max_events_per_device=settings.max_events_per_device)
+        credential_ttl_seconds=settings.credential_ttl_seconds, max_events_per_device=settings.max_events_per_device,
+        max_open_alerts_per_device=settings.max_open_alerts_per_device)
 
     @asynccontextmanager
     async def lifespan(app):

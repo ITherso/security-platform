@@ -1,7 +1,10 @@
 import { createDemoClient } from './adapters/fixtures';
 import { createApiClient } from './adapters/platformReadOnly';
-import type { DataClient, Tenant, DevicePage, AuditPage, DeviceDetail } from './data/contracts';
+import type { DataClient, Tenant, DevicePage, AuditPage, DeviceDetail, AlertOptions, AlertStatus, TimelineOptions } from './data/contracts';
 import { selectDeviceRows } from './data/deviceRows';
+import { isAlertStatus } from './data/normalize';
+import { appendAlerts, appendTimeline, ALERT_DEVICE_PAGE, MAX_LOADED_ALERTS, MAX_TIMELINE_EVENTS } from './features/events/eventsModel';
+import type { AlertListView, LoadStatus, TimelineView } from './features/events/eventsModel';
 import type { ReportContext, ReportDraft, ReportModel } from './features/reports/reportModel';
 import { captureRecord } from './features/reports/capture';
 import { createDraft, addRecord, updateRecord, removeRecord, clearDraft, buildPreview } from './features/reports/reportDraft';
@@ -27,9 +30,11 @@ import { createGuideState, currentGuideStep, moveGuideStep } from './features/pr
 
 import { message, type UiMessage, type Locale } from './i18n';
 
-export type View = 'productHub' | 'overview' | 'devices' | 'products' | 'audit' | 'reports' | 'compare' | 'policyReview' | 'termivarReview' | 'termivarComparison';
+export type View = 'productHub' | 'overview' | 'devices' | 'alerts' | 'products' | 'audit' | 'reports' | 'compare' | 'policyReview' | 'termivarReview' | 'termivarComparison';
 export type Scenario = 'normal' | 'empty' | 'error';
 const EMPTY_DEVICE_IDS: readonly string[] = Object.freeze([]);
+const DEVICE_ID_TEXT = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+type Mutable<T> = { -readonly [K in keyof T]: T[K] };
 interface DetailNavigationContext { readonly epoch: number; readonly tenantId: string; readonly generation: number }
 const ERRORS: Readonly<Record<string, UiMessage>> = {
   unauthorized: message('app.error.unauthorized'),
@@ -72,7 +77,18 @@ interface State {
   termivarReview: TermivarReviewState; termivarReviewImportId: number;
   termivarComparison: TermivarComparisonState; termivarComparisonImportId: number;
   guide: GuideState | null;
+  timeline: TimelineView | null; timelineStatus: LoadStatus; timelineOlder: boolean; timelineError: UiMessage | null;
+  alerts: AlertListView | null; alertsStatus: LoadStatus; alertsOlder: boolean; alertsError: UiMessage | null;
+  alertStatusFilter: AlertStatus | 'all'; alertDeviceFilter: string | null; alertDevices: DevicePage | null;
+  alertDevicesError: UiMessage | null;
 }
+/** The open detail's timeline; it never outlives that detail, tenant or session. */
+const TIMELINE_CLEARED: Pick<State, 'timeline' | 'timelineStatus' | 'timelineOlder' | 'timelineError'> = {
+  timeline: null, timelineStatus: 'idle', timelineOlder: false, timelineError: null };
+const ALERTS_CLEARED: Pick<State, 'alerts' | 'alertsStatus' | 'alertsOlder' | 'alertsError' | 'alertDevices' | 'alertDevicesError'> = {
+  alerts: null, alertsStatus: 'idle', alertsOlder: false, alertsError: null, alertDevices: null, alertDevicesError: null };
+/** Device ids are tenant data: a tenant, session or source change starts from no filter. */
+const ALERT_FILTERS_DEFAULT: Pick<State, 'alertStatusFilter' | 'alertDeviceFilter'> = { alertStatusFilter: 'all', alertDeviceFilter: null };
 class ConsoleStore {
   private client: DataClient | null = createDemoClient();
   private epoch = 0;
@@ -80,6 +96,8 @@ class ConsoleStore {
   private detailRequest = new AbortController();
   private detailSequence = 0;
   private detailNavigationContext: DetailNavigationContext | null = null;
+  private timelineRequest = new AbortController();
+  private timelineSequence = 0;
   private contextGeneration = 1;
   private policyReviewReadSequence = 0;
   private termivarReadSequence = 0;
@@ -95,17 +113,23 @@ class ConsoleStore {
     detailReadAt: '', reportDraft: null, reportPreview: null, previewRevision: null, showIdentifiers: false, reportError: null, reportNotice: null,
     comparison: null, compareError: null, compareNotice: null, policyReview: createPolicyReviewState(), policyReviewImportId: 0,
     termivarReview: createTermivarReviewState(), termivarReviewImportId: 0,
-    termivarComparison: createTermivarComparisonState(), termivarComparisonImportId: 0, guide: null };
+    termivarComparison: createTermivarComparisonState(), termivarComparisonImportId: 0, guide: null,
+    ...TIMELINE_CLEARED, ...ALERTS_CLEARED, ...ALERT_FILTERS_DEFAULT };
   snapshot = () => this.state;
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener); }; };
   private emit(patch: Partial<State> = {}) { this.state = { ...this.state, ...patch }; this.listeners.forEach((fn) => fn()); }
   private reset() {
-    ++this.epoch; ++this.detailSequence; this.scope.abort(); this.detailRequest.abort();
+    ++this.epoch; ++this.detailSequence; this.scope.abort(); this.detailRequest.abort(); this.cancelTimeline();
     this.detailNavigationContext = null;
     this.scope = new AbortController(); this.detailRequest = new AbortController();
     this.emit({ devices: null, audit: null, auditStatus: 'idle', auditError: null, error: null, lastRead: '',
       detail: null, detailOpen: false, detailError: null, detailBusy: false, detailReadAt: '',
-      detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS, loading: false, busy: false, compareError: null, compareNotice: null });
+      detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS, loading: false, busy: false, compareError: null, compareNotice: null,
+      ...TIMELINE_CLEARED, ...ALERTS_CLEARED });
+  }
+  /** Aborts the timeline read in flight; its late answer fails the sequence check. */
+  private cancelTimeline() {
+    ++this.timelineSequence; this.timelineRequest.abort(); this.timelineRequest = new AbortController();
   }
   private clearReportContext() {
     this.guideGeneration = null;
@@ -145,10 +169,11 @@ class ConsoleStore {
     if (code(error) === 'unauthorized') {
       this.disconnect(); this.emit({ error: failureMessage }); return;
     }
-    ++this.detailSequence; this.detailRequest.abort(); this.detailNavigationContext = null;
+    ++this.detailSequence; this.detailRequest.abort(); this.detailNavigationContext = null; this.cancelTimeline();
     this.emit({ devices: null, audit: null, detail: null, detailOpen: false, detailBusy: false, detailReadAt: '',
       detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS, busy: false, loading: false,
-      auditStatus: 'error', auditError: failureMessage, error: failureMessage });
+      auditStatus: 'error', auditError: failureMessage, error: failureMessage,
+      ...TIMELINE_CLEARED, ...ALERTS_CLEARED, alertsStatus: 'error', alertsError: failureMessage });
   }
   reload = async () => {
     if (!this.client) { this.openConnection(); return; }
@@ -164,7 +189,9 @@ class ConsoleStore {
       if (!this.current(epoch, client)) return;
       const tenant = previous ? page.items.find((item) => item.id === previous) || null : page.items[0] || null;
       this.bindReportContext(tenant);
-      this.emit({ tenants: page.items, nextTenant: page.next_offset, tenant, loading: false, lastRead: this.readTime() });
+      // A refresh keeps the alert filters only for the same tenant.
+      this.emit({ tenants: page.items, nextTenant: page.next_offset, tenant, loading: false, lastRead: this.readTime(),
+        ...(tenant !== null && tenant.id === previous ? {} : ALERT_FILTERS_DEFAULT) });
       if (tenant) await this.loadView();
       else if (previous) this.emit({ error: message('app.error.previousTenant') });
     } catch (error) { this.fail(error, epoch, client); }
@@ -183,15 +210,16 @@ class ConsoleStore {
     const tenant = this.state.tenants.find((item) => item.id === id); if (!tenant) return;
     if (id !== this.state.tenant?.id) { this.closeGuide(); this.clearPolicyReview(); this.clearTermivarReview(); this.clearTermivarComparison(); }
     this.bindReportContext(tenant);
-    this.reset(); this.emit({ tenant, query: '', filter: 'all', offset: 0 }); await this.loadView();
+    this.reset(); this.emit({ tenant, query: '', filter: 'all', offset: 0, ...ALERT_FILTERS_DEFAULT }); await this.loadView();
   };
   private loadView = async () => {
     if (this.state.view === 'audit') await this.loadAudit(0);
+    else if (this.state.view === 'alerts') await this.loadAlerts();
     else if (this.state.view === 'overview' || this.state.view === 'devices') await this.loadDevices(0);
   };
   navigate = (view: View, filter = 'all') => {
     if (this.state.loading && view !== 'productHub' && view !== 'policyReview' && view !== 'termivarReview' && view !== 'termivarComparison') return;
-    this.reset(); this.emit({ view, filter, query: '', offset: 0, mobile: false, reportPreview: null, previewRevision: null }); void this.loadView();
+    this.reset(); this.emit({ view, filter, query: '', offset: 0, mobile: false, reportPreview: null, previewRevision: null, ...ALERT_FILTERS_DEFAULT }); void this.loadView();
   };
   loadDevices = async (offset = 0) => {
     if (!this.client || !this.state.tenant || !Number.isInteger(offset) || offset < 0 || offset > 10000) return;
@@ -250,15 +278,17 @@ class ConsoleStore {
   private requestDevice = async (id: string) => {
     if (!this.client || !this.state.tenant) return;
     if (this.detailNavigationContext !== null && (!this.navigationCurrent() || !this.state.detailNavigationIds.includes(id))) return;
-    this.detailRequest.abort(); this.detailRequest = new AbortController();
+    this.detailRequest.abort(); this.detailRequest = new AbortController(); this.cancelTimeline();
     const client = this.client, epoch = this.epoch, sequence = ++this.detailSequence, tenant = this.state.tenant.id, reportGeneration = this.contextGeneration;
     this.emit({ detail: null, detailOpen: true, detailBusy: true, detailError: null, detailReadAt: '',
-      detailTargetId: id, reportError: null, reportNotice: null, compareError: null, compareNotice: null });
+      detailTargetId: id, reportError: null, reportNotice: null, compareError: null, compareNotice: null, ...TIMELINE_CLEARED });
     try {
       const detail = await client.getDevice(tenant, id, { signal: this.detailRequest.signal });
       if (!this.detailCurrent(epoch, client, sequence, reportGeneration, tenant, id)) return;
       this.bindReportContext(this.state.tenant);
       this.emit({ detail, detailBusy: false, detailReadAt: this.readTime() });
+      // The timeline is a separate GET of the device just shown; its failure never hides the detail.
+      void this.loadTimeline();
     } catch (error) {
       if (!this.detailCurrent(epoch, client, sequence, reportGeneration, tenant, id) || code(error) === 'aborted') return;
       const accessLost = code(error) === 'forbidden' || code(error) === 'not_found';
@@ -269,9 +299,117 @@ class ConsoleStore {
     }
   };
   closeDevice = () => {
-    ++this.detailSequence; this.detailRequest.abort(); this.detailNavigationContext = null;
+    ++this.detailSequence; this.detailRequest.abort(); this.detailNavigationContext = null; this.cancelTimeline();
     this.emit({ detailOpen: false, detail: null, detailError: null, detailBusy: false, detailReadAt: '',
-      detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS });
+      detailTargetId: null, detailNavigationIds: EMPTY_DEVICE_IDS, ...TIMELINE_CLEARED });
+  };
+  private timelineLimit() { return this.state.mode === 'demo' ? 10 : 50; }
+  private timelineCurrent(epoch: number, client: DataClient, sequence: number, tenantId: string, deviceId: string) {
+    return this.current(epoch, client) && sequence === this.timelineSequence && tenantId === this.state.tenant?.id
+      && this.state.detailOpen && this.state.detail?.id === deviceId && this.state.detailTargetId === deviceId;
+  }
+  /** First page of the open device's events, or (older) the next page below the last loaded sequence. */
+  loadTimeline = async (older = false) => {
+    const { detail, tenant } = this.state;
+    if (!this.client || !tenant || !detail || !this.state.detailOpen || this.state.detailBusy || this.state.detailError !== null
+      || detail.tenant_id !== tenant.id || detail.id !== this.state.detailTargetId) return;
+    const current = this.state.timeline !== null && this.state.timeline.deviceId === detail.id ? this.state.timeline : null;
+    if (older && (current === null || current.nextBeforeSeq === null || this.state.timelineStatus !== 'ready'
+      || this.state.timelineOlder || current.events.length >= MAX_TIMELINE_EVENTS)) return;
+    this.cancelTimeline();
+    const client = this.client, epoch = this.epoch, sequence = this.timelineSequence, tenantId = tenant.id, deviceId = detail.id;
+    const signal = this.timelineRequest.signal;
+    const beforeSeq = older && current !== null ? current.nextBeforeSeq : null;
+    const limit = older && current !== null ? Math.min(this.timelineLimit(), MAX_TIMELINE_EVENTS - current.events.length) : this.timelineLimit();
+    const request: TimelineOptions = beforeSeq === null ? { limit, signal } : { limit, signal, beforeSeq };
+    this.emit(older ? { timelineOlder: true, timelineError: null }
+      : { timeline: null, timelineStatus: 'loading', timelineOlder: false, timelineError: null });
+    try {
+      const page = await client.listDeviceEvents(tenantId, deviceId, request);
+      if (!this.timelineCurrent(epoch, client, sequence, tenantId, deviceId)) return;
+      const base = older ? this.state.timeline : null;
+      if (older && (base === null || base.deviceId !== deviceId)) return;
+      this.emit({ timeline: appendTimeline(base, page, deviceId, this.readTime()), timelineStatus: 'ready', timelineOlder: false, timelineError: null });
+    } catch (error) {
+      if (!this.timelineCurrent(epoch, client, sequence, tenantId, deviceId) || code(error) === 'aborted') return;
+      if (code(error) === 'unauthorized') { this.fail(error, epoch, client); return; }
+      const failure: UiMessage = { ...errorMessage(error), sample: this.state.mode === 'demo' };
+      // An older page that fails keeps the loaded events; lost access clears the timeline.
+      const keep = older && code(error) !== 'forbidden' && code(error) !== 'not_found';
+      this.emit(keep ? { timelineOlder: false, timelineError: failure }
+        : { timeline: null, timelineStatus: 'error', timelineOlder: false, timelineError: failure });
+    }
+  };
+  /** Leaves the open detail for the alert list filtered to this device. */
+  showDeviceAlerts = (deviceId: string) => {
+    const { detail, tenant } = this.state;
+    if (!this.client || !tenant || this.state.loading || !detail || detail.id !== deviceId || detail.tenant_id !== tenant.id) return;
+    this.reset();
+    this.emit({ view: 'alerts', filter: 'all', query: '', offset: 0, mobile: false, reportPreview: null, previewRevision: null,
+      alertStatusFilter: 'all', alertDeviceFilter: deviceId });
+    void this.loadView();
+  };
+  private alertsCurrent(epoch: number, client: DataClient, tenantId: string) {
+    return this.current(epoch, client) && tenantId === this.state.tenant?.id && this.state.view === 'alerts';
+  }
+  /** Fresh read (filters, refresh, navigation) or the explicit next keyset page; never polled. */
+  loadAlerts = async (older = false) => {
+    if (!this.client || !this.state.tenant || this.state.view !== 'alerts') return;
+    const current = this.state.alerts;
+    if (older && (current === null || current.nextBefore === null || this.state.alertsStatus !== 'ready'
+      || this.state.alertsOlder || current.items.length >= MAX_LOADED_ALERTS)) return;
+    if (older) this.emit({ alertsOlder: true, alertsError: null });
+    else { this.reset(); this.emit({ alertsStatus: 'loading' }); }
+    const tenant = this.state.tenant;
+    if (!tenant) return;
+    const client = this.client, epoch = this.epoch, signal = this.scope.signal, tenantId = tenant.id;
+    const status = this.state.alertStatusFilter, deviceId = this.state.alertDeviceFilter;
+    const request: Mutable<AlertOptions> = {
+      limit: older && current !== null ? Math.min(this.limit(), MAX_LOADED_ALERTS - current.items.length) : this.limit(), signal };
+    if (status !== 'all') request.status = status;
+    if (deviceId !== null) request.deviceId = deviceId;
+    if (older && current !== null && current.nextBefore !== null) request.before = current.nextBefore;
+    try {
+      if (older) {
+        const page = await client.listAlerts(tenantId, request);
+        if (!this.alertsCurrent(epoch, client, tenantId) || this.state.alerts === null) return;
+        this.emit({ alerts: appendAlerts(this.state.alerts, page, this.readTime()), alertsOlder: false, alertsError: null, lastRead: this.readTime() });
+        return;
+      }
+      // Labels and the device filter come from the first device page; no other page is read for them. That read is
+      // optional: when it fails, the alerts still load and show short device ids with a note. A 401 on either read
+      // disconnects, as on every other read.
+      const [alertRead, labelRead] = await Promise.allSettled([client.listAlerts(tenantId, request),
+        client.listDevices(tenantId, { offset: 0, limit: ALERT_DEVICE_PAGE, signal })]);
+      if (!this.alertsCurrent(epoch, client, tenantId)) return;
+      for (const read of [alertRead, labelRead]) {
+        if (read.status === 'rejected' && code(read.reason) === 'unauthorized') throw read.reason;
+      }
+      if (alertRead.status === 'rejected') throw alertRead.reason;
+      const labelError: UiMessage | null = labelRead.status === 'rejected'
+        ? { ...errorMessage(labelRead.reason), sample: this.state.mode === 'demo' } : null;
+      this.emit({ alerts: appendAlerts(null, alertRead.value, this.readTime()),
+        alertDevices: labelRead.status === 'fulfilled' ? labelRead.value : null, alertDevicesError: labelError,
+        alertsStatus: 'ready', alertsOlder: false, alertsError: null, lastRead: this.readTime() });
+    } catch (error) {
+      if (!this.alertsCurrent(epoch, client, tenantId) || code(error) === 'aborted') return;
+      const key = code(error);
+      if (older && key !== 'unauthorized' && key !== 'forbidden' && key !== 'not_found') {
+        this.emit({ alertsOlder: false, alertsError: { ...errorMessage(error), sample: this.state.mode === 'demo' } });
+        return;
+      }
+      this.fail(error, epoch, client);
+    }
+  };
+  setAlertStatusFilter = (value: string) => {
+    const next = value === 'all' ? 'all' : isAlertStatus(value) ? value : null;
+    if (next === null || next === this.state.alertStatusFilter || this.state.view !== 'alerts') return;
+    this.emit({ alertStatusFilter: next }); void this.loadAlerts();
+  };
+  setAlertDeviceFilter = (value: string) => {
+    const next = value === '' ? null : DEVICE_ID_TEXT.test(value) ? value : undefined;
+    if (next === undefined || next === this.state.alertDeviceFilter || this.state.view !== 'alerts') return;
+    this.emit({ alertDeviceFilter: next }); void this.loadAlerts();
   };
   addDetailToReport = (update = false) => {
     const { detail, tenant, reportDraft: draft } = this.state;
@@ -588,7 +726,7 @@ class ConsoleStore {
   disconnect = () => {
     this.client?.disconnect(); this.client = null; this.reset(); this.clearReportContext();
     this.emit({ mode: 'disconnected', tenants: [], tenant: null, nextTenant: null, query: '', filter: 'all',
-      error: message('app.error.connectionClosed') });
+      error: message('app.error.connectionClosed'), ...ALERT_FILTERS_DEFAULT });
   };
   useDemo = (scenario: Scenario) => {
     this.disconnect(); this.client = createDemoClient({ scenario });

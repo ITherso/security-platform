@@ -1,8 +1,8 @@
 import type { CatalogShape } from '../types';
 
 export const termivarReviewTr = {
-  'termivarReview.nav': 'Termivar Değerlendirmeleri',
-  'termivarReview.title': 'Termivar Güvenlik Değerlendirme Merkezi',
+  'termivarReview.nav': 'Termivar Web Değerlendirmeleri',
+  'termivarReview.title': 'Termivar Web Güvenlik Değerlendirme Merkezi',
   'termivarReview.subtitle': 'Önceden üretilmiş değerlendirme artefact’larını kapsam ve kanıt sınırlarıyla inceleyin.',
   'termivarReview.localWorkspace': 'Yerel değerlendirme alanı',
   'termivarReview.localNote': 'Yalnız seçtiğiniz yerel dosyalar okunur; tarama, cihaz veya API bağlantısı kullanılmaz.',
@@ -15,11 +15,11 @@ export const termivarReviewTr = {
   'termivarReview.fileHelp': 'Tek bir UTF-8 JSON dosyası, en fazla 1 MiB. Dosya adı ve yerel yol gösterilmez.',
   'termivarReview.manifestHelp': 'Manifest isteğe bağlı ve ayrı seçilir; başka dosya veya HTML aranmaz.',
   'termivarReview.manifestCompleteOnly': 'Native paket manifesti yalnız tamamlanmış değerlendirme JSON’u için eşleştirilir; tanılama çıktısı paket raporu değildir.',
-  'termivarReview.boundary': 'Değerlendirme sonucu ≠ doğrulanmış güvenlik durumu. Dosya açmak üreticiyi doğrulamaz ve cihazda Termivar’ın kurulu veya çalışıyor olduğunu göstermez.',
-  'termivarReview.example': 'Örnek Termivar değerlendirmesi — gerçek hedef üzerinde tarama yapılmadı.',
+  'termivarReview.boundary': 'Değerlendirme sonucu ≠ doğrulanmış güvenlik durumu. Dosya açmak üreticiyi doğrulamaz ve cihazda Termivar Web’in kurulu veya çalışıyor olduğunu göstermez.',
+  'termivarReview.example': 'Örnek Termivar Web değerlendirmesi — gerçek hedef üzerinde tarama yapılmadı.',
   'termivarReview.loading': 'Yerel değerlendirme doğrulanıyor…',
   'termivarReview.emptyTitle': 'Bir değerlendirme açın',
-  'termivarReview.emptyDescription': 'Termivar’ın desteklenen değerlendirme JSON’unu seçin veya sentetik örneği açıkça yükleyin. Dosya yalnız bu tarayıcı oturumunun belleğinde incelenir.',
+  'termivarReview.emptyDescription': 'Termivar Web’in desteklenen değerlendirme JSON’unu seçin veya sentetik örneği açıkça yükleyin. Dosya yalnız bu tarayıcı oturumunun belleğinde incelenir.',
   'termivarReview.summaryTitle': 'Değerlendirme özeti',
   'termivarReview.source.file': 'Kullanıcının seçtiği yerel artefact',
   'termivarReview.source.example': 'Açıkça yüklenmiş sentetik örnek',
@@ -151,8 +151,8 @@ export const termivarReviewTr = {
 };
 
 export const termivarReviewEn = {
-  'termivarReview.nav': 'Termivar Assessments',
-  'termivarReview.title': 'Termivar Security Assessment Workspace',
+  'termivarReview.nav': 'Termivar Web Assessments',
+  'termivarReview.title': 'Termivar Web Security Assessment Workspace',
   'termivarReview.subtitle': 'Review existing assessment artifacts with their scope and evidence boundaries.',
   'termivarReview.localWorkspace': 'Local assessment workspace',
   'termivarReview.localNote': 'Only selected local files are read; no scan, device or API connection is used.',
@@ -165,11 +165,11 @@ export const termivarReviewEn = {
   'termivarReview.fileHelp': 'One UTF-8 JSON file, up to 1 MiB. Its filename and local path are not displayed.',
   'termivarReview.manifestHelp': 'The manifest is optional and selected separately; no other file or HTML is located.',
   'termivarReview.manifestCompleteOnly': 'A native bundle manifest is matched only to completed assessment JSON; a diagnostic output is not a bundle report.',
-  'termivarReview.boundary': 'Assessment result ≠ verified security state. Opening a file does not authenticate its producer or show that Termivar is installed or running on a device.',
-  'termivarReview.example': 'Example Termivar assessment — no real target was scanned.',
+  'termivarReview.boundary': 'Assessment result ≠ verified security state. Opening a file does not authenticate its producer or show that Termivar Web is installed or running on a device.',
+  'termivarReview.example': 'Example Termivar Web assessment — no real target was scanned.',
   'termivarReview.loading': 'Validating the local assessment…',
   'termivarReview.emptyTitle': 'Open an assessment',
-  'termivarReview.emptyDescription': 'Select a supported Termivar assessment JSON or explicitly load a synthetic example. It is reviewed only in this browser session’s memory.',
+  'termivarReview.emptyDescription': 'Select a supported Termivar Web assessment JSON or explicitly load a synthetic example. It is reviewed only in this browser session’s memory.',
   'termivarReview.summaryTitle': 'Assessment summary',
   'termivarReview.source.file': 'Local artifact selected by the user',
   'termivarReview.source.example': 'Explicitly loaded synthetic example',

@@ -1,4 +1,6 @@
-# Security Platform 0.1.0 — deneysel kaynak teslimatı
+# Termivar Platform 0.1.0 (teknik ad: security-platform) — deneysel kaynak teslimatı
+
+Görünen ad 2026-11-23'ten beri Termivar'dır; teknik adlar değişmedi: Python paketi `security_platform`, `security-platform` komutu, `SP_` ayarları, ürün kimlikleri (`hostbasedfirewall`, `termivar`, `antivirus`) ve veritabanı adları.
 
 ## Buradan başlayın / Start here
 
@@ -14,23 +16,23 @@ Aşağıdaki bölümler ayrıntılı başvuru ve tarihsel teslim notlarıdır.
 
 ## Bileşenler
 
-Türkçe/İngilizce, salt okunur [operatör konsolu](operator-console/README.md), açıkça etiketlenen örnek veriyle bağımsız çalışır. React/TypeScript kaynakları, kilitli bağımlılıklar ve yerel kurulum yönergesi `operator-console/` altındadır. Gerçek API adapter'ı mevcut dört operatör GET'iyle sınırlıdır; canlı bağlantı kabulü yapılmadı. Derlenmiş konsol (`operator-console/dist/`) git'te tutulmaz; paketlenmiş konsol derlemesi veya Node/pnpm ile build gerekir.
+Türkçe/İngilizce, salt okunur [operatör konsolu](operator-console/README.md), açıkça etiketlenen örnek veriyle bağımsız çalışır. React/TypeScript kaynakları, kilitli bağımlılıklar ve yerel kurulum yönergesi `operator-console/` altındadır. Gerçek API adapter'ı altı operatör GET'iyle (cihaz olay zaman çizelgesi ve uyarı listesi dahil) sınırlıdır; canlı bağlantı kabulü yapılmadı. Derlenmiş konsol (`operator-console/dist/`) git'te tutulmaz; paketlenmiş konsol derlemesi veya Node/pnpm ile build gerekir.
 
 Bağımsız FastAPI/PostgreSQL hizmeti: şirket üyeliklerini, tek kullanımlık cihaz kaydını, cihazların bildirdiği son ürün durumunu ve cihazın kendi beyanı olan süreç/sensör olaylarını tutar. Operatör yalnız güncel DB üyeliğinin izin verdiği tenant'a erişir; cihaz bearer kimliği yalnız kendi snapshot'ını, olaylarını ve credential yaşam döngüsünü kullanır.
 
-Bu sürüm envanter, durum aktarımı ve cihazın kendi beyanı olan olayların (süreç başlangıcı/bitişi, sensör durumu) alımıdır; olaylar `self_reported`/`not_verified` kalır, uyarı kuralı ve konsol görünümü henüz yoktur. Firewall politika gönderimi, uzaktan shell, Termivar tarama yürütmesi, antivirüs motoru, otomatik enrollment veya ajan daemon'u içermez. Cihazın kimliğinin doğrulanması, bildirdiği korumanın, raporun veya olayların doğru olduğunu kanıtlamaz.
+Bu sürüm envanter, durum aktarımı ve cihazın kendi beyanı olan olayların (süreç başlangıcı/bitişi, sensör durumu) alımıdır; olaylar `self_reported`/`not_verified` kalır. Yerleşik basit kurallar bu olaylardan uyarı üretir; operatör uyarıları okur, `tenant_admin` API ile onaylar veya kapatır, konsol olay zaman çizelgesini ve uyarı listesini salt okunur gösterir. Kural tespiti teşhis değildir; uyarılar da `self_reported`/`not_verified` kalır. Firewall politika gönderimi, uzaktan shell, Termivar Web tarama yürütmesi, antivirüs motoru, otomatik enrollment veya ajan daemon'u içermez. Cihazın kimliğinin doğrulanması, bildirdiği korumanın, raporun veya olayların doğru olduğunu kanıtlamaz.
 
 Ek çevrimdışı araç, mevcut HBF değerlendiricisiyle açık senaryoları karşılaştırır ve yürütülemeyen politika sözleşmeleri üretir. Ayrı içerik kimlikleri, iki CAS önkoşulu ve raporlanan receipt tutarlılığı saf fonksiyonlarla kontrol edilir. Bu araç HTTP/DB yüzeyini veya cihaz yetkilerini genişletmez.
 
 Konsolun [politika etki inceleme alanı](operator-console/docs/POLICY_REVIEW_WORKBENCH.tr.md) ([English](operator-console/docs/POLICY_REVIEW_WORKBENCH.en.md)), bu CLI'nin önceden ürettiği sürümlü preview dosyasını yerel olarak görüntüler. Evaluator'ı tarayıcıya taşımaz; cihaz/uygulama yetkisi veya eksik revision/CAS kanıtı oluşturmaz.
 
-[Termivar değerlendirme alanı](operator-console/docs/TERMIVAR_REVIEW.tr.md) ([English](operator-console/docs/TERMIVAR_REVIEW.en.md)), desteklenen yerel assessment ve ayrı incomplete tanı artefaktlarını salt okunur inceler. Yeni scanner veya backend importer değildir; isteğe bağlı manifest kontrolü yalnız seçilen JSON girdisine ilişkindir, tam bundle/üretici doğrulaması değildir.
+[Termivar Web değerlendirme alanı](operator-console/docs/TERMIVAR_REVIEW.tr.md) ([English](operator-console/docs/TERMIVAR_REVIEW.en.md)), desteklenen yerel assessment ve ayrı incomplete tanı artefaktlarını salt okunur inceler. Yeni scanner veya backend importer değildir; isteğe bağlı manifest kontrolü yalnız seçilen JSON girdisine ilişkindir, tam bundle/üretici doğrulaması değildir.
 
 Bu alanın [karşılaştırma görünümü](operator-console/docs/TERMIVAR_COMPARISON.tr.md) ([English](operator-console/docs/TERMIVAR_COMPARISON.en.md)) hazır `termivar-report-comparison/v1` JSON'unu okur. Dört grup yalnız rapor projection farklarını anlatır; tarayıcı yeni karşılaştırma üretmez ve bir öğenin kaybolmasını remediation kanıtı saymaz.
 
 [Ürün Merkezi ve demo rehberi](operator-console/docs/PRODUCT_HUB.tr.md) ([English](operator-console/docs/PRODUCT_HUB.en.md)) beş mevcut ürün/bileşenin kapsamını ve gerçek sayfa bağlantılarını toplar. [Yetenek matrisi](operator-console/docs/CAPABILITY_MATRIX.tr.md) kullanılabilir UI ile yapılmamış/kararlaştırılmamış kurumsal kabul kapılarını, [yükleme kaydı](operator-console/docs/FRONTEND_LOADING.tr.md) gerçek frontend byte ölçümlerini ayrı tutar. Yeni marka, fiyat, lisans/SLA veya production onayı oluşturulmaz.
 
-İlk ticari ürün adayı için [Termivar pilot hazırlık paketi](docs/commercial/README.tr.md); hedef müşteri hipotezini, kaynak destekli iddiaları, teslimat standardını ve açık kabul kararlarını tanımlar. Bu dokümantasyon satış, müşteri iletişimi, canlı değerlendirme veya üretime çıkış yetkisi değildir.
+İlk ticari ürün adayı için [Termivar Web pilot hazırlık paketi](docs/commercial/README.tr.md); hedef müşteri hipotezini, kaynak destekli iddiaları, teslimat standardını ve açık kabul kararlarını tanımlar. Bu dokümantasyon satış, müşteri iletişimi, canlı değerlendirme veya üretime çıkış yetkisi değildir.
 
 ## Korunan başlangıç
 
@@ -143,7 +145,7 @@ CLI çıkış kodu 0 yalnız belirtilen çıktı dosyasının yazıldığını b
 
 ## Sözleşme ve kabul
 
-- [API V1 ve statik OpenAPI](docs/API_V1.tr.md): 14 dar endpoint, olay sözleşmesi ve üç ayrı bearer türü.
+- [API V1 ve statik OpenAPI](docs/API_V1.tr.md): 17 dar endpoint, olay sözleşmesi, uyarı kuralları ve üç ayrı bearer türü.
 - [Mimari](docs/ARCHITECTURE.tr.md): transaction, tenant ilişkileri, sıra ve kaynak anlamı.
 - [Tehdit modeli](docs/THREAT_MODEL.tr.md): güven sınırları ve kalan riskler.
 - [İşletim](docs/OPERATIONS.tr.md): portable PostgreSQL, roller, migration, olay saklama ve günlük temizlik, TLS ve durdurma.

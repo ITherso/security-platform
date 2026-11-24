@@ -23,11 +23,14 @@ const ComparePage = lazy(() => import('./features/compare/ComparePage').then(mod
 const PolicyReviewPage = lazy(() => import('./features/policyReview/PolicyReviewPage').then(module => ({ default: module.PolicyReviewPage })));
 const TermivarReviewPage = lazy(() => import('./features/termivarReview/TermivarReviewPage').then(module => ({ default: module.TermivarReviewPage })));
 const ComparisonPage = lazy(() => import('./features/termivarComparison/ComparisonPage').then(module => ({ default: module.ComparisonPage })));
+const AlertsPage = lazy(() => import('./features/events/AlertsPage').then(module => ({ default: module.AlertsPage })));
+const DeviceTimeline = lazy(() => import('./features/events/DeviceTimeline').then(module => ({ default: module.DeviceTimeline })));
 
 const TITLES: Record<View, [MessageKey, MessageKey, MessageKey]> = {
   productHub: ['productHub.title', 'productHub.subtitle', 'productHub.nav'],
   overview: ['app.view.overview.title', 'app.view.overview.subtitle', 'app.nav.overview'],
   devices: ['app.view.devices.title', 'app.view.devices.subtitle', 'app.nav.devices'],
+  alerts: ['alerts.view.title', 'alerts.view.subtitle', 'alerts.nav'],
   products: ['app.view.products.title', 'app.view.products.subtitle', 'app.nav.products'],
   audit: ['app.view.audit.title', 'app.view.audit.subtitle', 'app.view.audit.title'],
   reports: ['app.view.reports.title', 'app.view.reports.subtitle', 'app.view.reports.title'],
@@ -44,6 +47,7 @@ function Icon({ name = 'device' }: { name?: string }) {
   return <svg viewBox="0 0 24 24" aria-hidden="true">{name === 'overview' ? <><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></>
     : name === 'products' || name === 'productHub' ? <><path d="M12 3 3 7.5 12 12l9-4.5ZM3 12l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5" /></>
     : name === 'compare' ? <><rect x="2" y="4" width="8" height="16" rx="1.5" /><rect x="14" y="4" width="8" height="16" rx="1.5" /><path d="M5 9h2M17 9h2M5 14h2M17 14h2" /></>
+    : name === 'alerts' ? <><path d="M12 3a6 6 0 0 0-6 6v4l-2 3h16l-2-3V9a6 6 0 0 0-6-6Z" /><path d="M10 19a2 2 0 0 0 4 0" /></>
     : name === 'audit' || name === 'reports' || name === 'policyReview' || name === 'termivarReview' ? <path d="M9 4h10v17H5V4h2M9 3h6v4H9zM8 12h8M8 16h5" />
     : name === 'refresh' ? <path d="M20 7v5h-5M4 17v-5h5M6 7a7 7 0 0 1 12-1l2 3M4 15l2 3a7 7 0 0 0 12-1" />
     : name === 'recent' ? <><circle cx="12" cy="12" r="9" /><path d="m7 12 3 3 7-7" /></>
@@ -121,7 +125,7 @@ function Attention() {
 }
 function Catalog() {
   const { locale, t } = useLocale();
-  return <section className="panel side-card"><h2>{t('app.nav.products')}</h2><p>{t('app.catalog.subtitle')}</p><div className="catalog-list">{[['◈', 'HostBasedFirewall', t('app.catalog.hbf'), t('app.catalog.reported')], ['⌁', 'Termivar', t('app.catalog.termivar'), t('app.catalog.experimental')], ['◇', t('app.catalog.av'), t('app.catalog.unavailable'), t('app.catalog.planned')]].map(([symbol, name, description, status]) =>
+  return <section className="panel side-card"><h2>{t('app.nav.products')}</h2><p>{t('app.catalog.subtitle')}</p><div className="catalog-list">{[['◈', 'HostBasedFirewall', t('app.catalog.hbf'), t('app.catalog.reported')], ['⌁', 'Termivar Web', t('app.catalog.termivar'), t('app.catalog.experimental')], ['◇', t('app.catalog.av'), t('app.catalog.unavailable'), t('app.catalog.planned')]].map(([symbol, name, description, status]) =>
     <div className="catalog-item" key={name}><span className="product-symbol">{symbol}</span><div><strong>{name}</strong><p>{description}</p></div><span className="product-state">{status}</span></div>)}</div></section>;
 }
 function ConnectionPanel() {
@@ -161,6 +165,15 @@ function CaptureComparisonActions() {
     onAdd={store.addDetailToComparison} onUpdate={store.updateDetailInComparison} onReplace={store.replaceComparisonSide}
     onOpen={() => store.navigate('compare')} />;
 }
+function DeviceTimelinePanel() {
+  const { locale } = useLocale();
+  const s = useSyncExternalStore(store.subscribe, store.snapshot);
+  if (!s.detail || s.detailBusy || s.detailError || !s.detailOpen) return null;
+  const deviceId = s.detail.id;
+  const timeline = s.timeline !== null && s.timeline.deviceId === deviceId ? s.timeline : null;
+  return <DeviceTimeline timeline={timeline} status={s.timelineStatus} older={s.timelineOlder} errorMessage={renderMessage(locale, s.timelineError)}
+    onOlder={() => void store.loadTimeline(true)} onRefresh={() => void store.loadTimeline(false)} onShowAlerts={() => store.showDeviceAlerts(deviceId)} />;
+}
 function DetailNavigator() {
   const { locale, t } = useLocale();
   const s = useSyncExternalStore(store.subscribe, store.snapshot);
@@ -199,7 +212,7 @@ function AppContent() {
     <div className="sidebar-spacer" /><div className="sidebar-note"><span className="note-icon">↗</span><strong>{t('app.sidebar.title')}</strong><p>{t('app.sidebar.note')}</p><span className="sidebar-tag">{t('app.readOnlyConsole')}</span></div><div className="operator"><span className="avatar">O</span><div><strong>{t('app.operator')}</strong><span>{s.tenant ? t(demo ? admin ? 'app.role.sampleAdmin' : 'app.role.sampleViewer' : admin ? 'app.role.admin' : 'app.role.viewer') : t('app.noTenant')}</span></div></div>
   </aside><div className="workspace"><header className="topbar"><button className="icon-button mobile-only" aria-label={t('app.menu.open')} aria-expanded={s.mobile} onClick={store.toggleMobile}>☰</button><div className="breadcrumb">{t('app.productCenter')} <span>/</span><strong>{t(breadcrumbKey)}</strong></div><div className="topbar-actions"><LanguageSelect /><Badge tone={localReview ? 'neutral' : demo ? 'purple' : s.mode === 'api' ? 'success' : 'neutral'}>{localReview ? localLabel : demo ? t('app.mode.demo') : s.mode === 'api' ? t('app.mode.api') : t('app.mode.closed')}</Badge>{!localReview && <button className="icon-button" aria-label={t('app.source')} onClick={store.openConnection}>⚙</button>}</div></header>
     <main id="main" tabIndex={-1}><div className="mode-banner" data-mode={localReview ? 'local' : demo ? 'demo' : 'api'} role="status"><span className="banner-symbol">{localReview ? '▤' : demo ? '◉' : '◎'}</span><div><strong>{localReview ? localLabel : demo ? t('app.banner.demo') : s.mode === 'api' ? t('app.banner.api') : t('app.banner.none')}</strong><span>{localReview ? t(localHub ? 'productHub.localNote' : localComparison ? 'termivarComparison.localNote' : localTermivar ? 'termivarReview.localNote' : 'policyReview.localNote') : demo ? s.scenario === 'normal' ? t('app.banner.normal') : s.scenario === 'empty' ? t('app.banner.empty') : t('app.banner.error') : t('app.banner.trust')}</span></div>{!localReview && <button className="text-button" onClick={store.openConnection}>{t('app.source.link')}</button>}</div>
-      <section className="page-heading"><div><p className="eyebrow">{localReview ? localLabel : s.tenant?.name || t('app.workspaceFallback')}</p><h1>{t(titleKey)}</h1><p>{t(subtitleKey)}</p></div>{!localReview && <div className="heading-actions"><span className="refresh-caption">{s.lastRead && t('app.readAt', formatDate(s.lastRead, locale))}</span><button className="btn btn-primary" disabled={s.loading || s.busy || s.auditStatus === 'loading'} onClick={() => void store.reload()}><Icon name="refresh" />{t('app.refresh')}</button></div>}</section>
+      <section className="page-heading"><div><p className="eyebrow">{localReview ? localLabel : s.tenant?.name || t('app.workspaceFallback')}</p><h1>{t(titleKey)}</h1><p>{t(subtitleKey)}</p></div>{!localReview && <div className="heading-actions"><span className="refresh-caption">{s.lastRead && t('app.readAt', formatDate(s.lastRead, locale))}</span><button className="btn btn-primary" disabled={s.loading || s.busy || s.auditStatus === 'loading' || s.alertsStatus === 'loading'} onClick={() => void store.reload()}><Icon name="refresh" />{t('app.refresh')}</button></div>}</section>
       {localTermivar && <nav className="panel termivar-view-switch" aria-label={t('termivarComparison.viewsLabel')}><button type="button" className={`btn ${s.view === 'termivarReview' ? 'btn-primary' : 'btn-ghost'}`} aria-pressed={s.view === 'termivarReview'} onClick={() => store.navigate('termivarReview')}>{t('termivarComparison.view.assessment')}</button><button type="button" className={`btn ${localComparison ? 'btn-primary' : 'btn-ghost'}`} aria-pressed={localComparison} onClick={() => store.navigate('termivarComparison')}>{t('termivarComparison.view.comparison')}</button></nav>}
       {!localReview && s.error && <div className="page-message" role="alert">{renderMessage(locale, s.error)}</div>}
       <GuidePanel state={s.guide} onPrevious={store.previousGuideStep} onNext={store.nextGuideStep} onClose={store.closeGuide} onOpenStep={store.openGuideStep} />
@@ -210,9 +223,10 @@ function AppContent() {
         : s.view === 'policyReview' ? <PolicyReviewPage key={s.policyReviewImportId} state={s.policyReview} onImportFile={store.importPolicyReviewFile} onInvalidSelection={store.rejectPolicyReviewSelection} onLoadExample={store.loadPolicyReviewExample} onClear={store.clearPolicyReview} onQueryChange={store.setPolicyReviewQuery} onFilterChange={store.setPolicyReviewFilter} onSelectScenario={store.selectPolicyReviewScenario} onShowDetailsChange={store.setPolicyReviewDetails} />
         : s.view === 'reports' ? s.reportDraft ? <><ReportPage draft={s.reportDraft} showIdentifiers={s.showIdentifiers} onShowIdentifiersChange={store.setReportIdentifiers} onRemove={store.removeReportRecord} onClear={store.clearReport} onPreview={store.createReportPreview} onBrowseDevices={() => store.navigate('devices')} />{s.reportError && <p className="page-message" role="alert">{renderMessage(locale, s.reportError)}</p>}</> : <section className="panel empty-state"><h2>{t('app.report.selectTenant')}</h2><p>{t('app.report.emptyTenant')}</p></section>
         : s.view === 'compare' ? s.comparison ? <><ComparePage state={s.comparison} onRemove={store.removeCompareDevice} onClear={store.clearComparison} onBrowseDevices={() => store.navigate('devices')} />{s.compareError && <p className="page-message" role="alert">{renderMessage(locale, s.compareError)}</p>}</> : <section className="panel empty-state"><h2>{t('compare.selectTenant')}</h2></section>
+        : s.view === 'alerts' ? <AlertsPage page={s.alerts} status={s.alertsStatus} older={s.alertsOlder} errorMessage={renderMessage(locale, s.alertsError)} tenantSelected={s.tenant !== null} statusFilter={s.alertStatusFilter} deviceFilter={s.alertDeviceFilter} devices={s.alertDevices} labelsErrorMessage={renderMessage(locale, s.alertDevicesError)} onStatusFilterChange={store.setAlertStatusFilter} onDeviceFilterChange={store.setAlertDeviceFilter} onOlder={() => void store.loadAlerts(true)} onOpenDevice={(id) => void store.openDevice(id)} />
         : !admin ? <section className="panel empty-state"><h2>{t('app.audit.adminTitle')}</h2><p>{s.tenant ? t('app.audit.viewerNote') : t('app.audit.selectTenant')}</p></section> : <AuditView page={s.audit} tenantName={s.tenant?.name} status={s.auditStatus} errorMessage={renderMessage(locale, s.auditError)} onNext={(offset) => void store.loadAudit(offset)} onPrev={s.auditOffset > 0 ? () => void store.loadAudit(Math.max(0, s.auditOffset - (demo ? 5 : 50))) : undefined} />}</ScreenBoundary>
       <footer className="page-footer"><span><span className="footer-dot" />{t('app.footer.readOnly')}</span><span>{localReview ? t(localHub ? 'productHub.footer' : localComparison ? 'termivarComparison.footer' : localTermivar ? 'termivarReview.footer' : 'policyReview.footer') : t('app.footer.trust')}</span></footer>
     </main></div></div>
-    <Modal open={s.detailOpen} onClose={store.closeDevice} className="detail-dialog" label={t('app.detail.title')} restorePageFocus><DetailNavigator />{s.detailBusy ? <div className="empty-state" role="status">{t('app.detail.loading')}</div> : s.detailError ? <div className="empty-state"><p role="alert">{renderMessage(locale, s.detailError)}</p></div> : <ScreenBoundary key={s.detailTargetId ?? 'detail'} onBack={() => store.navigate('productHub')}><DeviceDetail detail={s.detail} actions={<><CaptureReportActions /><CaptureComparisonActions /></>} /></ScreenBoundary>}</Modal>
+    <Modal open={s.detailOpen} onClose={store.closeDevice} className="detail-dialog" label={t('app.detail.title')} restorePageFocus><DetailNavigator />{s.detailBusy ? <div className="empty-state" role="status">{t('app.detail.loading')}</div> : s.detailError ? <div className="empty-state"><p role="alert">{renderMessage(locale, s.detailError)}</p></div> : <ScreenBoundary key={s.detailTargetId ?? 'detail'} onBack={() => store.navigate('productHub')}><DeviceDetail detail={s.detail} actions={<><CaptureReportActions /><CaptureComparisonActions /></>} /><DeviceTimelinePanel /></ScreenBoundary>}</Modal>
     <ConnectionPanel /></>;
 }

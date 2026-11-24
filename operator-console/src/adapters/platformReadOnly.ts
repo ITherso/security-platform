@@ -2,6 +2,7 @@
 import { ClientError } from "../data/contracts";
 import type { ClientErrorCode, DataClient } from "../data/contracts";
 import { requireValue, strictJson } from "../data/normalize";
+import type { StrictJsonProfile } from "../data/normalize";
 import { createReadOnlyClient, createTokenSession, readPath } from "./session";
 import type { ReadOperation, ResolvedOptions } from "./session";
 
@@ -23,7 +24,13 @@ function target(input: unknown): string {
   return expected;
 }
 
-async function bodyJson(response: Response): Promise<unknown> {
+/** The strictJson profile of a read, chosen by its fixed route, never by the response. */
+function responseProfile(operation: ReadOperation): StrictJsonProfile {
+  // Timeline and alert pages carry event images of up to 1,024 code points (2,048 UTF-16 units).
+  return operation.type === "events" || operation.type === "alerts" ? "sp-events-alerts-v1" : "default";
+}
+
+async function bodyJson(response: Response, profile: StrictJsonProfile): Promise<unknown> {
   requireValue((response.headers.get("content-type") ?? "").split(";")[0]?.trim().toLowerCase() === "application/json");
   const length = response.headers.get("content-length");
   if (length !== null) requireValue(/^\d{1,10}$/.test(length) && Number(length) <= MAX_RESPONSE_BYTES);
@@ -43,7 +50,7 @@ async function bodyJson(response: Response): Promise<unknown> {
     const bytes = new Uint8Array(size);
     let offset = 0;
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.byteLength; }
-    try { return strictJson(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
+    try { return strictJson(new TextDecoder("utf-8", { fatal: true }).decode(bytes), profile); }
     catch { throw new ClientError("malformed"); }
   } finally {
     try { void reader.cancel().catch(() => {}); } catch { /* Never expose body/error text. */ }
@@ -72,7 +79,7 @@ export function createApiClient(config: ApiConfiguration): DataClient {
         if (response.status === 401) session.disconnect();
         throw new ClientError(code, response.status);
       }
-      const result = normalize(await bodyJson(response));
+      const result = normalize(await bodyJson(response, responseProfile(operation)));
       if (!session.isConnected()) throw new ClientError("disconnected");
       if (request.signal.aborted) throw new ClientError(request.reason() ?? "aborted");
       return result;

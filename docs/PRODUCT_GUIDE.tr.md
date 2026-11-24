@@ -1,10 +1,12 @@
-# Security Platform — ürün kılavuzu
+# Termivar Platform — ürün kılavuzu
 
-Security Platform 0.1.0'ı değerlendirmek, kurmak ve göstermek için başlangıç noktası budur. Bugün neyin uygulandığını, nasıl çalıştırılacağını ve neyin hazır olmadığını anlatır. Ayrıntılı Türkçe başvuru belgeleri sondadır. English: [PRODUCT_GUIDE.md](PRODUCT_GUIDE.md).
+Termivar Platform 0.1.0'ı değerlendirmek, kurmak ve göstermek için başlangıç noktası budur. Bugün neyin uygulandığını, nasıl çalıştırılacağını ve neyin hazır olmadığını anlatır. Ayrıntılı Türkçe başvuru belgeleri sondadır. English: [PRODUCT_GUIDE.md](PRODUCT_GUIDE.md).
+
+Görünen ad 2026-11-23'ten beri Termivar'dır; teknik adlar değişmedi: Python paketi `security_platform`, `security-platform` komutu, `SP_` ayarları, ürün kimlikleri (`hostbasedfirewall`, `termivar`, `antivirus`) ve veritabanı adları.
 
 ## Ürün nedir?
 
-Security Platform, güvenlik operasyonu bileşenlerinden oluşur. Her sonuç kanıt düzeyini açıkça taşır:
+Termivar Platform, güvenlik operasyonu bileşenlerinden oluşur. Her sonuç kanıt düzeyini açıkça taşır:
 
 - Cihaz bildirimi "cihazın bildirdiği" olarak kalır.
 - Hash eşleşmesi yalnız "tutarlı byte" anlamına gelir.
@@ -12,9 +14,9 @@ Security Platform, güvenlik operasyonu bileşenlerinden oluşur. Her sonuç kan
 
 | Bileşen | Bugün ne yapar | Demo durumu |
 | --- | --- | --- |
-| **Operatör konsolu** (`operator-console/`) | Türkçe/İngilizce, salt okunur web konsolu. Açıkça etiketli örnek veriyle açılır. Kapsadıkları: cihaz envanteri, iki cihazın karşılaştırılması, durum raporu taslağı, politika etki incelemesi, Termivar değerlendirme ve karşılaştırma incelemesi. Yerel JSON dosyalarını yalnız tarayıcıda okur. | Derlenmiş konsol varsa hazır ([3. bölüm](#3-operatör-konsolu-örnek-veri)). |
+| **Operatör konsolu** (`operator-console/`) | Türkçe/İngilizce, salt okunur web konsolu. Açıkça etiketli örnek veriyle açılır. Kapsadıkları: cihaz envanteri, iki cihazın karşılaştırılması, durum raporu taslağı, politika etki incelemesi, Termivar Web değerlendirme ve karşılaştırma incelemesi. Yerel JSON dosyalarını yalnız tarayıcıda okur. | Derlenmiş konsol varsa hazır ([3. bölüm](#3-operatör-konsolu-örnek-veri)). |
 | **Çevrimdışı politika etki önizlemesi** (`security-policy`) | Base ve candidate firewall politikasını, yerel HostBasedFirewall evaluator kaynağıyla açık senaryolar üzerinde karşılaştırır. Fixture CAS önkoşullarını kontrol eder. Yürütülemeyen bir rollout'u simüle eder. | Hazır, çevrimdışı. |
-| **Çevrimdışı Termivar analist zinciri** (`tools/commercial_*`, faz 16–44) | Termivar değerlendirmesini intake, analist inceleme paketi, tek dosyalık HTML inceleme masası ve müşteri teslim taslağı adımlarından geçirir. Sonraki fazlar şunları ekler: vaka paketi, portföy, kapsam/izlenebilirlik, bileşim, lisans/bağımlılık kanıtı, korumalı referans kapsülü ve minimal görev kapsülü alışverişi/uzlaştırması. | Tek komutla yeniden üretilebilir ([5. bölüm](#5-termivar-çevrimdışı-analist-zinciri)). |
+| **Çevrimdışı Termivar Web analist zinciri** (`tools/commercial_*`, faz 16–44) | Termivar Web değerlendirmesini intake, analist inceleme paketi, tek dosyalık HTML inceleme masası ve müşteri teslim taslağı adımlarından geçirir. Sonraki fazlar şunları ekler: vaka paketi, portföy, kapsam/izlenebilirlik, bileşim, lisans/bağımlılık kanıtı, korumalı referans kapsülü ve minimal görev kapsülü alışverişi/uzlaştırması. | Tek komutla yeniden üretilebilir ([5. bölüm](#5-termivar-web-çevrimdışı-analist-zinciri)). |
 | **Envanter API'si** (`security-platform` servisi) | FastAPI/PostgreSQL. Tenant üyeliklerini, tek kullanımlık cihaz kaydını, cihaz kimlik bilgilerini ve cihazın bildirdiği son ürün durumunu tutar. Operatörler RS256 RFC 9068 erişim token'ıyla kimlik doğrular. | PostgreSQL, IdP ve TLS gerekir ([6. bölüm](#6-envanter-apisi-ileri-düzey)). |
 | **Cihaz göndericisi** (`security-snapshot`) | Dışa aktarılmış HostBasedFirewall ekosistem özetini bir kez gönderir. Açıkça istenirse cihaz kimlik bilgisini yeniler. | Envanter API'si gerekir. |
 
@@ -27,7 +29,7 @@ Security Platform, güvenlik operasyonu bileşenlerinden oluşur. Her sonuç kan
 - cihazları otomatik kaydetmek,
 - cihaz bildiriminin doğruluğunu kanıtlamak.
 
-HostBasedFirewall ve Termivar ayrı ürünlerdir. Bu depo onların çıktılarını veya kaynaklarını okur, kendilerini dağıtmaz.
+HostBasedFirewall ve Termivar Web ayrı ürünlerdir. Bu depo onların çıktılarını veya kaynaklarını okur, kendilerini dağıtmaz.
 
 ## 1. Kurulum
 
@@ -106,7 +108,7 @@ python -B operator-console/serve.py --port 8787
 2. **Cihazlar**: bir cihazı açın; kayıt, sunucu alındısı ve ürün beyanı bölümleri ayrıdır. Cihazı **Durum raporu**na ekleyip önizlemeyi açın.
 3. **Karşılaştırma**: iki cihaz ayrıntısını açıp karşılaştırın.
 4. **Politika önizlemeleri**: yerleşik örneği veya [4. bölümde](#4-politika-etki-önizlemesi) üretilen `policy-preview.json` dosyasını yükleyin.
-5. **Termivar değerlendirmeleri**: tamamlanmış ve eksik örnekleri, **Rapor karşılaştırması** sekmesinde de karşılaştırma örneğini yükleyin.
+5. **Termivar Web değerlendirmeleri**: tamamlanmış ve eksik örnekleri, **Rapor karşılaştırması** sekmesinde de karşılaştırma örneğini yükleyin.
 6. **Dil / Language** menüsünden İngilizceye geçin.
 
 Konsol hiçbir cihaza veya tarayıcıya bağlanmaz. Canlı API kipi için envanter API'sinin aynı HTTPS origin'inde olması ve dışarıda üretilmiş bir operatör token'ı gerekir. Bu kip gerçek bir IdP ile kabul edilmedi.
@@ -142,7 +144,7 @@ Politika, senaryo ve zone kontrolleri evaluator gerektirir. `--hbf-root` verilme
 
 **`--hbf-root` altındaki evaluator, aracın çalıştırdığı yerel Python kodudur.** Yalnız güvendiğiniz bir HostBasedFirewall checkout'unu gösterin.
 
-## 5. Termivar çevrimdışı analist zinciri
+## 5. Termivar Web çevrimdışı analist zinciri
 
 ```powershell
 python -B scripts/run_offline_chain.py --workspace <depo dışında yeni boş dizin> [--termivar-root <Termivar checkout'u>] [--phase30-delivery-zip <Phase30 teslim ZIP'i>]
@@ -249,13 +251,13 @@ Bu özellikler depodaki otomatik testlerle sınanır. Bağımsız sızma testi, 
 En yüksek etkiden başlayarak:
 
 1. **Üretim IdP'si, dağıtımı ve veritabanı işletimi yok.** Envanter API'si yalnız yerel fixture'larla kabul edildi: test issuer/JWKS, yerel TLS CA'sı ve taşınabilir PostgreSQL. Gerçek bir IdP, konsolun canlı kipi için ters vekil, yedekleme, yüksek erişilebilirlik ve izleme sağlanmaz.
-2. **Konsolun yeni içe aktarma sınırları henüz derlenmedi.** Bu sürümdeki kaynak değişikliği konsolun içe aktarma sınırlarını yükseltiyor; böylece 100'den fazla bulgulu Termivar değerlendirmeleri ve CLI'nin üst sınırındaki politika önizlemeleri açılabilecek. Bu değişiklik Node bulunmadığı için derlenmedi. Büyük gerçek dosyalarla göstermeden önce `pnpm typecheck` ve `pnpm build` çalıştırıp yeniden kontrol edin.
+2. **Konsolun yeni içe aktarma sınırları henüz derlenmedi.** Bu sürümdeki kaynak değişikliği konsolun içe aktarma sınırlarını yükseltiyor; böylece 100'den fazla bulgulu Termivar Web değerlendirmeleri ve CLI'nin üst sınırındaki politika önizlemeleri açılabilecek. Bu değişiklik Node bulunmadığı için derlenmedi. Büyük gerçek dosyalarla göstermeden önce `pnpm typecheck` ve `pnpm build` çalıştırıp yeniden kontrol edin.
 3. **Analist zinciri yalnız demo veri setiyle çalışır.**
    - Intake yalnız örnekteki yetenek ve kategori kümesini kabul eder.
    - Kapsam planlayıcısı tek bir sabit Termivar commit'ini kabul eder.
    - Sonraki fazlar önceki çıktıların hash'lerini sabitler.
 
-   Müşterinin kendi Termivar çıktısını işlemek için bu izin listelerinin ve sabitlerin incelenmiş veri girdilerine dönüştürülmesi gerekir.
+   Müşterinin kendi Termivar Web çıktısını işlemek için bu izin listelerinin ve sabitlerin incelenmiş veri girdilerine dönüştürülmesi gerekir.
 4. **Vaka paketi (faz 22) karar içeren vakaları reddeder.** Müşteri taslağı atfedilmiş kararları taşıyabilir. Vaka ve portföy görünümleri ise yalnız incelenmemiş vakaları gösterir.
 5. **Kimlik bilgisi yaşam döngüsü manueldir.** Yenileme açık ve elle yapılan bir işlemdir. Yanıt kaybolursa cihaz yeniden kaydedilmelidir. İptal edilmiş cihaz satırları saklanır; bunları silen bir komut yoktur. Bir tenant'ta yaklaşık 10.000'den fazla cihaz satırı birikirse sayfalı cihaz listesi en yeni cihazlara ulaşamaz. Bu cihazlara kimlikleriyle ve audit kaydı üzerinden erişilebilir.
 6. **Ürün lisansı ve ticari şartlar yok.** Bu karar ürün sahibinindir.

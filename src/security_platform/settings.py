@@ -21,6 +21,7 @@ class Settings:
     max_active_grants_per_tenant: int = 1000
     max_audit_events_per_tenant: int = 10000
     max_events_per_device: int = 250000
+    max_open_alerts_per_device: int = 500
     requests_per_minute: int = 120
     body_timeout_seconds: int = 5
 
@@ -40,6 +41,7 @@ class Settings:
             (self.max_enrollment_ttl_seconds, 1, 3600), (self.credential_ttl_seconds, 60, 2592000),
             (self.max_devices_per_tenant, 1, 100000), (self.max_active_grants_per_tenant, 1, 100000),
             (self.max_audit_events_per_tenant, 10, 1000000), (self.max_events_per_device, 1000, 10000000),
+            (self.max_open_alerts_per_device, 10, 100000),
             (self.requests_per_minute, 1, 10000), (self.body_timeout_seconds, 1, 30),
         ):
             if type(value) is not int or not minimum <= value <= maximum:
@@ -64,8 +66,8 @@ class Settings:
         values["allow_loopback_http"] = flag == "true"
         for field in ("stale_after_seconds", "enrollment_ttl_seconds", "max_enrollment_ttl_seconds",
                       "credential_ttl_seconds", "max_devices_per_tenant", "max_active_grants_per_tenant",
-                      "max_audit_events_per_tenant", "max_events_per_device", "requests_per_minute",
-                      "body_timeout_seconds"):
+                      "max_audit_events_per_tenant", "max_events_per_device", "max_open_alerts_per_device",
+                      "requests_per_minute", "body_timeout_seconds"):
             key = "SP_" + field.upper()
             if key in os.environ:
                 try:

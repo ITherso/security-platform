@@ -1,4 +1,4 @@
-# Security Console quick start
+# Termivar Console quick start
 
 The console opens in Turkish with **sample data**. It is a read-only view; no real device, platform connection or sign-in is required to explore it. Choose **English** from **Dil / Language** in the top bar. The choice lasts for the open page only; reloading starts in Turkish again.
 
@@ -16,7 +16,7 @@ Open `http://127.0.0.1:8787/`. The local HTTP preview is for sample data. For so
 
 1. Choose one of the two fictional organizations in the sidebar. Organization and device names are data, so they may remain Turkish when the interface is English.
 2. Open the device list. Search, filters and sorting cover **the loaded page**, not the whole fleet. Move between pages explicitly; the console does not silently load every device.
-3. Open a device. Read device registration, last server receipt, source observation and product claims separately. HostBasedFirewall, Termivar and the planned antivirus have separate sections. A recent receipt does not mean that the device is online or protected.
+3. Open a device. Read device registration, last server receipt, source observation and product claims separately. HostBasedFirewall, Termivar Web and the planned antivirus have separate sections. A recent receipt does not mean that the device is online or protected.
 4. Add the displayed detail to the status report. Only a detail you actually opened and that passed DTO validation is eligible. Adding it does not fetch new data. Reopening a device does not silently update an existing report copy; use the explicit update action.
 5. Open the report draft. Remove a record or clear the draft as needed. It holds at most **20 devices / 256 KiB** in memory. Names and identifiers are hidden by default in the report preview; this is a display choice, not an anonymity guarantee.
 6. Create the report's HTML preview. It covers only the selected records, which may have different read times. Returning to edit or changing fields requires a new preview. Changing language preserves the draft but invalidates a ready preview; create it again in the new language.
@@ -27,16 +27,24 @@ The connection panel can select normal, empty and error sample scenarios. Those 
 
 ## Move between device details
 
-Use the previous/next controls inside the existing device dialog to move through **the displayed, filtered and sorted devices on the loaded page**. This is not the entire organization inventory. The first and last records are boundaries: navigation does not wrap, prefetch a neighbour or fetch another page. Each explicit move reads only the chosen device through the existing detail GET.
+Use the previous/next controls inside the existing device dialog to move through **the displayed, filtered and sorted devices on the loaded page**. This is not the entire organization inventory. The first and last records are boundaries: navigation does not wrap, prefetch a neighbour or fetch another page. Each explicit move reads only the chosen device: its details through the existing detail GET and, once they have loaded, the first page of its event timeline through the events GET.
 
 Closing the dialog keeps your list search, filter, sort and page. Switching language keeps the current target device. A loading/error view is not a completed product report. Moving between devices does not add to or update the status report automatically; use the explicit report action after the chosen detail has loaded successfully.
+
+## Device timeline and alerts
+
+The device dialog shows the device's **event timeline** under its product statuses, newest event first. **Older events** loads the next page explicitly; **Refresh timeline** reads the newest page again. A dashed row such as *4 events missing (sequence 13–16)* marks sequence numbers the platform does not hold between two loaded events; the console cannot tell whether the device lost them or the platform deleted them. The dialog also shows how many events the per-device cap deleted and how many alerts were suppressed. Observed time is the device clock; received time is the server's.
+
+**Alerts** in the sidebar lists rule matches, newest activity first, with status and device filters and **Older alerts** paging. Select a device name to open its details and timeline; **This device's alerts** in the device dialog filters the list to that device. **A rule match is not a diagnosis**: it is not evidence of malware or an attack, and a malicious device can raise or suppress its own alerts. The screen is read-only; acknowledging and closing happen only through the API in this stage. Sample alerts and events are fictional.
+
+If the device labels cannot be loaded, the alerts still appear with short device IDs and a note explaining why. This interface has been type-checked (tsc, 0 errors) and built (24 files, within the 32-file limit) with a portable Node 24.22.1. The current build (after the review fixes and the Termivar rename) was previewed in sample mode in a browser on 2026-11-24, in Turkish and English: the Product Hub, the Alerts screen and the device timeline appeared under the names Termivar Konsol / Termivar Console, with no browser console errors. The live API connection through the browser was not exercised (local certificate), and the interface has not been accepted against a live API.
 
 ## Understand the labels
 
 - **Reported by the device / Not independently verified** remains the trust level. Successful API access or TLS does not verify the product's claims.
 - **Unknown**, **No data**, **Stale**, an error and the number **0** have different meanings. Missing values are not replaced with zero or a healthy status.
 - **Device registration revoked** describes that registration; it does not say the firewall was disabled or removed.
-- A Termivar summary does not prove an installed/running scanner or a scan performed by the console.
+- A Termivar Web summary does not prove an installed/running scanner or a scan performed by the console.
 - **Planned product — unavailable** is not active antivirus protection.
 
 Dates use **en-GB with UTC**; changing language changes presentation, not the underlying time. Report creation time is browser metadata, not a new device observation. Loaded/selected records are not a complete organization inventory, security score, policy application receipt or compliance certificate.

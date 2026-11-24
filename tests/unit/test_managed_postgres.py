@@ -93,7 +93,13 @@ def test_runtime_event_rights_are_append_and_retention_only():
     assert set(managed.TABLE_GRANTS["endpoint_events"]) == {"SELECT", "INSERT", "DELETE"}
     # SELECT FOR UPDATE on the cursor needs UPDATE; a cursor is never deleted.
     assert set(managed.TABLE_GRANTS["device_event_cursors"]) == {"SELECT", "INSERT", "UPDATE"}
-    assert len(managed.TABLE_GRANTS) == 10
+    assert len(managed.TABLE_GRANTS) == 11
+
+
+def test_runtime_alert_rights_have_no_delete():
+    # Ingestion raises and updates alerts, tenant admins acknowledge and close
+    # them (UPDATE also covers SELECT FOR UPDATE). Alerts have no retention yet.
+    assert set(managed.TABLE_GRANTS["alerts"]) == {"SELECT", "INSERT", "UPDATE"}
 
 
 def test_reparse_fixture_path_is_rejected_without_following(tmp_path, monkeypatch):
