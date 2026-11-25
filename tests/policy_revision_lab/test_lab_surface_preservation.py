@@ -60,9 +60,9 @@ def test_no_application_module_or_migration_has_been_added():
         assert actual == expected, "Lab must stay outside " + directory
 
 
-def test_twelve_http_paths_and_auth_security_schemas_are_identical(inventory_app):
+def test_seventeen_http_paths_and_auth_security_schemas_are_identical(inventory_app):
     actual, expected = inventory_app.openapi(), PREVIEW_BASELINE["openapi"]
-    assert len(actual["paths"]) == 12
+    assert len(actual["paths"]) == 17
     assert actual["paths"] == expected["paths"]
     assert actual.get("components") == expected.get("components")
     assert actual.get("security") == expected.get("security")
