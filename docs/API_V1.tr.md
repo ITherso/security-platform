@@ -33,7 +33,7 @@ JWKS yenilemesi: yöneticinin doğruladığı dosyaya eski+yeni public anahtarla
 | `POST /api/v1/tenants/{tenant_id}/enrollment-grants` | Tenant admin | `{}` veya `ttl_seconds`; 201: `grant_id`, `tenant_id`, `enrollment_token`, `expires_at`. |
 | `POST /api/v1/tenants/{tenant_id}/enrollment-grants/{grant_id}/revoke` | Tenant admin | Boş body/`{}`; `grant_id`, `revoked:true`. Tüketilmiş hak 409. |
 | `GET /api/v1/tenants/{tenant_id}/devices` | Tenant viewer/admin | Sınırlı liste; tenant kapsamı zorunlu. |
-| `GET /api/v1/tenants/{tenant_id}/devices/{device_id}` | Tenant viewer/admin | Cihaz, son ürünler, eksik ürünler ve ayrı kaynak/bağlantı yaşları. |
+| `GET /api/v1/tenants/{tenant_id}/devices/{device_id}` | Tenant viewer/admin | Cihaz, son ürünler (ajanın kendi durumu `edr_agent` dahil), eksik ürünler ve ayrı kaynak/bağlantı yaşları. |
 | `GET /api/v1/tenants/{tenant_id}/devices/{device_id}/events` | Tenant viewer/admin | Cihazın kendi beyanı olan olaylar; en yeni önce, `before_seq` ile anahtar tabanlı sayfa: `items`, `next_before_seq`, `cap_deleted_events`, `suppressed_alerts`. |
 | `GET /api/v1/tenants/{tenant_id}/alerts` | Tenant viewer/admin | Kural uyarıları; en son etkinlik önce, `before_seen_at` + `before_id` ile anahtar tabanlı sayfa, isteğe bağlı `status` ve `device_id`: `items`, `next_before`. |
 | `POST /api/v1/tenants/{tenant_id}/alerts/{alert_id}/acknowledge` | Tenant admin | Boş body/`{}`; `open` → `acknowledged`, cevap uyarının `AlertView`'i. Kapalı uyarı 409. |
@@ -41,7 +41,7 @@ JWKS yenilemesi: yöneticinin doğruladığı dosyaya eski+yeni public anahtarla
 | `POST /api/v1/tenants/{tenant_id}/devices/{device_id}/revoke` | Tenant admin | Boş body/`{}`; bütün cihaz credential'larını etkisizleştirir. |
 | `GET /api/v1/tenants/{tenant_id}/audit` | Tenant admin | Bounded başarılı yönetim olayları; sır veya ham payload içermez. |
 | `POST /api/v1/enroll` | Enrollment grant | `{label:"..."}`; 201: `tenant_id`, `device_id`, `credential_id`, `credential_secret`, `credential_expires_at`. |
-| `PUT /api/v1/device/snapshot` | Device credential | Strict V1 snapshot; 200 kabul cevabı. |
+| `PUT /api/v1/device/snapshot` | Device credential | Strict V1 veya V2 snapshot (`schema_version` 1 ya da 2); 200 kabul cevabı. |
 | `POST /api/v1/device/events` | Device credential | Strict `altay-edr-event/v1` olay batch'i; 200 kabul cevabı. |
 | `POST /api/v1/device/credentials/rotate` | Device credential | `{}` veya `ttl_seconds`; yeni credential cevabı (süre yapılandırılmış credential süresini aşmaz), eski sır aynı transaction'da iptal edilir. |
 
@@ -79,9 +79,35 @@ Audit kaydı tenant başına sınırlıdır (`SP_MAX_AUDIT_EVENTS_PER_TENANT`, v
 }
 ```
 
-`sequence` strict integer `1..2^63-1`; `message_id` lower-case kanonik UUID'dir. UTC metni `YYYY-MM-DDTHH:MM:SS[.fraction]Z` biçiminde doğrulanıp normalize edilir. En fazla üç benzersiz ürün: `hostbasedfirewall`, `termivar`, `antivirus`. Boş liste kabul edilir ve önceki ürün satırlarını kaldırır; detayda eksik ürünler `missing_products` ile bildirilir.
+`schema_version` strict integer `1` veya `2`'dir (Snapshot V2, Aşama 2 adım 3; ADR 0003 §5). İki sürüm aynı uç noktayı ve aynı gövdeyi kullanır; V2 yalnız Altay EDR ajanının kendi durumu olan `edr_agent` ürününü ekler. `sequence` iki sürümde de strict integer `1..2^53-1`'dir (`9007199254740991`); `message_id` lower-case kanonik UUID'dir. UTC metni `YYYY-MM-DDTHH:MM:SS[.fraction]Z` biçiminde doğrulanıp normalize edilir. Ürünler benzersizdir: V2'de en fazla dört (`hostbasedfirewall`, `termivar`, `antivirus`, `edr_agent`); V1'de eskisi gibi en fazla üç ve `edr_agent` yalnız `schema_version=2` ile kabul edilir (V1'de 422). Boş liste kabul edilir ve önceki ürün satırlarını kaldırır; detayda eksik ürünler `missing_products` ile bildirilir. Ajanı olmayan bir cihazın detayı `edr_agent`'ı eksik listeler.
 
-Bilinen sınır (adım 4'ten önce de vardı): operatör konsolu yalnız `2^53-1`'e (`Number.MAX_SAFE_INTEGER`) kadar tamsayı okur. `2^53-1`'i aşan bir snapshot `sequence` cihaz kaydında `last_sequence` olarak döner; konsol o kaydı taşıyan cihaz listesi sayfasını ve cihaz ayrıntısını sözleşme hatası sayar, yani okuyamaz. Olay batch'indeki `event_seq` bu yüzden `2^53-1` ile sınırlıdır (aşağıda); snapshot `sequence` sınırı bu adımın dışında kaldı ve Snapshot V2'ye (Aşama 2, adım 3) not edildi.
+**V1 için sıkılaştırma.** Snapshot V2 iki kuralı V1 için de daraltır. Birincisi `sequence`: üst sınır önceden `2^63-1` idi; Snapshot V2 ile iki sürümde de `2^53-1`'dir. Operatör konsolu yalnız `2^53-1`'e (`Number.MAX_SAFE_INTEGER`) kadar tamsayı okur ve cihaz listesi `last_sequence` değerini taşır; daha büyük bir sıra o kaydı taşıyan cihaz listesi sayfasını ve cihaz ayrıntısını okunamaz yapardı. Artık böyle bir snapshot diğer sözleşme ihlalleri gibi 422 alır ve hiçbir şey yazılmaz. Dürüst bir gönderici bu sınıra yaklaşmaz; numarası `2^53-1`'e ulaşan bir cihazın kurtarması yeniden kayıttır. `contracts.MAX_SEQUENCE` (`2^63-1`) diğer kullanıcıları için (olay `batch_sequence`, zaman çizelgesinin `before_seq` parametresi) değişmez. İkincisi zarfın `source_observed_at` değeridir: `null` değilse, normalize edilmiş değer olay `observed_at`'i gibi `1970-01-01T00:00:00Z <= source_observed_at < 9999-01-01T00:00:00Z` aralığında olmalıdır; dışındaki değer iki sürümde de 422 alır ve hiçbir şey yazılmaz. Değer `devices.source_observed_at` (`timestamptz`) sütununda saklanır. PostgreSQL bu sütunu oturumun saat diliminde döndürür ve Python sürücüsü 9999'dan sonraki veya 1'den önceki yılı okuyamaz. Bu aralığın dışındaki bir an UTC dışındaki bir oturumda bu yılların dışına düşebilir: kabul edilmiş bir `9999-12-31T23:59:59Z`, UTC'nin doğusundaki bir oturumda (ör. Europe/Bucharest) 10000 yılına düşer ve o cihazın satırını okunamaz yapardı; o cihazı taşıyan cihaz listesi sayfası, cihaz ayrıntısı, cihazın sonraki istekleri ve operatörün iptali 503 alırdı. Ürünlerin kendi `source_observed_at` ve `agent_started_at` değerleri JSONB yükünde metin olarak saklanır, her saat diliminde okunur ve bu aralıkla sınırlanmaz. Gerçek göndericiler bu aralığın dışına çıkmaz: Altay EDR ajanı yalnız bu aralıktaki anları gönderir, HBF göndericisi zarfta `null` gönderir. `sequence` değeri en çok `2^53-1` olan ve zarf `source_observed_at` değeri `null` ya da bu aralıkta olan, daha önce geçerli her V1 gövdesi aynı kanonik JSON ve özetle geçerli kalır (`tests/unit/test_snapshot_v2_contracts.py` bilinen iki V1 gövdesinin özetini sabitler).
+
+V2 örneği (ajanın servis döngüsü, sensörsüz çalışma):
+
+```json
+{
+  "schema_version": 2,
+  "message_id": "00000000-0000-4000-8000-000000000003",
+  "sequence": 8,
+  "source_observed_at": "2030-01-01T00:00:00.000000Z",
+  "products": [
+    {
+      "product_id": "edr_agent",
+      "status": "running",
+      "version": "0.3.0",
+      "source_observed_at": "2030-01-01T00:00:00.000000Z",
+      "agent_started_at": "2029-12-31T22:00:00.000000Z",
+      "engine_id": "edr-agent/0.3.0",
+      "rule_file_present": false,
+      "sensor_state": "disabled",
+      "sensor_error_code": null,
+      "events_queue_dropped": 0, "events_write_failed": 0, "events_unmapped": 0, "events_skipped": 0,
+      "events_evicted": 0, "events_discarded": 0, "events_degraded": 0, "outbox_backlog": 0
+    }
+  ]
+}
+```
 
 | Ürün | Alanlar ve yorum |
 |---|---|
@@ -89,6 +115,23 @@ Bilinen sınır (adım 4'ten önce de vardı): operatör konsolu yalnız `2^53-1
 | HostBasedFirewall | `status`, `installed`, `reported_running`, `reported_stale`, `firewall_mode=enforce|sniff|unknown`, kapalı listeden en fazla 16 benzersiz `error_codes`. Merkezin enforcement doğrulaması değildir. |
 | Termivar Web | `status=experimental|unknown`, `scanner_installed`, `execution_available`, `report_presence=present|none|unknown`, `latest_report`. Çalıştırma iddiası `true` olamaz. Rapor varlığı scanner kurulumunu kanıtlamaz. |
 | Antivirüs | `status=planned|unknown`, `availability=unavailable|unknown`; aktif katalog/çalıştırma veya sürüm iddiası reddedilir. |
+| Altay EDR ajanı (`edr_agent`, yalnız V2) | Ajanın kendisi hakkında söyledikleri; tamamı `self_reported`/`not_verified`. Ayrıntı aşağıda. |
+
+**`edr_agent` alanları** (alan sırası önemsizdir; Platform ayrıştırılmış modeli kanonikleştirir):
+
+| Alan | Tür ve varsayılan | Anlamı |
+|---|---|---|
+| `status` | `running` veya `unknown` (varsayılan `unknown`) | `running` yalnız ajanın servis döngüsünün bunu bildirdiğini söyler. |
+| `version` | ortak sürüm metni veya `null` | Ajan sürümü. |
+| `source_observed_at` | UTC metni veya `null` | Ajanın bu durumu oluşturduğu an (cihaz saati). |
+| `agent_started_at` | UTC metni veya `null` | Ajan sürecinin başlangıcı; mikrosaniyeyle normalize edilir. |
+| `engine_id` | 1–128 karakter ASCII `^[A-Za-z0-9][A-Za-z0-9._+/ -]*$` veya `null` | Motor kimliği. |
+| `rule_file_present` | boolean veya `null` | Yalnız kural dosyasının var olup olmadığı. Kuralların yüklendiği iddiası değildir; servis Aşama 2'de kural yüklemez. |
+| `sensor_state` | `started`, `lost`, `failed`, `stopped`, `disabled`, `unknown` (varsayılan `unknown`) | `disabled`: servis sensörsüz çalışıyor (`--no-sensor`). |
+| `sensor_error_code` | olay sözleşmesinin altı kodu veya `null` | Yalnız `sensor_state` `lost` ya da `failed` iken dolu olabilir; aksi 422. |
+| `events_queue_dropped`, `events_write_failed`, `events_unmapped`, `events_skipped`, `events_evicted`, `events_discarded`, `events_degraded`, `outbox_backlog` | strict integer `0..2^53-1` veya `null` | Ajan sürecinin başlangıcından beri sayaçlar ve giden kutusu birikimi. Boolean sayı değildir; ajan sınırda doyurur. `null`, değerin bildirilmediğidir (ör. tek seferlik `edr-agent heartbeat` komutu), sıfır değildir. |
+
+`catalog_available` `null` olmalıdır: ajan katalog iddiası taşımaz. `source` ve `producer_verification` sabittir. Başka her anahtar (ör. koruma, gerçek zamanlı koruma veya yüklenmiş kural iddiası) `extra=forbid` ile 422 alır. Bu ürün hiçbir zaman "koruma aktif", "gerçek zamanlı koruma" veya "kurallar yüklü" anlamına gelmez. Cihaz detayında görünümü diğer ürünler gibidir: `product_id`, `snapshot_sequence`, `received_at`, `observation` (ajanın `source_observed_at` değerine göre yaş) ve kanonik yükün kendisi olan `state`.
 
 Termivar Web `latest_report` yalnız digest, sabit rapor şeması, yerel `imported_at`, konu/kayıt sayıları, disposition ve severity sayıları, sabit kaynak/doğrulama/scope alanlarını içerir. `subject_count=1..1024`, `item_count` ve her sayaç `0..4096`; boolean sayı değildir. Her iki sayı grubunun toplamı `item_count` olmalıdır. `present` ile özet varlığı tutarlı olmalıdır. Ham hedef/URL/IP, kanıt, HTML, komut veya serbest metadata alanı yoktur.
 
@@ -98,7 +141,7 @@ Termivar Web `latest_report` yalnız digest, sabit rapor şeması, yerel `import
 {"accepted":true,"message_id":"00000000-0000-4000-8000-000000000001","sequence":1,"received_at":"2030-01-01T00:00:00Z"}
 ```
 
-Sunucu `received_at` atar. Son mesaj aynı sıra/UUID/kanonik içerikle tekrarlanırsa aynı cevap döner ve tazelik yenilenmez. Son sıra veya son UUID farklı içerikle 409; eski sıra 409'dur. V1 yalnız son kabulün retry penceresini tutar; bütün tarihsel mesaj UUID'leri için sınırsız tombstone deposu yoktur. Daha yüksek sıra önceki tam ürün durumunu atomik değiştirir. Credential rotasyonu cihazın son sırasını korur.
+Sunucu `received_at` atar. Son mesaj aynı sıra/UUID/kanonik içerikle tekrarlanırsa aynı cevap döner ve tazelik yenilenmez. Son sıra veya son UUID farklı içerikle 409; eski sıra 409'dur. V1 yalnız son kabulün retry penceresini tutar; bütün tarihsel mesaj UUID'leri için sınırsız tombstone deposu yoktur. Daha yüksek sıra önceki tam ürün durumunu atomik değiştirir. Credential rotasyonu cihazın son sırasını korur. Bu kurallar V1 ve V2 için ortaktır ve sıra iki sürümde tek sayaçtır: V1'den sonra V2 (ya da tersi) yalnız daha yüksek sırayla kabul edilir; aynı sıra ve UUID'nin yalnız `schema_version`'ı farklı gönderilmesi farklı içeriktir ve 409 alır. Daha yüksek sıralı bir V1 mesajı ajanın `edr_agent` durumunu da kaldırır.
 
 ## Olay batch'i (`altay-edr-event/v1`)
 
@@ -123,7 +166,7 @@ Sunucu `received_at` atar. Son mesaj aynı sıra/UUID/kanonik içerikle tekrarla
 
 - `schema_version` strict integer `1`; `batch_id` lower-case kanonik UUID; `batch_sequence` strict integer `1..2^63-1`.
 - `events` 1–200 olaydır ve `kind` alanına göre ayrılır. `event_seq` ajanın giden kutusundaki kayıt numarasıdır; strict integer `1..2^53-1`'dir (`9007199254740991`) ve batch içinde kesin artar. Numaralardaki boşluk, olayların cihazda kaybolduğunu gösterir (kuyruk taşması, giden kutusundan atılan kayıt, okunamayan veya eşlenemeyen kayıt). Bir cihazın ilk batch'inde `batch_sequence` ve ilk `event_seq` 1'den büyük veya eşit herhangi bir değer olabilir (ör. yeniden kayıttan sonra kayıt numaraları kaldığı yerden sürer).
-- **`event_seq` üst sınırı `2^53-1`:** operatör konsolunun tam okuyabildiği en büyük tamsayıdır (`Number.MAX_SAFE_INTEGER`); konsol daha büyük bir tamsayı içeren yanıtın tamamını sözleşme hatası sayar. Daha büyük bir `event_seq` taşıyan batch, diğer sözleşme ihlalleri gibi bütünüyle 422 alır: hiçbir olayı saklanmaz, hiçbir kural çalışmaz, imleç ilerlemez. Böylece Platform'un `event_seq`'ten türettiği sayılar da konsolun aralığında kalır: zaman çizelgesindeki `event_seq` ve `next_before_seq`, uyarının `first_event_seq`/`last_event_seq` değerleri ve `missing_events` (bir cihazın kesin artan numaraları arasındaki boşlukların birikimli toplamı, en çok `2^53-3`). `batch_sequence`, snapshot `sequence` ve zaman çizelgesinin `before_seq` parametresi `1..2^63-1` kalır. Numarası `2^53-1`'e ulaşmış bir cihazın sonraki her batch'i 422 alır; kurtarma yeniden kayıttır. Ajanın numaraları pratikte bu sınıra ulaşmaz.
+- **`event_seq` üst sınırı `2^53-1`:** operatör konsolunun tam okuyabildiği en büyük tamsayıdır (`Number.MAX_SAFE_INTEGER`); konsol daha büyük bir tamsayı içeren yanıtın tamamını sözleşme hatası sayar. Daha büyük bir `event_seq` taşıyan batch, diğer sözleşme ihlalleri gibi bütünüyle 422 alır: hiçbir olayı saklanmaz, hiçbir kural çalışmaz, imleç ilerlemez. Böylece Platform'un `event_seq`'ten türettiği sayılar da konsolun aralığında kalır: zaman çizelgesindeki `event_seq` ve `next_before_seq`, uyarının `first_event_seq`/`last_event_seq` değerleri ve `missing_events` (bir cihazın kesin artan numaraları arasındaki boşlukların birikimli toplamı, en çok `2^53-3`). `batch_sequence` ve zaman çizelgesinin `before_seq` parametresi `1..2^63-1` kalır; snapshot `sequence` Snapshot V2'den beri `1..2^53-1`'dir (yukarıda). Numarası `2^53-1`'e ulaşmış bir cihazın sonraki her batch'i 422 alır; kurtarma yeniden kayıttır. Ajanın numaraları pratikte bu sınıra ulaşmaz.
 - `observed_at` cihaz saatidir ve doğrulanmaz. Snapshot'taki UTC metin kuralı geçerlidir: yalnız `Z`, en çok 6 kesir hanesi; değer mikrosaniyeyle normalize edilip saklanır. Normalize edilmiş değer `1970-01-01T00:00:00Z <= observed_at < 9999-01-01T00:00:00Z` aralığında olmalıdır; dışındaki değer 422 alır. PostgreSQL zamanı oturumun saat diliminde döndürür ve Python sürücüsü 9999'dan sonraki veya 1'den önceki yılı okuyamaz; bu aralıktaki her an her saat diliminde okunur, böylece tek bir olay zaman çizelgesini okunamaz hâle getiremez. Veritabanı aynı sınırı `ck_endpoint_event_observed_at` CHECK kısıtıyla uygular.
 
 | Tür | Alanlar |
@@ -317,7 +360,7 @@ security-snapshot --credential-file device.json --state-dir state --snapshot-fil
 security-snapshot --credential-file device.json --rotate-credential [--ca-file ca.pem]
 ```
 
-- Snapshot modunda `--state-dir` zorunludur. `--initialize-state` yalnız yeni kaydedilen cihaz için sıra 1'i açıkça başlatır.
+- Snapshot modunda `--state-dir` zorunludur. `--initialize-state` yalnız yeni kaydedilen cihaz için sıra 1'i açıkça başlatır. İstemci V1 gönderir; sırası sözleşmenin üst sınırına (`2^53-1`) ulaşınca yeni mesaj oluşturmaz ve ağ isteği yapmadan `device_sequence_exhausted` ile durur.
 - `--rotate-credential` açık, tek seferlik operatör işlemidir; otomatik veya zamanlanmış rotasyon yoktur. `--snapshot-file`, `--state-dir` ve `--initialize-state` ile birlikte verilemez (argparse hatası, çıkış 2) ve snapshot göndermez. Mevcut sırla `POST /api/v1/device/credentials/rotate` `{}` body ile çağrılır, böylece sunucunun yapılandırılmış süresi uygulanır.
 - Yeni `credential_secret` aynı `device.json` dosyasına mevcut private dosya yardımcılarıyla yazılır: owner/DACL veya POSIX izin denetimi, geçici dosya ve atomik replace. `base_url`, `device_id`, client state ve sıra korunur. İstekten önce dosya aynı içerikle yeniden yazılarak yazılabilirlik denetlenir; yazılamıyorsa istek gönderilmez (`credential_file_not_writable`). Eşzamanlı yenilemeler credential dizinindeki `client.lock` ile sıralanır. Snapshot gönderimi credential'ı state dizininin kilidi altında okur. Bu yüzden gönderim ile yenileme yalnız credential dosyası state dizinindeyse birbirine göre sıralanır. Dosyalar ayrı dizinlerdeyse yenileme sırasında başlayan bir gönderim eski sırla reddedilebilir. Bekleyen mesaj korunur ve yeniden denemek yeterlidir.
 - Başarıda stdout yalnız sabit JSON yazar: `{"credential_expires_at":"…","credential_rotated":true}`. Sunucu süre döndürmezse yalnız `credential_rotated` yazılır. Sır hiçbir zaman yazdırılmaz.

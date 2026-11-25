@@ -1,14 +1,26 @@
 /** Closed runtime validation shared by fixtures and the real GET adapter. */
-import { ALERT_RULES, ALERT_STATUSES, ClientError, HBF_ERROR_CODES, PRODUCT_IDS, SENSOR_ERROR_CODES,
-  SENSOR_STATES } from "./contracts";
+import { ALERT_RULES, ALERT_STATUSES, ClientError, EDR_COUNTER_KEYS, EDR_SENSOR_STATES, HBF_ERROR_CODES, PRODUCT_IDS,
+  SENSOR_ERROR_CODES, SENSOR_STATES } from "./contracts";
 import type { AgeObservation, Alert, AlertCursor, AlertPage, AlertRule, AlertSeverity, AlertStatus, AuditAction,
-  AuditEvent, AuditObject, ClientErrorCode, Device, DeviceDetail, DispositionCounts, Page, ProductId, ProductRecord,
-  ProductState, SeverityCounts, SourceClaims, Tenant, TermivarSummary, TimelineEvent, TimelinePage } from "./contracts";
+  AuditEvent, AuditObject, ClientErrorCode, Device, DeviceDetail, DispositionCounts, EdrAgentState, EdrCounterKey, Page,
+  ProductId, ProductRecord, ProductState, SeverityCounts, SourceClaims, Tenant, TermivarSummary, TimelineEvent,
+  TimelinePage } from "./contracts";
 
 const CLAIM_KEYS = ["source", "producer_verification"];
 const DEVICE_KEYS = ["id", "tenant_id", "label", "identity_status", "connection_status", "created_at", "revoked_at",
   "last_sequence", "last_received_at", "source_observed_at", "source_observation", ...CLAIM_KEYS];
 const PRODUCT_KEYS = ["product_id", "catalog_available", ...CLAIM_KEYS, "version", "source_observed_at"];
+/** The product-specific keys of each state; with PRODUCT_KEYS the exact key set of contracts.py's DTOs. */
+const PRODUCT_STATE_KEYS: Readonly<Record<ProductId, readonly string[]>> = {
+  hostbasedfirewall: ["status", "installed", "reported_running", "reported_stale", "firewall_mode", "error_codes"],
+  termivar: ["status", "scanner_installed", "execution_available", "report_presence", "latest_report"],
+  antivirus: ["status", "availability", "execution_available"],
+  edr_agent: ["status", "agent_started_at", "engine_id", "rule_file_present", "sensor_state", "sensor_error_code",
+    ...EDR_COUNTER_KEYS],
+};
+/** contracts.VersionText and contracts.EngineText (ASCII only). */
+const VERSION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._+\-]*$/;
+const ENGINE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._+\/ -]*$/;
 const AUDIT_OBJECTS: Readonly<Record<AuditAction, AuditObject>> = {
   tenant_created: "tenant", membership_set: "membership", membership_revoked: "membership",
   enrollment_grant_created: "enrollment_grant", enrollment_grant_revoked: "enrollment_grant",
@@ -127,16 +139,32 @@ function report(input: unknown): TermivarSummary {
     subject_count: integer(value.subject_count, 1, 1024), item_count: count, counts, severity_counts: severities,
     ...claims(value), scope: "offline_report_summary" };
 }
+/** The agent's own status: exact keys, nullability, safe integers, a code only with lost or failed. */
+function edrAgentState(value: Record<string, unknown>, common: { readonly catalog_available: boolean | null;
+  readonly source: "self_reported"; readonly producer_verification: "not_verified"; readonly version: string | null;
+  readonly source_observed_at: string | null }): EdrAgentState {
+  // The agent makes no catalog claim (contracts.EdrAgentStatus).
+  requireValue(common.catalog_available === null);
+  const engine = value.engine_id === null ? null : text(value.engine_id, 128);
+  requireValue(engine === null || ENGINE_PATTERN.test(engine));
+  const sensor = choice(value.sensor_state, EDR_SENSOR_STATES);
+  const code = value.sensor_error_code === null ? null : choice(value.sensor_error_code, SENSOR_ERROR_CODES);
+  requireValue(code === null || sensor === "lost" || sensor === "failed");
+  const counters = Object.fromEntries(EDR_COUNTER_KEYS.map((key) =>
+    [key, value[key] === null ? null : integer(value[key])])) as { readonly [K in EdrCounterKey]: number | null };
+  return { ...common, ...counters, product_id: "edr_agent", catalog_available: null,
+    status: choice(value.status, ["running", "unknown"]), agent_started_at: timestamp(value.agent_started_at, true),
+    engine_id: engine, rule_file_present: nullableBoolean(value.rule_file_present), sensor_state: sensor,
+    sensor_error_code: code };
+}
 function productState(input: unknown, id: ProductId): ProductState {
-  const specific = id === "hostbasedfirewall" ? ["status", "installed", "reported_running", "reported_stale", "firewall_mode", "error_codes"]
-    : id === "termivar" ? ["status", "scanner_installed", "execution_available", "report_presence", "latest_report"]
-      : ["status", "availability", "execution_available"];
-  const value = shape(input, [...PRODUCT_KEYS, ...specific]);
+  const value = shape(input, [...PRODUCT_KEYS, ...PRODUCT_STATE_KEYS[id]]);
   requireValue(value.product_id === id);
   const version = value.version === null ? null : text(value.version, 64);
-  requireValue(version === null || /^[A-Za-z0-9][A-Za-z0-9._+\-]*$/.test(version));
+  requireValue(version === null || VERSION_PATTERN.test(version));
   const common = { catalog_available: nullableBoolean(value.catalog_available), ...claims(value),
     version, source_observed_at: timestamp(value.source_observed_at, true) };
+  if (id === "edr_agent") return edrAgentState(value, common);
   if (id === "hostbasedfirewall") return { ...common, product_id: id,
     status: choice(value.status, ["running", "observing", "degraded", "stopped", "unavailable", "unknown"]),
     installed: nullableBoolean(value.installed), reported_running: nullableBoolean(value.reported_running),
@@ -159,7 +187,7 @@ export function normalizeDeviceDetail(input: unknown, tenantId: string, deviceId
   const base = device(input, tenantId, true);
   const value = input as Record<string, unknown>; // device() checked this exact shape above.
   requireValue(base.id === deviceId);
-  const products = array<ProductRecord>(value.products, 3, (raw) => {
+  const products = array<ProductRecord>(value.products, PRODUCT_IDS.length, (raw) => {
     requireValue(raw !== null && typeof raw === "object" && !Array.isArray(raw));
     const initial = raw as Record<string, unknown>;
     const id = choice(initial.product_id, PRODUCT_IDS);
@@ -172,10 +200,11 @@ export function normalizeDeviceDetail(input: unknown, tenantId: string, deviceId
     if (state.product_id === "termivar") return { ...common, product_id: state.product_id, state,
       report_import_age: age(entry.report_import_age, state.latest_report?.imported_at ?? null) };
     if (state.product_id === "hostbasedfirewall") return { ...common, product_id: state.product_id, state };
+    if (state.product_id === "edr_agent") return { ...common, product_id: state.product_id, state };
     return { ...common, product_id: state.product_id, state };
   });
   const present = unique(products.map((entry) => entry.product_id));
-  const missing = unique(array(value.missing_products, 3, (id) => choice(id, PRODUCT_IDS)));
+  const missing = unique(array(value.missing_products, PRODUCT_IDS.length, (id) => choice(id, PRODUCT_IDS)));
   requireValue(PRODUCT_IDS.every((id) => present.includes(id) !== missing.includes(id)));
   return { ...base, products, missing_products: missing };
 }

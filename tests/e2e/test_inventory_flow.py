@@ -326,7 +326,7 @@ def test_real_tls_separate_api_and_three_fixture_clients(tmp_path):
                 assert client_send(second)["sequence"] == 2
                 second_path = f"/api/v1/tenants/{tenant_a}/devices/{second['device']['device_id']}"
                 omitted = api.get(second_path, headers=admin_a).json()
-                assert omitted["missing_products"] == ["antivirus", "termivar"]
+                assert omitted["missing_products"] == ["antivirus", "edr_agent", "termivar"]
                 assert omitted["connection_status"] == "recent" and omitted["products"][0]["state"]["status"] == "unavailable"
                 assert api.post(path + "/revoke", headers=admin_a, json={}).status_code == 200
                 server.stop()

@@ -2,6 +2,9 @@
 import type { AgeObservation, Device, ProductId } from "../../data/contracts";
 import type { Locale } from "../../i18n/types";
 
+/** The status report keeps its three products; the Altay EDR agent's own status (Snapshot V2) is not copied into it. */
+export const REPORT_PRODUCT_IDS = ["hostbasedfirewall", "termivar", "antivirus"] as const satisfies readonly ProductId[];
+export type ReportProductId = typeof REPORT_PRODUCT_IDS[number];
 export const MAX_REPORT_RECORDS = 20;
 export const MAX_REPORT_BYTES = 256 * 1024;
 export type ReportMode = "example" | "api";
@@ -25,7 +28,7 @@ export interface ReportMetric {
   readonly value: string | number | boolean | null;
 }
 export interface ReportProduct {
-  readonly product: ProductId;
+  readonly product: ReportProductId;
   readonly presence: "reported" | "missing";
   readonly status: string | null;
   readonly version: string | null;

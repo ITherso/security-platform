@@ -1,19 +1,19 @@
 /** Capture only an already displayed detail; never fetch or accept session data. */
-import { PRODUCT_IDS } from "../../data/contracts";
-import type { AgeObservation, DeviceDetail, ProductId, ProductRecord } from "../../data/contracts";
+import type { AgeObservation, DeviceDetail, ProductRecord } from "../../data/contracts";
 import { normalizeDeviceDetail } from "../../data/normalize";
-import { copyContext, freezeReport, ReportError, reportObject, reportRequire,
+import { copyContext, freezeReport, REPORT_PRODUCT_IDS, ReportError, reportObject, reportRequire,
   reportText, reportTimestamp } from "./reportModel";
-import type { ReportCommonFields, ReportContext, ReportMetric, ReportMetricKey, ReportProduct, ReportRecord } from "./reportModel";
+import type { ReportCommonFields, ReportContext, ReportMetric, ReportMetricKey, ReportProduct, ReportProductId,
+  ReportRecord } from "./reportModel";
 
 export interface CaptureMetadata { readonly context: ReportContext; readonly tenantName: string; readonly readAt: string }
-const KEYS: Readonly<Record<ProductId, readonly ReportMetricKey[]>> = {
+const KEYS: Readonly<Record<ReportProductId, readonly ReportMetricKey[]>> = {
   hostbasedfirewall: ["installed", "reported_running", "reported_stale", "firewall_mode"],
   termivar: ["scanner_installed", "execution_available", "report_presence", "subject_count", "item_count", "informational",
     "needs_review", "confirmed", "unassigned", "info", "low", "medium", "high", "critical"],
   antivirus: ["availability", "execution_available"],
 };
-const STATUSES: Readonly<Record<ProductId, readonly string[]>> = {
+const STATUSES: Readonly<Record<ReportProductId, readonly string[]>> = {
   hostbasedfirewall: ["running", "observing", "degraded", "stopped", "unavailable", "unknown"],
   termivar: ["experimental", "unknown"], antivirus: ["planned", "unknown"],
 };
@@ -30,7 +30,7 @@ function copyAge(value: AgeObservation): AgeObservation {
   return { age_seconds: age.age_seconds as number | null, clock_state: age.clock_state };
 }
 function nullableTime(value: string | null): string | null { return value === null ? null : reportTimestamp(value); }
-function productFromDetail(id: ProductId, entry: ProductRecord | undefined): ReportProduct {
+function productFromDetail(id: ReportProductId, entry: ProductRecord | undefined): ReportProduct {
   if (!entry) return { product: id, presence: "missing", status: null, version: null,
     sourceObservedAt: null, receivedAt: null, observation: null, reportImportedAt: null, reportImportAge: null,
     source: null, producerVerification: null, metrics: KEYS[id].map((key) => metric(key, null)) };
@@ -52,12 +52,14 @@ function productFromDetail(id: ProductId, entry: ProductRecord | undefined): Rep
         metric("low", summary?.severity_counts.low ?? null), metric("medium", summary?.severity_counts.medium ?? null),
         metric("high", summary?.severity_counts.high ?? null), metric("critical", summary?.severity_counts.critical ?? null)] };
   }
+  // The caller looks entries up by a report product ID, so an edr_agent entry never arrives here.
+  reportRequire(entry.product_id === "antivirus");
   return { ...common, reportImportedAt: null, reportImportAge: null,
     metrics: [metric("availability", entry.state.availability), metric("execution_available", entry.state.execution_available)] };
 }
 
 /** Closed copy also used by pure draft mutations; no caller-owned references. */
-function copyProduct(input: ReportProduct, expected: ProductId): ReportProduct {
+function copyProduct(input: ReportProduct, expected: ReportProductId): ReportProduct {
   reportObject(input, ["product", "presence", "status", "version", "sourceObservedAt", "receivedAt", "observation",
     "reportImportedAt", "reportImportAge", "source", "producerVerification", "metrics"]);
   reportRequire(input.product === expected && (input.presence === "reported" || input.presence === "missing"));
@@ -101,7 +103,7 @@ export function copyCommonFields(input: ReportCommonFields): ReportCommonFields 
     && (input.identityStatus === "revoked") === (input.revokedAt !== null)
     && (input.connectionStatus === "never_seen") === (input.receivedAt === null)
     && Array.isArray(input.products) && input.products.length === 3);
-  const products = PRODUCT_IDS.map((id, index) => {
+  const products = REPORT_PRODUCT_IDS.map((id, index) => {
     const value = input.products[index]; reportRequire(value !== undefined);
     const product = copyProduct(value, id);
     reportRequire(product.presence === "missing" || product.receivedAt === input.receivedAt);
@@ -131,7 +133,7 @@ export function captureRecord(detail: DeviceDetail, metadata: CaptureMetadata): 
       revokedAt: source.revoked_at, sourceObservedAt: source.source_observed_at, receivedAt: source.last_received_at,
       readAt: reportTimestamp(metadata.readAt), sourceObservation: copyAge(source.source_observation),
       source: "self_reported", producerVerification: "not_verified",
-      products: PRODUCT_IDS.map((id) => productFromDetail(id, source.products.find((entry) => entry.product_id === id))) };
+      products: REPORT_PRODUCT_IDS.map((id) => productFromDetail(id, source.products.find((entry) => entry.product_id === id))) };
     return copyReportRecord(record);
   } catch { throw new ReportError("invalid_report"); }
 }

@@ -125,7 +125,7 @@ function Attention() {
 }
 function Catalog() {
   const { locale, t } = useLocale();
-  return <section className="panel side-card"><h2>{t('app.nav.products')}</h2><p>{t('app.catalog.subtitle')}</p><div className="catalog-list">{[['◈', 'HostBasedFirewall', t('app.catalog.hbf'), t('app.catalog.reported')], ['⌁', 'Termivar Web', t('app.catalog.termivar'), t('app.catalog.experimental')], ['◇', t('app.catalog.av'), t('app.catalog.unavailable'), t('app.catalog.planned')]].map(([symbol, name, description, status]) =>
+  return <section className="panel side-card"><h2>{t('app.nav.products')}</h2><p>{t('app.catalog.subtitle')}</p><div className="catalog-list">{[['◈', 'HostBasedFirewall', t('app.catalog.hbf'), t('app.catalog.reported')], ['⌁', 'Termivar Web', t('app.catalog.termivar'), t('app.catalog.experimental')], ['◇', t('app.catalog.av'), t('app.catalog.unavailable'), t('app.catalog.planned')], ['◎', 'Altay EDR', t('app.catalog.edr'), t('app.catalog.prototype')]].map(([symbol, name, description, status]) =>
     <div className="catalog-item" key={name}><span className="product-symbol">{symbol}</span><div><strong>{name}</strong><p>{description}</p></div><span className="product-state">{status}</span></div>)}</div></section>;
 }
 function ConnectionPanel() {

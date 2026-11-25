@@ -100,7 +100,8 @@ class ProductState(Base):
     __tablename__ = "product_states"
     __table_args__ = (
         ForeignKeyConstraint(["tenant_id", "device_id"], ["devices.tenant_id", "devices.id"], name="fk_product_tenant_device"),
-        CheckConstraint("product_id IN ('hostbasedfirewall','termivar','antivirus')", name="ck_product_id"),
+        # contracts.PRODUCT_IDS; migration 0004 added 'edr_agent' (Snapshot V2).
+        CheckConstraint("product_id IN ('hostbasedfirewall','termivar','antivirus','edr_agent')", name="ck_product_id"),
         CheckConstraint("snapshot_sequence >= 1", name="ck_product_sequence"),
         CheckConstraint("octet_length(payload::text) <= 16384", name="ck_product_payload_bytes"),
     )

@@ -2,17 +2,18 @@
 
 **Termivar Product Hub / Termivar Ürün Merkezi** links the existing products and workspaces of the Termivar ecosystem. It is a small typed frontend catalogue, not a calculation of installation, device health, protection, licence entitlement or independent verification. [Türkçe kullanım](PRODUCT_HUB.tr.md), [capability matrix](CAPABILITY_MATRIX.tr.md).
 
-## Five entries and existing destinations
+## Six entries and existing destinations
 
 | Kind / stable ID | Product or component | Console destination | Source and boundary |
 |---|---|---|---|
 | product `hostbasedfirewall` | HostBasedFirewall | Devices (`devices`) | HBF state reported by a sample or explicitly connected API device. The local Windows product is separate; no central policy push/enforcement or completed live Windows acceptance is implied. |
 | product `termivar` | Termivar Web | Assessment review (`termivarReview`) and sibling comparison | Supported precomputed local JSON. The console starts no scanner and authenticates neither target nor producer by opening an artefact. |
+| product `edr_agent` | Altay EDR | Devices (`devices`); the card is in device details | The agent's own status from its V2 snapshot (Snapshot V2, Stage 2 step 3). The agent is a prototype; real sensor acceptance in a VM is still pending. `self_reported` / `not_verified`; no claim of protection or rule loading. |
 | component `policy-impact-workbench` | Policy Impact Workbench | Policy previews (`policyReview`) | Existing CLI preview output; no real policy revision/lineage authority, application or verification. |
 | component `security-platform` | Termivar Platform | Overview (`overview`) | Existing tenant/device/product inventory and audit contracts. Example mode works and the API adapter exists; corporate IdP/production live acceptance has not been performed. |
 | product `antivirus` | Antivirus | Products (`products`) | Planned-product information only: `planned/unavailable`. No engine, scanning, malware detection or real-time AV protection. |
 
-The first four entries use `availability=available_workspace`; antivirus uses `planned_unavailable`. These describe **console workspace availability**. Separate `verification=not_verified` remains unchanged; it does not mean installed/protected/verified. Component IDs are frontend catalogue IDs, not additions to the backend's three-product DTO.
+HBF, Termivar Web and the two components use `availability=available_workspace`; Altay EDR uses `prototype_pending_acceptance` (“Prototype · VM acceptance pending”); antivirus uses `planned_unavailable`. These describe **console workspace availability**. Separate `verification=not_verified` remains unchanged; it does not mean installed/protected/verified. Component IDs are frontend catalogue IDs, not additions to the backend's four-product DTO (`hostbasedfirewall`, `termivar`, `antivirus`, `edr_agent`).
 
 Cards navigate to existing pages. A destination in API mode may make its existing normal GET; the catalogue adds no endpoint, permission or client. It has no install/enable/buy/scan/protection action, payment or customer-registration screen. Brands and technical IDs remain unchanged across locales.
 

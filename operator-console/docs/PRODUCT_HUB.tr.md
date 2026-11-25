@@ -2,17 +2,18 @@
 
 **Termivar Ürün Merkezi / Termivar Product Hub**, Termivar ekosistemindeki mevcut ürün ve çalışma alanlarına tek yerden ulaşmayı sağlar. Statik, tipli frontend kataloğudur; bir cihazın ürün kurulumunu, sağlığını, korunmasını, lisans hakkını veya bağımsız doğrulanmasını hesaplamaz. [English guide](PRODUCT_HUB.en.md), [yetenek matrisi](CAPABILITY_MATRIX.tr.md).
 
-## Beş giriş ve mevcut bağlantıları
+## Altı giriş ve mevcut bağlantıları
 
 | Tür / sabit ID | Ürün veya bileşen | Mevcut konsol hedefi | Kaynak ve sınır |
 |---|---|---|---|
 | product `hostbasedfirewall` | HostBasedFirewall | Cihazlar (`devices`) | Örnek ya da açık API kipindeki cihazın bildirdiği HBF durumu. Yerel Windows ürünü ayrı çalışır; merkezden policy push/enforcement ve tamamlanmış gerçek Windows kabulü yoktur. |
 | product `termivar` | Termivar Web | Değerlendirme incelemesi (`termivarReview`), aynı alanda karşılaştırma | Önceden hazırlanmış desteklenen yerel JSON. Konsol scanner başlatmaz; artefakt açılması hedefi/üreticiyi doğrulamaz. |
+| product `edr_agent` | Altay EDR | Cihazlar (`devices`); kart cihaz ayrıntısındadır | Ajanın V2 snapshot'ında gönderdiği kendi durumu (Snapshot V2, Aşama 2 adım 3). Ajan prototiptir; gerçek sensörün sanal makinede kabulü henüz yapılmadı. `self_reported` / `not_verified`; koruma veya kural yükleme iddiası değildir. |
 | component `policy-impact-workbench` | Policy Impact Workbench | Politika önizlemeleri (`policyReview`) | Önceden üretilmiş CLI preview sonucu. Gerçek policy revision/lineage otoritesi, uygulanma veya doğrulama yoktur. |
 | component `security-platform` | Termivar Platform | Genel bakış (`overview`) | Mevcut tenant/device/product inventory ve audit sözleşmeleri. Örnek kip çalışır, gerçek API adapter'ı uygulanmıştır; kurumsal IdP/production canlı kabulü yapılmadı. |
 | product `antivirus` | Antivirus | Ürünler (`products`) | Yalnız planlanan ürün bilgisi; `planned/unavailable`. Motor, tarama, zararlı yazılım tespiti veya gerçek zamanlı AV koruması yoktur. |
 
-İlk dört girişin `availability=available_workspace`, AV'nin `availability=planned_unavailable` olması **konsol özelliğinin bulunabilirliğidir**. Ayrı `verification=not_verified` korunur. Bu değerler installed/protected/verified anlamına gelmez. İki component ID yalnız frontend kataloğuna aittir; backend'in üç ürünlü DTO'suna yeni ürün eklemez.
+HBF, Termivar Web ve iki bileşenin `availability=available_workspace`, Altay EDR'nin `availability=prototype_pending_acceptance` (“Prototip · VM kabulü bekliyor”), AV'nin `availability=planned_unavailable` olması **konsol özelliğinin bulunabilirliğidir**. Ayrı `verification=not_verified` korunur. Bu değerler installed/protected/verified anlamına gelmez. İki component ID yalnız frontend kataloğuna aittir; backend'in dört ürünlü DTO'suna (`hostbasedfirewall`, `termivar`, `antivirus`, `edr_agent`) yeni ürün eklemez.
 
 Kart bağlantısı mevcut sayfaya gider. İlgili sayfa API kipinde normal mevcut GET'ini yapabilir; katalog yeni endpoint, izin veya client eklemez. Kur/etkinleştir/satın al/tara/koruma aç gibi çalışmayan eylemler, ödeme veya müşteri kayıt ekranı yoktur. Kaynak marka ve teknik ID'ler çevrilmez.
 

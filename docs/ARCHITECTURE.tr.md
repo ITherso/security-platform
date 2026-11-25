@@ -31,7 +31,7 @@ IdP dış sistemdir; bu proje onu veya parola girişini uygulamaz. Üretim IdP k
 | `services/events.py` | Olay alımı ve cihaz imleci, cihaz başına üst sınır, zaman çizelgesi ve zamana göre saklama |
 | `services/alerts.py` | Alım içinde çalışan yerleşik uyarı kuralları, tekilleştirme, cihaz başına kapanmamış uyarı sınırı; uyarı listesi, onaylama ve kapatma |
 | `cli.py`, `services/administration.py` | Migration hesabıyla yerel tenant/üyelik yönetimi ve tenant olay saklama günü; TLS sunucu girişi; runtime hesabıyla `events prune` |
-| `contracts.py` | Strict V1 snapshot ve ürün DTO'ları |
+| `contracts.py` | Strict V1/V2 snapshot ve ürün DTO'ları (V2: Altay EDR ajanının kendi durumu `edr_agent`) |
 | `event_contracts.py` | Strict `altay-edr-event/v1` olay batch'i, gizlilik maskesi kuralı ve kanonik özet |
 | `connectors/hostbased_firewall/` | Saf mevcut özet eşlemesi, özel dosyalar ve elle tek gönderim |
 

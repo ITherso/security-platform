@@ -1,5 +1,6 @@
 /** GET response dictionaries in inventory.py/audit.py/events.py/alerts.py and contracts.py states. */
-export const PRODUCT_IDS = ["hostbasedfirewall", "termivar", "antivirus"] as const;
+/** contracts.PRODUCT_IDS: a V2 snapshot (Stage 2 step 3) adds the agent's own `edr_agent` status. */
+export const PRODUCT_IDS = ["hostbasedfirewall", "termivar", "antivirus", "edr_agent"] as const;
 export type ProductId = typeof PRODUCT_IDS[number];
 export type TenantRole = "tenant_admin" | "viewer";
 export type ClientMode = "demo" | "live";
@@ -101,7 +102,27 @@ export interface AntivirusState extends ReportedProduct {
   readonly availability: "unavailable" | "unknown";
   readonly execution_available: false | null;
 }
-export type ProductState = HostBasedFirewallState | TermivarState | AntivirusState;
+/** contracts.EdrAgentStatus: the Altay EDR agent's own self-reported state, never a protection claim. */
+export const EDR_SENSOR_STATES = ["started", "lost", "failed", "stopped", "disabled", "unknown"] as const;
+export type EdrSensorState = typeof EDR_SENSOR_STATES[number];
+/** Counts since the agent process started, and the outbox backlog; each a safe integer or null. */
+export const EDR_COUNTER_KEYS = ["events_queue_dropped", "events_write_failed", "events_unmapped", "events_skipped",
+  "events_evicted", "events_discarded", "events_degraded", "outbox_backlog"] as const;
+export type EdrCounterKey = typeof EDR_COUNTER_KEYS[number];
+export type EdrAgentState = ReportedProduct & { readonly [K in EdrCounterKey]: number | null } & {
+  readonly product_id: "edr_agent";
+  readonly catalog_available: null;
+  /** "running": only that the agent's service loop reported it. */
+  readonly status: "running" | "unknown";
+  readonly agent_started_at: string | null;
+  readonly engine_id: string | null;
+  /** Presence of the rule file only; never that rules are loaded. */
+  readonly rule_file_present: boolean | null;
+  readonly sensor_state: EdrSensorState;
+  /** Only with sensor_state lost or failed. */
+  readonly sensor_error_code: SensorErrorCode | null;
+};
+export type ProductState = HostBasedFirewallState | TermivarState | AntivirusState | EdrAgentState;
 interface ProductRecordBase<S extends ProductState> {
   readonly product_id: S["product_id"];
   readonly snapshot_sequence: number;
@@ -111,7 +132,8 @@ interface ProductRecordBase<S extends ProductState> {
 }
 export type ProductRecord = ProductRecordBase<HostBasedFirewallState>
   | (ProductRecordBase<TermivarState> & { readonly report_import_age: AgeObservation })
-  | ProductRecordBase<AntivirusState>;
+  | ProductRecordBase<AntivirusState>
+  | ProductRecordBase<EdrAgentState>;
 export interface DeviceDetail extends Device {
   readonly products: readonly ProductRecord[];
   readonly missing_products: readonly ProductId[];

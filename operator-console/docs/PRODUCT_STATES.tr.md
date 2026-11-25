@@ -44,6 +44,21 @@ Ekranı yenilemek yalnız konsolun okuma bilgisini değiştirir. API'nin `connec
 
 `planned` + `unavailable`, **“Planlanan ürün — kullanıma hazır değil”** anlamındadır. `unknown` değerleri bilinmiyor kalır. Kurulu/etkin/koruyor rozeti, AV testi, tarama sonucu veya “yakında tara” eylemi eklenmez. Bu konsol AV motoru veya uzaktan yürütücü değildir.
 
+## Altay EDR ajanı
+
+Snapshot V2 (Aşama 2 adım 3) ile cihaz ayrıntısı **Altay EDR ajanı / Altay EDR agent** kartını gösterir. Kart ajanın kendisi hakkında söylediğidir; tamamı `self_reported` / `not_verified` kalır ve kart **“Ajan kendi durumunu bildirir; koruma veya kural yükleme iddiası değildir”** notunu taşır. Ajan bir prototiptir; gerçek sensörün sanal makinede kabulü henüz yapılmadı.
+
+| Görünen bilgi | Anlamı | Ne kanıtlamaz? |
+|---|---|---|
+| “Hizmet döngüsü çalıştığını bildirdi” (`status=running`) | Ajanın servis döngüsü durumu oluştururken bunu bildirdi. `unknown` bilinmiyordur (ör. tek seferlik `edr-agent heartbeat` komutu). | Korumanın çalıştığını veya sensörün olay topladığını. |
+| Ajan sürümü, başlangıç zamanı, motor kimliği | Ajanın bildirdiği sürüm, süreç başlangıcı (cihaz saati) ve motor kimliği. | Yayıncı, imza veya ikili dosya doğrulamasını. |
+| Kural dosyası: **Var / Yok / Bilinmiyor** | Yalnız kural dosyasının var olup olmadığı. | Kuralların yüklendiğini veya uygulandığını; servis Aşama 2'de kural yüklemez. “Yüklü” denmez. |
+| Sensör durumu | Başladı, Kayboldu, Başarısız, Durdu, Devre dışı (sensörsüz çalışma, `--no-sensor`) veya Bilinmiyor. | Sensörün gerçekten olay topladığını. |
+| Sensör hata kodu | Yalnız Kayboldu/Başarısız ile gelen kod; kod yoksa “Kod bildirilmedi”, diğer durumlarda “Bu durumda kod yok”. | Hatanın nedenini. |
+| Sayaçlar ve giden kutusu birikimi | Ajan sürecinin başlangıcından beri düşen, yazılamayan, eşlenemeyen, atlanan, sınırda silinen, başka kayda ait diye atılan ve indirgenmiş kabul edilen olaylar; gönderilmeyi bekleyen kayıtlar. **Bilinmiyor** değerin bildirilmediğidir, sıfır değildir. | Kaybın tamamını veya sıfırın gerçek olduğunu; sayaçlar süreç yeniden başlayınca sıfırlanır. |
+
+Ajanı bildirmeyen cihazda kart **“Bildirim yok”** olarak kalır; ajanın kurulu olmadığı varsayılmaz. Kartta koruma, gerçek zamanlı koruma veya “kurallar yüklü” rozeti yoktur. Durum raporu ve cihaz karşılaştırması bu adımda ajan kartını kopyalamaz.
+
 ## Sözleşme uyuşmazlığı
 
 Runtime doğrulama gerekli alanları/türleri ve ilişkileri kontrol eder. Bilinmeyen güven/koruma enum'u olumluya çevrilmez; eksik/uygunsuz yanıt açık hatadır. JavaScript'in kesin temsil sınırını aşan BIGINT/sayaç değerleri yuvarlanmaz: fail closed sözleşme hatası gösterilir. 401 bağlantıyı temizler, 403 erişimi reddeder; ikisi “kayıt yok” değildir. Canlı API hatasında sentetik kayda geçilmez.

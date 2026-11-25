@@ -5,7 +5,8 @@ from uuid import uuid4
 from pydantic import ValidationError
 import pytest
 
-from security_platform.contracts import MAX_SEQUENCE, SnapshotEnvelope, canonical_json, snapshot_digest
+from security_platform.contracts import (MAX_SEQUENCE, MAX_SNAPSHOT_SEQUENCE, SnapshotEnvelope, canonical_json,
+                                         snapshot_digest)
 from security_platform.connectors.hostbased_firewall.snapshot_mapper import SnapshotMappingError, map_snapshot
 
 
@@ -80,7 +81,9 @@ def test_unknown_source_errors_are_not_copied_or_silently_treated_as_healthy():
 
 
 @pytest.mark.parametrize("changes", [
-    {"schema_version": True}, {"schema_version": 2}, {"sequence": True}, {"sequence": 0},
+    # schema_version 2 is Snapshot V2 (tests/unit/test_snapshot_v2_contracts.py); 3 and non-integers stay closed.
+    {"schema_version": True}, {"schema_version": 3}, {"schema_version": 0}, {"schema_version": 2.0},
+    {"schema_version": "2"}, {"sequence": True}, {"sequence": 0}, {"sequence": MAX_SNAPSHOT_SEQUENCE + 1},
     {"sequence": MAX_SEQUENCE + 1}, {"sequence": 1.0}, {"sequence": "1"}, {"message_id": "not-a-uuid"},
     {"message_id": "A" * 36}, {"tenant_id": str(uuid4())}, {"device_id": str(uuid4())},
     {"metadata": {"secret": "MUST_NOT_ACCEPT"}}, {"source_observed_at": "2026-11-07T10:00:00"},

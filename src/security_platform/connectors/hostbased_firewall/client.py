@@ -15,7 +15,8 @@ from uuid import uuid4
 
 import httpx
 
-from security_platform.contracts import (MAX_SEQUENCE, SnapshotEnvelope, canonical_json, canonical_uuid, utc_text)
+from security_platform.contracts import (MAX_SEQUENCE, MAX_SNAPSHOT_SEQUENCE, SnapshotEnvelope, canonical_json,
+                                         canonical_uuid, utc_text)
 from .private_files import (ClientFileError, bounded_json, create_private_directory,
                            private_lock, read_private_json, validate_private_path, write_private_json)
 from .snapshot_mapper import SnapshotMappingError, map_snapshot
@@ -192,7 +193,8 @@ def send_once(snapshot_file, credential_file, state_dir, *, transport=None, allo
             path = directory / STATE_FILENAME
             state = _read_state(path, credentials)
             if state["pending"] is None:
-                _require(state["next_sequence"] <= MAX_SEQUENCE, "device_sequence_exhausted")
+                # The contract's snapshot bound; a state file may still hold a larger next_sequence.
+                _require(state["next_sequence"] <= MAX_SNAPSHOT_SEQUENCE, "device_sequence_exhausted")
                 pending = map_snapshot(_read_export(snapshot_file), sequence=state["next_sequence"], message_id=str(uuid4()))
                 state["pending"] = pending.model_dump(mode="json")
                 # Durable pending content precedes HTTP. A lost response is

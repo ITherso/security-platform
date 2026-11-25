@@ -1,4 +1,4 @@
-"""Closed V1 device reports. Identity authenticates a sender, never its claims."""
+"""Closed V1/V2 device reports. Identity authenticates a sender, never its claims."""
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -10,10 +10,34 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 
 
 MAX_SNAPSHOT_BYTES = 16 * 1024
+# Event batch_sequence, the timeline's before_seq and other users keep this bound.
 MAX_SEQUENCE = 2**63 - 1
+# The snapshot sequence of both schema versions: 2^53-1, the operator console's
+# safe-integer limit (Number.MAX_SAFE_INTEGER). The console rejects a whole
+# response holding a larger integer, and the device list carries last_sequence.
+# This tightens V1 (once 2^63-1); no honest sender comes near either bound.
+MAX_SNAPSHOT_SEQUENCE = 2**53 - 1
+# A device time stored in a timestamptz column must satisfy
+# MIN_OBSERVED_AT <= value < MAX_OBSERVED_AT: an event's observed_at (the same
+# bound as the endpoint_events CHECK, event_contracts.py) and a snapshot
+# envelope's source_observed_at (devices.source_observed_at; a tightening of V1
+# like MAX_SNAPSHOT_SEQUENCE). PostgreSQL returns timestamptz in the session
+# time zone and the driver cannot load a year after 9999 or before 1, so an
+# accepted value near either end of the 4-digit range would make every load of
+# the row holding it (a timeline page; a device list page, the device detail,
+# the device's own requests, its revocation) fail in a non-UTC session. Every
+# instant in this window loads in every zone. Times kept as text inside a JSONB
+# payload (a product's source_observed_at, agent_started_at) load in any zone
+# and are not bounded.
+MIN_OBSERVED_AT = datetime(1970, 1, 1, tzinfo=timezone.utc)
+MAX_OBSERVED_AT = datetime(9999, 1, 1, tzinfo=timezone.utc)
 UTCText = Annotated[str, Field(min_length=20, max_length=32)]
 VersionText = Annotated[str, Field(min_length=1, max_length=64, pattern=r"^[A-Za-z0-9][A-Za-z0-9._+\-]*$")]
+# ASCII only: the character classes hold ASCII letters, digits and . _ + / space -.
+EngineText = Annotated[str, Field(min_length=1, max_length=128, pattern=r"^[A-Za-z0-9][A-Za-z0-9._+/ -]*$")]
 Count = Annotated[int, Field(strict=True, ge=0, le=4096)]
+# A counter the console can read exactly; a sender saturates at the bound instead of overflowing it.
+SafeCount = Annotated[int, Field(strict=True, ge=0, le=2**53 - 1)]
 DigestText = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
 ErrorCode = Literal["config_error", "policy_error", "temp_error", "runtime_error", "telemetry_error",
     "history_error", "network_profile_error", "recovery_error", "application_rule_recovery_error",
@@ -148,15 +172,65 @@ class AntivirusStatus(ReportedProduct):
         return self
 
 
-ProductStatus = Annotated[HostBasedFirewallStatus | TermivarStatus | AntivirusStatus, Field(discriminator="product_id")]
+EdrSensorState = Literal["started", "lost", "failed", "stopped", "disabled", "unknown"]
+# The same six codes as event_contracts.SensorErrorCode (a unit test compares them).
+EdrSensorErrorCode = Literal["session_name_invalid", "session_in_use", "access_denied", "session_start_failed",
+                             "session_stop_failed", "unknown"]
+
+
+class EdrAgentStatus(ReportedProduct):
+    """The Altay EDR agent's own self-reported state (Snapshot V2); no claim of protection or loaded rules."""
+    # status=running says only that the agent's service loop reported it. rule_file_present says only
+    # that the rule file exists, never that rules are loaded. Counters count since the agent process
+    # started. version is the agent version and source_observed_at the time the agent built this
+    # status. No field claims protection, real-time protection or loaded rules; StrictDTO's
+    # extra="forbid" keeps any such key out.
+    product_id: Literal["edr_agent"]
+    status: Literal["running", "unknown"] = "unknown"
+    agent_started_at: UTCText | None = None
+    engine_id: EngineText | None = None
+    rule_file_present: bool | None = None
+    sensor_state: EdrSensorState = "unknown"
+    sensor_error_code: EdrSensorErrorCode | None = None
+    events_queue_dropped: SafeCount | None = None
+    events_write_failed: SafeCount | None = None
+    events_unmapped: SafeCount | None = None
+    events_skipped: SafeCount | None = None
+    events_evicted: SafeCount | None = None
+    events_discarded: SafeCount | None = None
+    events_degraded: SafeCount | None = None
+    outbox_backlog: SafeCount | None = None
+
+    @field_validator("agent_started_at")
+    @classmethod
+    def validate_started_time(cls, value):
+        return utc_text(value) if value is not None else None
+
+    @model_validator(mode="after")
+    def no_catalog_claim_and_code_only_when_unstable(self):
+        if self.catalog_available is not None:
+            raise ValueError("edr_agent_catalog_claim_not_supported")
+        if self.sensor_error_code is not None and self.sensor_state not in ("lost", "failed"):
+            raise ValueError("sensor_error_code_requires_lost_or_failed")
+        return self
+
+
+ProductStatus = Annotated[HostBasedFirewallStatus | TermivarStatus | AntivirusStatus | EdrAgentStatus,
+                          Field(discriminator="product_id")]
+# Every product a snapshot may carry; also the device detail's missing_products universe and
+# the product_states.ck_product_id list (migration 0004).
+PRODUCT_IDS = ("hostbasedfirewall", "termivar", "antivirus", "edr_agent")
+# Products a schema_version 1 snapshot may carry: V1 is unchanged.
+V1_PRODUCT_IDS = frozenset({"hostbasedfirewall", "termivar", "antivirus"})
 
 
 class SnapshotEnvelope(StrictDTO):
-    schema_version: Literal[1]
+    """V1 and V2 share one body. V2 only adds the edr_agent product; sequence and replay rules are common."""
+    schema_version: Literal[1, 2]
     message_id: Annotated[str, Field(min_length=36, max_length=36)]
-    sequence: Annotated[int, Field(strict=True, ge=1, le=MAX_SEQUENCE)]
+    sequence: Annotated[int, Field(strict=True, ge=1, le=MAX_SNAPSHOT_SEQUENCE)]
     source_observed_at: UTCText | None = None
-    products: Annotated[list[ProductStatus], Field(max_length=3)]
+    products: Annotated[list[ProductStatus], Field(max_length=len(PRODUCT_IDS))]
 
     @field_validator("schema_version", mode="before")
     @classmethod
@@ -173,12 +247,21 @@ class SnapshotEnvelope(StrictDTO):
     @field_validator("source_observed_at")
     @classmethod
     def validate_observed_time(cls, value):
-        return utc_text(value) if value is not None else None
+        if value is None:
+            return None
+        normalized = utc_text(value)
+        # Stored in devices.source_observed_at (timestamptz); see MIN_OBSERVED_AT. No real sender leaves the window.
+        if not MIN_OBSERVED_AT <= datetime.fromisoformat(normalized.replace("Z", "+00:00")) < MAX_OBSERVED_AT:
+            raise ValueError("source_observed_at_out_of_range")
+        return normalized
 
     @model_validator(mode="after")
     def unique_products(self):
         if len({product.product_id for product in self.products}) != len(self.products):
             raise ValueError("duplicate_product")
+        if self.schema_version == 1 and (len(self.products) > len(V1_PRODUCT_IDS)
+                                         or any(product.product_id not in V1_PRODUCT_IDS for product in self.products)):
+            raise ValueError("edr_agent_requires_schema_version_2")
         return self
 
 

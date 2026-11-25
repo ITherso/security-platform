@@ -217,7 +217,7 @@ def test_conflicts_stale_order_and_omitted_products_are_atomic(service_tenants):
     with runtime.session() as session:
         detail = inventory.get_device(session, admin, a, UUID(device["device_id"]), now=NOW)
         assert detail["last_sequence"] == 6 and detail["products"] == []
-        assert detail["missing_products"] == ["antivirus", "hostbasedfirewall", "termivar"]
+        assert detail["missing_products"] == ["antivirus", "edr_agent", "hostbasedfirewall", "termivar"]
 
 
 def test_sequence_survives_rotation_and_source_future_never_controls_freshness(service_tenants):

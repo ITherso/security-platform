@@ -1,8 +1,8 @@
 /** Synthetic DTO-shaped fixtures. No real device/account/security action. */
-import { PRODUCT_IDS } from "../data/contracts";
-import type { AgeObservation, Alert, AlertStatus, AntivirusState, AuditEvent, Device, DeviceDetail, HostBasedFirewallState,
-  HbfErrorCode, ProductRecord, ProductState, ReportedProduct, SensorErrorCode, SensorStateValue, SourceClaims, Tenant,
-  TermivarState, TimelineEvent } from "../data/contracts";
+import { EDR_COUNTER_KEYS, PRODUCT_IDS } from "../data/contracts";
+import type { AgeObservation, Alert, AlertStatus, AntivirusState, AuditEvent, Device, DeviceDetail, EdrAgentState,
+  EdrCounterKey, EdrSensorState, HostBasedFirewallState, HbfErrorCode, ProductRecord, ProductState, ReportedProduct,
+  SensorErrorCode, SensorStateValue, SourceClaims, Tenant, TermivarState, TimelineEvent } from "../data/contracts";
 
 export const DEMO_TENANT_IDS = ["10000000-0000-4000-8000-000000000001", "10000000-0000-4000-8000-000000000002"] as const;
 /** One device's stored events, newest first, with the platform's counters for it. */
@@ -54,23 +54,43 @@ export function createDemoData(): DemoDataset {
   });
   const antivirus = (): AntivirusState => ({ ...base(null), catalog_available: false, version: null,
     product_id: "antivirus", status: "planned", availability: "unavailable", execution_available: false });
+  /** The agent's own status (Snapshot V2); `counts` null is the one-shot CLI heartbeat, which knows no counters. */
+  const edrAgent = (observed: number, sensor: EdrSensorState, options: { started?: number | null;
+    code?: SensorErrorCode; ruleFile?: boolean | null; counts?: readonly number[] | null } = {}): EdrAgentState => {
+    const counts = options.counts === undefined ? [0, 0, 0, 0, 0, 0, 0, 0] : options.counts;
+    const counters = Object.fromEntries(EDR_COUNTER_KEYS.map((key, index) =>
+      [key, counts === null ? null : counts[index] ?? 0])) as { readonly [K in EdrCounterKey]: number | null };
+    const started = options.started === undefined ? observed + 14400 : options.started;
+    return { ...base(observed, "0.3.0"), ...counters, catalog_available: null, product_id: "edr_agent",
+      status: counts === null ? "unknown" : "running", agent_started_at: started === null ? null : at(started),
+      engine_id: "edr-agent/0.3.0", rule_file_present: options.ruleFile === undefined ? true : options.ruleFile,
+      sensor_state: sensor, sensor_error_code: options.code ?? null };
+  };
+  // Counter order: EDR_COUNTER_KEYS (queue dropped, write failed, unmapped, skipped, evicted, discarded, degraded, backlog).
   const specs: DeviceSpec[] = [
     { n: 1, tenant: 0, label: "DEMO · Ankara uç noktası", connection: "recent", received: 45, observed: 90,
-      sequence: 42, states: [firewall("running", "enforce", 90), termivar(90, true), antivirus()] },
+      sequence: 42, states: [firewall("running", "enforce", 90), termivar(90, true), antivirus(),
+        edrAgent(90, "started", { started: 5460, counts: [4, 0, 2, 0, 0, 0, 0, 3] })] },
     { n: 2, tenant: 0, label: "DEMO · İzmir gözlem istasyonu", connection: "stale", received: 2700, observed: 2760,
-      sequence: 17, states: [firewall("observing", "sniff", 2760), termivar(2760, false), antivirus()] },
+      sequence: 17, states: [firewall("observing", "sniff", 2760), termivar(2760, false), antivirus(),
+        edrAgent(2760, "stopped", { started: 9060, counts: [0, 1, 0, 0, 0, 0, 0, 0] })] },
     { n: 3, tenant: 0, label: "DEMO · Yeni kayıt", connection: "never_seen", received: null, observed: null,
       sequence: null, states: [] },
     { n: 7, tenant: 0, label: "DEMO · İptal edilmiş saha kaydı", connection: "stale", received: 7200, observed: 7260,
-      sequence: 12, revoked: 3600, states: [firewall("stopped", "unknown", 7260), termivar(7260, false), antivirus()] },
+      sequence: 12, revoked: 3600, states: [firewall("stopped", "unknown", 7260), termivar(7260, false), antivirus(),
+        edrAgent(7260, "disabled", { ruleFile: false })] },
     { n: 8, tenant: 0, label: "DEMO · Kaynak saati ileride", connection: "recent", received: 55, observed: -180,
-      sequence: 51, states: [firewall("degraded", "enforce", -180, ["telemetry_error"]), termivar(-180, true), antivirus()] },
+      sequence: 51, states: [firewall("degraded", "enforce", -180, ["telemetry_error"]), termivar(-180, true), antivirus(),
+        edrAgent(-180, "started", { started: 1860, counts: [0, 0, 5, 3, 0, 0, 1, 12] })] },
     { n: 9, tenant: 0, label: "DEMO · Arşiv gözlem dizüstü", connection: "stale", received: 93600, observed: 97200,
-      sequence: 24, states: [firewall("unavailable", "unknown", 97200, ["health_unavailable"]), antivirus()] },
+      sequence: 24, states: [firewall("unavailable", "unknown", 97200, ["health_unavailable"]), antivirus(),
+        edrAgent(97200, "failed", { code: "access_denied", ruleFile: null, counts: [0, 0, 0, 0, 0, 0, 0, 37] })] },
     { n: 4, tenant: 1, label: "DEMO · Araştırma iş istasyonu", connection: "recent", received: 80, observed: -120,
-      sequence: 8, states: [firewall("degraded", "enforce", -120, ["telemetry_error"]), termivar(-120, true, 1), antivirus()] },
+      sequence: 8, states: [firewall("degraded", "enforce", -120, ["telemetry_error"]), termivar(-120, true, 1), antivirus(),
+        edrAgent(-120, "started", { started: 2460, counts: [0, 0, 1, 0, 0, 0, 0, 0] })] },
     { n: 5, tenant: 1, label: "DEMO · Saha dizüstü", connection: "stale", received: 93600, observed: 97200,
-      sequence: 23, states: [firewall("unavailable", "unknown", 97200, ["health_unavailable"]), antivirus()] },
+      sequence: 23, states: [firewall("unavailable", "unknown", 97200, ["health_unavailable"]), antivirus(),
+        edrAgent(97200, "unknown", { started: null, counts: null })] },
     { n: 6, tenant: 1, label: "DEMO · İptal edilmiş cihaz kaydı", connection: "stale", received: 7200, observed: 7260,
       sequence: 11, revoked: 3600, states: [firewall("stopped", "unknown", 7260), termivar(7260, false), antivirus()] },
   ];
@@ -90,6 +110,7 @@ export function createDemoData(): DemoDataset {
       if (state.product_id === "termivar") return { ...common, product_id: state.product_id, state,
         report_import_age: observation(state.latest_report === null ? null : Math.floor((now - Date.parse(state.latest_report.imported_at)) / 1000)) };
       if (state.product_id === "hostbasedfirewall") return { ...common, product_id: state.product_id, state };
+      if (state.product_id === "edr_agent") return { ...common, product_id: state.product_id, state };
       return { ...common, product_id: state.product_id, state };
     });
     return { ...device, products,

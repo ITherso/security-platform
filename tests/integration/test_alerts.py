@@ -710,14 +710,16 @@ def test_migrated_alert_table_matches_the_model(pg_service_databases):
     assert has_counter and tuple(counter) == ("bigint", "NO", "0") and check == "CHECK ((suppressed_alerts >= 0))"
     column = DeviceEventCursor.__table__.c.suppressed_alerts
     assert column.nullable is False and column.server_default.arg.text == "0"
-    assert head == "0003_alerts"
+    # 0004 (Snapshot V2) follows 0003 and changes only product_states.ck_product_id.
+    assert head == "0004_edr_agent_product"
 
 
-def test_the_alembic_chain_is_linear_up_to_0003():
+def test_the_alembic_chain_is_linear_up_to_0004():
     script = ScriptDirectory.from_config(Config(str(PROJECT / "alembic.ini")))
-    assert script.get_heads() == ["0003_alerts"]
+    assert script.get_heads() == ["0004_edr_agent_product"]
     assert [(revision.revision, revision.down_revision) for revision in script.walk_revisions()] == [
-        ("0003_alerts", "0002_endpoint_events"), ("0002_endpoint_events", "0001_initial"), ("0001_initial", None)]
+        ("0004_edr_agent_product", "0003_alerts"), ("0003_alerts", "0002_endpoint_events"),
+        ("0002_endpoint_events", "0001_initial"), ("0001_initial", None)]
 
 
 def test_migration_0003_upgrades_a_0002_database_in_a_rolled_back_transaction(event_tenants):

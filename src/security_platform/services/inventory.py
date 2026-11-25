@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import select
 
 from security_platform.auth.principals import OperatorPrincipal
+from security_platform.contracts import PRODUCT_IDS
 from security_platform.models import Tenant, Principal, Membership, Device, ProductState
 from security_platform.services.common import (DEFAULT_LIMITS, Unauthorized, NotFound,
     bounded_page, iso, require_membership, utc_now)
@@ -65,17 +66,19 @@ def get_device(session, operator, tenant_id, device_id, *, limits=DEFAULT_LIMITS
     now = utc_now(now)
     products = session.scalars(select(ProductState).where(ProductState.tenant_id == tenant_id,
         ProductState.device_id == device_id).order_by(ProductState.product_id)).all()
-    product_views = []
-    for product in products:
-        payload = product.payload
-        observed_text = payload.get("source_observed_at")
-        observed = datetime.fromisoformat(observed_text.replace("Z", "+00:00")) if observed_text else None
-        view = {"product_id": product.product_id, "snapshot_sequence": product.snapshot_sequence,
-                "received_at": iso(product.received_at), "observation": _age(observed, now), "state": payload}
-        if product.product_id == "termivar":
-            report = payload.get("latest_report")
-            imported = datetime.fromisoformat(report["imported_at"].replace("Z", "+00:00")) if report else None
-            view["report_import_age"] = _age(imported, now)
-        product_views.append(view)
-    return {**_device_view(row, now, limits), "products": product_views,
-            "missing_products": sorted({"hostbasedfirewall", "termivar", "antivirus"} - {p.product_id for p in products})}
+    return {**_device_view(row, now, limits), "products": [_product_view(product, now) for product in products],
+            "missing_products": sorted(set(PRODUCT_IDS) - {p.product_id for p in products})}
+
+
+def _product_view(product, now):
+    """Every product, edr_agent included, shows its stored payload as `state`; only Termivar adds an age."""
+    payload = product.payload
+    observed_text = payload.get("source_observed_at")
+    observed = datetime.fromisoformat(observed_text.replace("Z", "+00:00")) if observed_text else None
+    view = {"product_id": product.product_id, "snapshot_sequence": product.snapshot_sequence,
+            "received_at": iso(product.received_at), "observation": _age(observed, now), "state": payload}
+    if product.product_id == "termivar":
+        report = payload.get("latest_report")
+        imported = datetime.fromisoformat(report["imported_at"].replace("Z", "+00:00")) if report else None
+        view["report_import_age"] = _age(imported, now)
+    return view

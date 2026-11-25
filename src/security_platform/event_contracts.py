@@ -3,7 +3,7 @@
 A device credential authenticates the sender, never its claims: every event
 stays self_reported and not_verified, and a batch carries no trust field.
 """
-from datetime import datetime, timezone
+from datetime import datetime
 import hashlib
 import json
 import re
@@ -11,7 +11,12 @@ from typing import Annotated, Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from security_platform.contracts import MAX_SEQUENCE, StrictDTO, UTCText, canonical_uuid, utc_text
+# observed_at must satisfy MIN_OBSERVED_AT <= value < MAX_OBSERVED_AT, the same
+# bound as the endpoint_events CHECK. The window lives in contracts.py, which
+# this module already imports, because the snapshot envelope's
+# source_observed_at shares it; it is re-exported here for existing imports.
+from security_platform.contracts import (MAX_OBSERVED_AT, MAX_SEQUENCE, MIN_OBSERVED_AT, StrictDTO, UTCText,
+                                         canonical_uuid, utc_text)
 
 
 EVENT_SCHEMA = "altay-edr-event/v1"
@@ -20,14 +25,6 @@ MAX_BATCH_EVENTS = 200
 # Equals the endpoint_events payload CHECK, so a contract-valid event can
 # always be stored instead of failing as a database error.
 MAX_STORED_EVENT_BYTES = 4096
-# observed_at must satisfy MIN_OBSERVED_AT <= value < MAX_OBSERVED_AT, the
-# same bound as the endpoint_events CHECK. PostgreSQL returns timestamptz in
-# the session time zone and the driver cannot load a year after 9999 or before
-# 1, so an accepted value near either end of the 4-digit range would make
-# every timeline page holding it fail in a non-UTC session. Every instant in
-# this window loads in every zone.
-MIN_OBSERVED_AT = datetime(1970, 1, 1, tzinfo=timezone.utc)
-MAX_OBSERVED_AT = datetime(9999, 1, 1, tzinfo=timezone.utc)
 MAX_UINT32 = 2**32 - 1
 UInt32 = Annotated[int, Field(strict=True, ge=0, le=MAX_UINT32)]
 # The largest event_seq: 2^53-1, the operator console's safe-integer limit
@@ -35,7 +32,8 @@ UInt32 = Annotated[int, Field(strict=True, ge=0, le=MAX_UINT32)]
 # stay within it too: timeline event_seq and next_before_seq, alert
 # first/last_event_seq, and event_loss missing_events, a sum of gaps between
 # one device's strictly increasing accepted values (at most 2^53-3).
-# batch_sequence and the snapshot sequence keep MAX_SEQUENCE.
+# batch_sequence keeps MAX_SEQUENCE; the snapshot sequence has its own
+# MAX_SNAPSHOT_SEQUENCE (2^53-1, contracts.py) since Snapshot V2.
 MAX_EVENT_SEQ = 2**53 - 1
 EventSequence = Annotated[int, Field(strict=True, ge=1, le=MAX_EVENT_SEQ)]
 SensorErrorCode = Literal["session_name_invalid", "session_in_use", "access_denied", "session_start_failed",

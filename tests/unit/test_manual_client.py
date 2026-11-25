@@ -12,6 +12,7 @@ import httpx
 import pytest
 
 import security_platform.connectors.hostbased_firewall.client as client_module
+from security_platform.contracts import MAX_SEQUENCE, MAX_SNAPSHOT_SEQUENCE
 from security_platform.connectors.hostbased_firewall.client import (MAX_CA_FILE_BYTES, STATE_FILENAME, SnapshotClientError,
     initialize_client_state, read_credentials, rotate_credential_file, send_once, tls_verification, validate_base_url)
 from security_platform.connectors.hostbased_firewall.private_files import (ClientFileError, bounded_json,
@@ -100,6 +101,34 @@ def test_response_loss_restart_and_rotation_retry_exact_id_sequence_and_content(
     export.write_text(json.dumps(local_overview()), encoding="utf-8")
     third = send_once(export, credential_file, state_dir, transport=httpx.MockTransport(acknowledgment))
     assert third["sequence"] == 2 and third["message_id"] != result["message_id"]
+
+
+def test_last_snapshot_sequence_is_sent_and_the_next_one_is_exhausted(client_files):
+    # Snapshot V2 bounds the snapshot sequence of both versions at MAX_SNAPSHOT_SEQUENCE (2^53-1).
+    credential_file, state_dir, export, _ = client_files
+    state = read_private_json(state_dir / STATE_FILENAME)
+    write_private_json(state_dir / STATE_FILENAME, {**state, "next_sequence": MAX_SNAPSHOT_SEQUENCE})
+    result = send_once(export, credential_file, state_dir, transport=httpx.MockTransport(acknowledgment))
+    assert result["sequence"] == MAX_SNAPSHOT_SEQUENCE
+    exhausted = read_private_json(state_dir / STATE_FILENAME)
+    assert exhausted["next_sequence"] == MAX_SNAPSHOT_SEQUENCE + 1 and exhausted["pending"] is None
+    def must_not_send(request):
+        raise AssertionError("an exhausted sequence must not reach the network")
+    with pytest.raises(SnapshotClientError, match="^device_sequence_exhausted$"):
+        send_once(export, credential_file, state_dir, transport=httpx.MockTransport(must_not_send))
+    assert read_private_json(state_dir / STATE_FILENAME) == exhausted
+
+
+def test_state_beyond_the_snapshot_bound_is_exhausted_not_sent(client_files):
+    # A state written before the bound tightened may hold up to MAX_SEQUENCE + 1; it is read, not sent.
+    credential_file, state_dir, export, _ = client_files
+    state = {**read_private_json(state_dir / STATE_FILENAME), "next_sequence": MAX_SEQUENCE + 1}
+    write_private_json(state_dir / STATE_FILENAME, state)
+    def must_not_send(request):
+        raise AssertionError("an exhausted sequence must not reach the network")
+    with pytest.raises(SnapshotClientError, match="^device_sequence_exhausted$"):
+        send_once(export, credential_file, state_dir, transport=httpx.MockTransport(must_not_send))
+    assert read_private_json(state_dir / STATE_FILENAME) == state
 
 
 @pytest.mark.parametrize("status", [301, 302, 307, 308, 401, 409, 500])

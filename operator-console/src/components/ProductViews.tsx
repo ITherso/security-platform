@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
-import type { AuditPage, DeviceDetail as DeviceDetailDto, ProductRecord, TermivarSummary } from "../data/contracts";
+import { EDR_COUNTER_KEYS } from "../data/contracts";
+import type { AuditPage, DeviceDetail as DeviceDetailDto, EdrCounterKey, ProductRecord, TermivarSummary } from "../data/contracts";
 import { booleanLabel, displayText, formatAge, formatCount, formatDate, shortIdentifier } from "./display";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { ProductTextKey } from "../i18n/catalogs/products";
@@ -9,10 +10,22 @@ type ProductId = ProductRecord["product_id"];
 type FirewallRecord = Extract<ProductRecord, { product_id: "hostbasedfirewall" }>;
 type TermivarRecord = Extract<ProductRecord, { product_id: "termivar" }>;
 type AntivirusRecord = Extract<ProductRecord, { product_id: "antivirus" }>;
+type EdrAgentRecord = Extract<ProductRecord, { product_id: "edr_agent" }>;
 type DisplayPair = readonly [label: string, value: ReactNode];
 
 const PRODUCT_LABELS: Readonly<Record<ProductId, ProductTextKey>> = {
   hostbasedfirewall: "product.name.hostbasedfirewall", termivar: "product.name.termivar", antivirus: "product.name.antivirus",
+  edr_agent: "product.name.edr_agent",
+};
+const EDR_SENSOR_LABELS: Readonly<Record<string, ProductTextKey>> = {
+  started: "product.edr.sensor.started", lost: "product.edr.sensor.lost", failed: "product.edr.sensor.failed",
+  stopped: "product.edr.sensor.stopped", disabled: "product.edr.sensor.disabled", unknown: "display.unknown",
+};
+const EDR_COUNTER_LABELS: Readonly<Record<EdrCounterKey, ProductTextKey>> = {
+  events_queue_dropped: "product.edr.counter.events_queue_dropped", events_write_failed: "product.edr.counter.events_write_failed",
+  events_unmapped: "product.edr.counter.events_unmapped", events_skipped: "product.edr.counter.events_skipped",
+  events_evicted: "product.edr.counter.events_evicted", events_discarded: "product.edr.counter.events_discarded",
+  events_degraded: "product.edr.counter.events_degraded", outbox_backlog: "product.edr.counter.outbox_backlog",
 };
 const ERROR_LABELS: Readonly<Record<string, ProductTextKey>> = {
   config_error: "product.error.config_error", policy_error: "product.error.policy_error", temp_error: "product.error.temp_error",
@@ -84,6 +97,7 @@ function MissingProduct({ id, selected }: { id: ProductId; selected: boolean }) 
     hostbasedfirewall: { label: "product.catalog.localFirewall", tone: "neutral", description: "product.catalog.firewallDescription" },
     termivar: { label: "product.catalog.experimental", tone: "purple", description: "product.catalog.termivarDescription" },
     antivirus: { label: "product.catalog.planned", tone: "neutral", description: "product.catalog.antivirusDescription" },
+    edr_agent: { label: "product.catalog.prototype", tone: "purple", description: "product.catalog.edrDescription" },
   };
   const item = catalog[id];
   return <article className="product-card">
@@ -184,14 +198,48 @@ function AntivirusCard({ record }: { record: AntivirusRecord }) {
   </article>;
 }
 
+/** The agent's own state (Snapshot V2). Presence of the rule file only; nothing here is a protection claim. */
+function EdrAgentCard({ record }: { record: EdrAgentRecord }) {
+  const { locale, t } = useLocale();
+  const state = record.state;
+  const running = state.status === "running";
+  const ruleFile: ProductTextKey = state.rule_file_present === true ? "product.edr.ruleFile.present"
+    : state.rule_file_present === false ? "product.edr.ruleFile.absent" : "display.unknown";
+  const unstable = state.sensor_state === "lost" || state.sensor_state === "failed";
+  const errorCode = state.sensor_error_code !== null ? <code>{state.sensor_error_code}</code>
+    : t(unstable ? "product.edr.sensorError.notReported" : "product.edr.sensorError.notApplicable");
+  const count = (value: number | null): string => value === null ? t("display.unknown") : formatCount(value, locale);
+  return <article className="product-card">
+    <ProductHeading id="edr_agent" label={t(running ? "product.edr.running" : "display.unknown")} tone={running ? "purple" : "neutral"}/>
+    <p className="product-description">{t("product.edr.description")}</p>
+    <KeyValues values={[
+      [t("product.edr.version"), displayText(state.version, t("display.unknown"))],
+      [t("product.edr.startedAt"), formatDate(state.agent_started_at, locale)],
+      [t("product.edr.engine"), displayText(state.engine_id, t("display.unknown"))],
+      [t("product.edr.ruleFile"), t(ruleFile)],
+      [t("product.edr.sensorState"), t(mapped(EDR_SENSOR_LABELS, state.sensor_state, "display.unknown"))],
+      [t("product.edr.sensorError"), errorCode],
+      [t("product.label.received"), formatDate(record.received_at, locale)],
+      [t("product.label.sourceAge"), formatAge(record.observation, locale)],
+      [t("product.edr.claims"), `${t("app.claim.device")} (${state.source}) · ${t("app.claim.notVerified")} (${state.producer_verification})`],
+    ]}/>
+    <h4>{t("product.edr.countersTitle")}</h4>
+    <KeyValues values={EDR_COUNTER_KEYS.map((key): DisplayPair => [t(EDR_COUNTER_LABELS[key]), count(state[key])])}/>
+    <p className="muted">{t("product.edr.countersScope")}</p>
+    <p className="state-note">{t("product.edr.notice")}</p>
+  </article>;
+}
+
 function ProductGrid({ detail }: { detail: DeviceDetailDto | null }) {
   const firewall = detail?.products.find((product): product is FirewallRecord => product.product_id === "hostbasedfirewall");
   const termivar = detail?.products.find((product): product is TermivarRecord => product.product_id === "termivar");
   const antivirus = detail?.products.find((product): product is AntivirusRecord => product.product_id === "antivirus");
+  const agent = detail?.products.find((product): product is EdrAgentRecord => product.product_id === "edr_agent");
   return <div className="product-grid">
     {firewall ? <FirewallCard record={firewall}/> : <MissingProduct id="hostbasedfirewall" selected={detail !== null}/>}
     {termivar ? <TermivarCard record={termivar}/> : <MissingProduct id="termivar" selected={detail !== null}/>}
     {antivirus ? <AntivirusCard record={antivirus}/> : <MissingProduct id="antivirus" selected={detail !== null}/>}
+    {agent ? <EdrAgentCard record={agent}/> : <MissingProduct id="edr_agent" selected={detail !== null}/>}
   </div>;
 }
 

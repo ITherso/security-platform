@@ -1139,6 +1139,255 @@
         ],
         "title": "DispositionCounts"
       },
+      "EdrAgentStatus": {
+        "properties": {
+          "catalog_available": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Catalog Available"
+          },
+          "source": {
+            "type": "string",
+            "const": "self_reported",
+            "title": "Source",
+            "default": "self_reported"
+          },
+          "producer_verification": {
+            "type": "string",
+            "const": "not_verified",
+            "title": "Producer Verification",
+            "default": "not_verified"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._+\\-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          },
+          "source_observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32,
+                "minLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Observed At"
+          },
+          "product_id": {
+            "type": "string",
+            "const": "edr_agent",
+            "title": "Product Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "running",
+              "unknown"
+            ],
+            "title": "Status",
+            "default": "unknown"
+          },
+          "agent_started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32,
+                "minLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Started At"
+          },
+          "engine_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._+/ -]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine Id"
+          },
+          "rule_file_present": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rule File Present"
+          },
+          "sensor_state": {
+            "type": "string",
+            "enum": [
+              "started",
+              "lost",
+              "failed",
+              "stopped",
+              "disabled",
+              "unknown"
+            ],
+            "title": "Sensor State",
+            "default": "unknown"
+          },
+          "sensor_error_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "session_name_invalid",
+                  "session_in_use",
+                  "access_denied",
+                  "session_start_failed",
+                  "session_stop_failed",
+                  "unknown"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sensor Error Code"
+          },
+          "events_queue_dropped": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events Queue Dropped"
+          },
+          "events_write_failed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events Write Failed"
+          },
+          "events_unmapped": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events Unmapped"
+          },
+          "events_skipped": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events Skipped"
+          },
+          "events_evicted": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events Evicted"
+          },
+          "events_discarded": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events Discarded"
+          },
+          "events_degraded": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Events Degraded"
+          },
+          "outbox_backlog": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9007199254740991.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outbox Backlog"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "product_id"
+        ],
+        "title": "EdrAgentStatus",
+        "description": "The Altay EDR agent's own self-reported state (Snapshot V2); no claim of protection or loaded rules."
+      },
       "EmptyRequest": {
         "properties": {},
         "additionalProperties": false,
@@ -1657,7 +1906,10 @@
         "properties": {
           "schema_version": {
             "type": "integer",
-            "const": 1,
+            "enum": [
+              1,
+              2
+            ],
             "title": "Schema Version"
           },
           "message_id": {
@@ -1668,7 +1920,7 @@
           },
           "sequence": {
             "type": "integer",
-            "maximum": 9.223372036854776e+18,
+            "maximum": 9007199254740991.0,
             "minimum": 1.0,
             "title": "Sequence"
           },
@@ -1696,19 +1948,23 @@
                 },
                 {
                   "$ref": "#/components/schemas/AntivirusStatus"
+                },
+                {
+                  "$ref": "#/components/schemas/EdrAgentStatus"
                 }
               ],
               "discriminator": {
                 "propertyName": "product_id",
                 "mapping": {
                   "antivirus": "#/components/schemas/AntivirusStatus",
+                  "edr_agent": "#/components/schemas/EdrAgentStatus",
                   "hostbasedfirewall": "#/components/schemas/HostBasedFirewallStatus",
                   "termivar": "#/components/schemas/TermivarStatus"
                 }
               }
             },
             "type": "array",
-            "maxItems": 3,
+            "maxItems": 4,
             "title": "Products"
           }
         },
@@ -1720,7 +1976,8 @@
           "sequence",
           "products"
         ],
-        "title": "SnapshotEnvelope"
+        "title": "SnapshotEnvelope",
+        "description": "V1 and V2 share one body. V2 only adds the edr_agent product; sequence and replay rules are common."
       },
       "TermivarStatus": {
         "properties": {

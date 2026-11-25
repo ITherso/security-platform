@@ -1,7 +1,8 @@
 import { PRODUCT_HUB_ENTRIES } from './productCatalog';
-import type { HubDestination, ProductHubEntry } from './productCatalog';
+import type { HubAvailability, HubDestination, ProductHubEntry } from './productCatalog';
 import { GUIDE_FLOWS, GUIDE_FLOW_LABELS } from './guideModel';
 import type { GuideFlow } from './guideModel';
+import type { ProductHubTextKey } from '../../i18n/catalogs/productHub';
 import { useLocale } from '../../i18n/LocaleProvider';
 import './productHub.css';
 
@@ -12,6 +13,12 @@ export interface HubPageProps {
 }
 const SYMBOLS: Readonly<Record<ProductHubEntry['id'], string>> = {
   hostbasedfirewall: '◈', termivar: '⌁', 'policy-impact-workbench': '≍', 'security-platform': '▦', antivirus: '◇',
+  edr_agent: '◎',
+};
+const AVAILABILITY: Readonly<Record<HubAvailability, readonly [ProductHubTextKey, string]>> = {
+  available_workspace: ['productHub.availability.available', 'purple'],
+  prototype_pending_acceptance: ['productHub.availability.prototype', 'warning'],
+  planned_unavailable: ['productHub.availability.planned', 'neutral'],
 };
 
 export function HubPage({ onNavigate, onStartGuide, guideAvailable }: HubPageProps) {
@@ -29,7 +36,7 @@ export function HubPage({ onNavigate, onStartGuide, guideAvailable }: HubPagePro
           <div><dt>{t('productHub.dataSource')}</dt><dd>{t(entry.dataSourceKey)}</dd></div>
         </dl>
         <dl className="product-hub-assurance">
-          <div><dt>{t('productHub.availability')}</dt><dd><span className="badge" data-tone={entry.availability === 'planned_unavailable' ? 'neutral' : 'purple'}>{t(entry.availability === 'planned_unavailable' ? 'productHub.availability.planned' : 'productHub.availability.available')}</span></dd></div>
+          <div><dt>{t('productHub.availability')}</dt><dd><span className="badge" data-tone={AVAILABILITY[entry.availability][1]}>{t(AVAILABILITY[entry.availability][0])}</span></dd></div>
           <div><dt>{t('productHub.verification')}</dt><dd>{t('productHub.verification.notVerified')}</dd></div>
         </dl>
         <button type="button" className="btn btn-ghost" onClick={() => onNavigate(entry.destination)}>{t(entry.actionKey)}</button>
