@@ -243,8 +243,9 @@ function AntivirusCard({ record }: { record: AntivirusRecord }) {
 }
 
 /** The agent's own state (Snapshot V3), told from V2 by its key set. Every value is the agent's claim: "compiled" is
- * only that it compiled its rule file, its scan runs after a process starts and blocks nothing, an isolation state is
- * its report about its own filters, and the console sends it no action. */
+ * only that it compiled its rule file, its scans run after the fact (after a process start, its own start, a file
+ * change, a remote scan request or on a persistence target) and block nothing, an isolation state is its report about
+ * its own filters, and the console sends it no action. */
 function EdrAgentV3Card({ record }: { record: EdrAgentV3Record }) {
   const { locale, t } = useLocale();
   const state = record.state;

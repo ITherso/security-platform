@@ -1,6 +1,6 @@
 """Stage 3 detection contracts on real PostgreSQL: migration 0005 (head, CHECK parity, the agent_silent null rule,
-the two indexes, upgrade -> downgrade -> upgrade), event v2 batches and Snapshot V3 through the real HTTP app and
-signed JWTs, interleaved with v1 and V2.
+the two indexes, its statement timeout, upgrade -> downgrade -> upgrade), event v2 batches and Snapshot V3 through
+the real HTTP app and signed JWTs, interleaved with v1 and V2.
 
 The pure contracts are tested in tests/unit/test_event_v2_contracts.py and tests/unit/test_snapshot_v3_contracts.py.
 
@@ -11,6 +11,7 @@ events, once, and never on a retry, conflict, 413 or 422. A batch of every kind,
 three v1 kinds in their v2 shapes also run through the real alert path.
 """
 import hashlib
+import io
 import json
 import re
 from uuid import UUID, uuid4
@@ -20,7 +21,7 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from alembic.script import ScriptDirectory
 import pytest
-from sqlalchemy import CheckConstraint, text
+from sqlalchemy import CheckConstraint, event, text
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.schema import CreateIndex
@@ -364,6 +365,81 @@ def test_migration_0005_down_and_up_in_a_rolled_back_transaction(event_tenants):
             transaction.rollback()
     with ctx.owner.engine.connect() as connection:
         assert schema_state(connection) == head
+
+
+def normalized(statements):
+    return [" ".join(statement.split()) for statement in statements]
+
+
+def offline_sql(run):
+    """The statements that a migration step emits in alembic's offline (--sql) mode, in order."""
+    buffer = io.StringIO()
+    with Operations.context(MigrationContext.configure(dialect_name="postgresql",
+                                                       opts={"as_sql": True, "output_buffer": buffer})):
+        run()
+    return normalized(item for item in buffer.getvalue().split(";\n\n") if item.strip())
+
+
+def test_migration_0005_lifts_the_statement_timeout_around_its_own_statements_only():
+    # env.py bounds every statement of the one migration transaction at 5 s. 0005's CHECK validation, index build
+    # and downgrade deletion read the event table whole, so each direction lifts statement_timeout before its first
+    # statement and restores env.py's value after its last; lock_timeout is never touched.
+    module = migration_module(HEAD)
+    assert (module.LIFT_STATEMENT_TIMEOUT, module.RESTORE_STATEMENT_TIMEOUT) == (
+        "SET LOCAL statement_timeout = 0", "SET LOCAL statement_timeout TO DEFAULT")
+    for run, statements in ((module.upgrade, module.DDL_STATEMENTS), (module.downgrade, module.DOWNGRADE_STATEMENTS)):
+        emitted = offline_sql(run)
+        assert emitted == [module.LIFT_STATEMENT_TIMEOUT, *normalized(statements), module.RESTORE_STATEMENT_TIMEOUT]
+        assert not [statement for statement in emitted if "lock_timeout" in statement]
+
+
+def settings_per_statement(connection, run):
+    """(statement, statement_timeout, lock_timeout) in effect for each statement that ``run`` sends on
+    ``connection``, read on the same session and transaction just before the statement runs."""
+    seen = []
+
+    def before(conn, cursor, statement, parameters, context, executemany):
+        probe = cursor.connection.cursor()
+        try:
+            probe.execute("SELECT current_setting('statement_timeout'), current_setting('lock_timeout')")
+            seen.append((" ".join(statement.split()), *probe.fetchone()))
+        finally:
+            probe.close()
+
+    event.listen(connection, "before_cursor_execute", before)
+    try:
+        run()
+    finally:
+        event.remove(connection, "before_cursor_execute", before)
+    return seen
+
+
+def timeouts(connection):
+    return (connection.scalar(text("SHOW statement_timeout")), connection.scalar(text("SHOW lock_timeout")))
+
+
+def test_migration_0005_statements_run_unbounded_with_env_lock_timeout_then_env_timeouts_return(
+        pg_service_databases):
+    # On PostgreSQL itself: SET LOCAL reaches every 0005 statement, and TO DEFAULT gives back the value that the
+    # connection's options set (env.py's and db.py's 5 s), so later migrations of the same run keep their bound.
+    owner, _ = pg_service_databases
+    module = migration_module(HEAD)
+    lift, restore = module.LIFT_STATEMENT_TIMEOUT, module.RESTORE_STATEMENT_TIMEOUT
+    with owner.engine.connect() as connection:
+        transaction = connection.begin()
+        try:
+            head = schema_state(connection)
+            assert timeouts(connection) == ("5s", "3s")
+            with Operations.context(MigrationContext.configure(connection)):
+                for run, statements in ((module.downgrade, module.DOWNGRADE_STATEMENTS),
+                                        (module.upgrade, module.DDL_STATEMENTS)):
+                    assert settings_per_statement(connection, run) == [
+                        (lift, "5s", "3s"), *((statement, "0", "3s") for statement in normalized(statements)),
+                        (restore, "0", "3s")]
+                    assert timeouts(connection) == ("5s", "3s")
+            assert schema_state(connection) == head
+        finally:
+            transaction.rollback()
 
 
 SEQUENCE_PAIRS = [(None, None), (None, 1), (1, None), (0, 0), (0, 1), (2, 1), (1, 1), (1, 2)]

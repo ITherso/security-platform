@@ -412,6 +412,51 @@ def test_alert_evidence_of_the_event_rules_is_the_event_fields():
     assert all(set(states) <= set(subjects[subject]) for subject, states in down.items())
 
 
+def test_alert_rule_mirrors_equal_their_python_sources():
+    # The tests above pin the brief's values; these copies must also follow the Python names they mirror, so that a
+    # change on the Platform side that the console did not take fails here rather than in the browser.
+    capability_down = pinned("services.alerts", "CAPABILITY_DOWN")
+    added_changes = tuple(pinned("services.alerts", "PERSISTENCE_ADDED_CHANGES"))
+    silent_fields = tuple(pinned("services.sweep", "EVIDENCE_FIELDS"))
+    heartbeat_interval = pinned("services.sweep", "heartbeat_interval")
+    silence_threshold = pinned("services.sweep", "silence_threshold")
+    setting_range = pinned("settings", "SILENCE_ALERT_SECONDS_RANGE")
+    shortest = pinned("contracts", "MIN_HEARTBEAT_INTERVAL_SECONDS")
+    longest = pinned("contracts", "MAX_HEARTBEAT_INTERVAL_SECONDS")
+    contracts_ts, normalize = source("data/contracts.ts"), source("data/normalize.ts")
+    alert = flat(block(normalize, "function alert(input: unknown): Alert {", "\ninterface AlertQuery"))
+    # capability_down: services.alerts.CAPABILITY_DOWN, subjects and states in order.
+    down = ts_table(block(contracts_ts, "export const CAPABILITY_DOWN_STATES = {", "} as const;"))
+    assert down == capability_down and tuple(down) == tuple(capability_down)
+    # persistence_added: services.alerts.PERSISTENCE_ADDED_CHANGES, in the normalizer and in the alert type.
+    [changes] = re.findall(
+        r"persistenceFields\(shape\(value\.evidence, EVENT_FIELDS\.persistence_change\), \[([^\]]*)\]\)", alert)
+    assert tuple(names(changes)) == added_changes
+    added_type = flat(block(contracts_ts, "export interface PersistenceAddedAlert extends AlertBase {", "\n}"))
+    [union] = re.findall(r"readonly evidence: PersistenceChangeFields<([^>]*)>;", added_type)
+    assert tuple(names(union)) == added_changes
+    # agent_silent: services.sweep.EVIDENCE_FIELDS, in order, in the shape check, the built value and the alert type.
+    silent = alert[alert.index('if (rule === "agent_silent") {'):alert.index("// Every other rule has an event_seq range")]
+    [required] = re.findall(r"const evidence = shape\(value\.evidence, \[([^\]]*)\]\);", silent)
+    assert tuple(names(required)) == silent_fields
+    assert tuple(re.findall(r"(\w+): \w+\(evidence\.\1[,)]", silent)) == silent_fields
+    silent_type = flat(block(contracts_ts, "export interface AgentSilentAlert extends AlertCommon {", "\n}"))
+    [typed] = re.findall(r"readonly evidence: \{([^}]*)\};", silent_type)
+    assert tuple(re.findall(r"readonly (\w+):", typed)) == silent_fields
+    # threshold_seconds: every threshold the sweep can apply, max(SP_SILENCE_ALERT_SECONDS, 3 x a valid V3 heartbeat
+    # interval) or the setting alone, lies in the console's bounds, and both bounds are reached. silence_threshold is
+    # monotonic in both arguments, so the corners give its extremes.
+    payloads = [None, {"rule_file_present": True}]
+    for seconds in (shortest, longest):
+        payload = {"rule_set_state": "unknown", "heartbeat_interval_seconds": seconds}
+        assert heartbeat_interval(payload) == seconds
+        payloads.append(payload)
+    thresholds = {silence_threshold(setting, payload) for setting in setting_range for payload in payloads}
+    [(minimum, maximum)] = re.findall(r"const MIN_SILENCE_THRESHOLD = (\d+), MAX_SILENCE_THRESHOLD = (\d+);", normalize)
+    assert (int(minimum), int(maximum)) == (min(thresholds), max(thresholds))
+    assert "threshold_seconds: integer(evidence.threshold_seconds, MIN_SILENCE_THRESHOLD, MAX_SILENCE_THRESHOLD)" in silent
+
+
 def test_alerts_page_uses_the_adr_wording_in_both_languages():
     events = source("i18n/catalogs/events.ts")
     tr = strings("export const eventsTr = {", "\n};", "events")
@@ -501,6 +546,39 @@ def test_v3_card_wording_claims_no_protection(start, end, note):
     for key, value in new.items():
         assert not FORBIDDEN.search(value), key
         assert not CLAIMS.search(value.replace("engellemez", "") if key == "product.edrV3.scanNote" else value), key
+
+
+# ADR 0004 sections 1.2 and 3: a scan follows one of five triggers, and only the first is a process starting from the
+# file. A file dropped on disk is scanned on file_change without ever running, so no scan wording may tie scanning to
+# a process start. For each language: the V3 card note's phrase for every trigger, in SCAN_TRIGGERS order.
+SCAN_NOTE_TRIGGERS = [
+    ("export const productsTr = {", "\n};", "export const eventsTr = {", "\n};",
+     ("bir süreç başladıktan sonra imajını", "ajan başlarken çalışan süreçlerin imajlarını",
+      "yeni veya değişmiş çalıştırılabilirleri", "uzaktan istenen bir taramanın dosyalarını",
+      "kalıcılık kayıtlarının hedeflerini")),
+    ("export const productsEn = {", "\n} satisfies", "export const eventsEn = {", "\n} satisfies",
+     ("a process's image after the process starts", "the images of running processes when the agent starts",
+      "new or changed executables", "the files of a remote scan request", "the targets of persistence entries")),
+]
+NARROW_SCAN = re.compile(r"only after|after a process started|after its process|ancak süreci|süreç başladıktan sonra "
+                         r"taradığı", re.IGNORECASE)
+
+
+@pytest.mark.parametrize("products_start,products_end,events_start,events_end,phrases", SCAN_NOTE_TRIGGERS,
+                         ids=["tr", "en"])
+def test_scan_wording_covers_every_scan_trigger(products_start, products_end, events_start, events_end, phrases):
+    triggers = tuple(pinned("event_contracts", "SCAN_TRIGGERS"))
+    note = strings(products_start, products_end, "products")["product.edrV3.scanNote"]
+    entries = strings(events_start, events_end, "events")
+    description = entries["alerts.description.scan_detection"]
+    assert len(phrases) == len(triggers) == 5
+    for phrase in phrases:
+        assert phrase in note, phrase
+    # The rule panel names the evidence's trigger field by its label, and every trigger value it can show.
+    assert entries["events.field.trigger"].casefold() in description.casefold()
+    assert re.findall(r"\((\w+)\)", description) == list(triggers)
+    for text in (note, description):
+        assert not NARROW_SCAN.search(text), text
 
 
 # --- Strict JSON: a V3 device detail needs its own route profile; v2 pages fit the event profile.
