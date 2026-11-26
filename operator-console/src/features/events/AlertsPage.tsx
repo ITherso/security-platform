@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { ALERT_STATUSES } from '../../data/contracts';
+import { ALERT_RULES, ALERT_STATUSES } from '../../data/contracts';
 import type { Alert, AlertStatus, Device, DevicePage } from '../../data/contracts';
 import type { AlertListView, BadgeTone, LoadStatus } from './eventsModel';
-import { MAX_LOADED_ALERTS, RULE_LABELS, SENSOR_STATE_LABELS, SEVERITY_LABELS, SEVERITY_TONES, STATUS_LABELS, STATUS_TONES,
-  shortDeviceId } from './eventsModel';
+import { MAX_LOADED_ALERTS, RULE_DESCRIPTIONS, RULE_LABELS, SENSOR_STATE_LABELS, SEVERITY_LABELS, SEVERITY_TONES, STATUS_LABELS,
+  STATUS_TONES, shortDeviceId } from './eventsModel';
+import { AgentStateFieldList, BehaviorFields, PersistenceFields, ScanFields, TamperFields } from './EventFields';
 import { formatCount, formatPreciseDate } from '../../i18n/formatters';
 import { useLocale } from '../../i18n/LocaleProvider';
 import './events.css';
@@ -57,8 +58,35 @@ function Evidence({ alert }: { alert: Alert }) {
     <EvidenceItem label={t('alerts.evidence.errorCode')}>{alert.evidence.error_code === null ? t('alerts.evidence.noErrorCode')
       : <code className="event-code">{alert.evidence.error_code}</code>}</EvidenceItem>
   </dl>;
-  return <p className="alert-evidence-text">
+  if (alert.rule === 'event_loss') return <p className="alert-evidence-text">
     {t('alerts.evidence.missing', formatCount(alert.evidence.missing_events, locale), alert.evidence.missing_events)}</p>;
+  // The five Stage 3 event rules carry the triggering event's own fields under the same names.
+  if (alert.rule === 'scan_detection') return <ScanFields fields={alert.evidence} />;
+  if (alert.rule === 'behavior_match') return <BehaviorFields fields={alert.evidence} />;
+  if (alert.rule === 'persistence_added') return <PersistenceFields fields={alert.evidence} />;
+  if (alert.rule === 'capability_down') return <AgentStateFieldList fields={alert.evidence} />;
+  if (alert.rule === 'tamper_signal') return <TamperFields fields={alert.evidence} />;
+  // agent_silent: the server's own record of the device's last contact, and the threshold the sweep used.
+  return <dl className="alert-evidence">
+    <EvidenceItem label={t('alerts.evidence.lastReceived')}><Instant value={alert.evidence.last_received_at} /></EvidenceItem>
+    <EvidenceItem label={t('alerts.evidence.threshold')}>
+      {t('alerts.evidence.seconds', formatCount(alert.evidence.threshold_seconds, locale), alert.evidence.threshold_seconds)}</EvidenceItem>
+  </dl>;
+}
+
+/** The rule's label; agent_silent names the device's last contact time (the server's). */
+function RuleLabel({ alert }: { alert: Alert }) {
+  const { locale, t } = useLocale();
+  return <strong>{alert.rule === 'agent_silent'
+    ? t('alerts.rule.agent_silent.since', formatPreciseDate(alert.evidence.last_received_at, locale))
+    : t(RULE_LABELS[alert.rule])}</strong>;
+}
+
+/** An event rule's row names the matched event sequences; agent_silent comes from the sweep and has none. */
+function SeenAt({ at, sequence }: { at: string; sequence: number | null }) {
+  const { t } = useLocale();
+  return <><Instant value={at} /><span className="cell-sub">{sequence === null ? t('alerts.sweep')
+    : t('alerts.sequence', String(sequence))}</span></>;
 }
 
 /** Read-only alert list: filters and "Older" are explicit reads; there is no acknowledge or close control. */
@@ -75,6 +103,11 @@ export function AlertsPage({ page, status, older, errorMessage, tenantSelected, 
       <h2 id="alerts-boundary-title">{t('alerts.diagnosis.title')}</h2>
       <p>{t('alerts.diagnosis.note')}</p>
       <p className="alerts-read-only">{t('alerts.readOnly')}</p>
+      <details className="alert-rules">
+        <summary>{t('alerts.rules.title')}</summary>
+        <dl>{ALERT_RULES.map((rule) => <div key={rule}>
+          <dt>{t(RULE_LABELS[rule])} <code>{rule}</code></dt><dd>{t(RULE_DESCRIPTIONS[rule])}</dd></div>)}</dl>
+      </details>
     </section>
     <section className="panel" aria-busy={busy}>
       <div className="panel-heading">
@@ -115,13 +148,13 @@ export function AlertsPage({ page, status, older, errorMessage, tenantSelected, 
                       const name = label ?? shortDeviceId(alert.device_id);
                       return <tr key={alert.id}>
                         <td><Badge tone={SEVERITY_TONES[alert.severity]}>{t(SEVERITY_LABELS[alert.severity])}</Badge></td>
-                        <td className="alert-rule-cell"><strong>{t(RULE_LABELS[alert.rule])}</strong><span className="cell-sub"><code>{alert.rule}</code></span></td>
+                        <td className="alert-rule-cell"><RuleLabel alert={alert} /><span className="cell-sub"><code>{alert.rule}</code></span></td>
                         <td><button type="button" className="device-link" onClick={() => onOpenDevice(alert.device_id)}
                           aria-label={t('alerts.device.open', name)}>{name}</button>
                           <span className="device-sub">{label === undefined ? t('alerts.device.unlisted') : shortDeviceId(alert.device_id)}</span></td>
                         <td>{formatCount(alert.occurrences, locale)}</td>
-                        <td><Instant value={alert.first_seen_at} /><span className="cell-sub">{t('alerts.sequence', String(alert.first_event_seq))}</span></td>
-                        <td><Instant value={alert.last_seen_at} /><span className="cell-sub">{t('alerts.sequence', String(alert.last_event_seq))}</span></td>
+                        <td><SeenAt at={alert.first_seen_at} sequence={alert.first_event_seq} /></td>
+                        <td><SeenAt at={alert.last_seen_at} sequence={alert.last_event_seq} /></td>
                         <td className="alert-evidence-cell"><Evidence alert={alert} /></td>
                         <td><div className="status-stack"><Badge tone={STATUS_TONES[alert.status]}>{t(STATUS_LABELS[alert.status])}</Badge>
                           {alert.acknowledged_at !== null

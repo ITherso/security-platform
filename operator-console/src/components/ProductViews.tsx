@@ -1,6 +1,10 @@
+import { Fragment } from "react";
 import type { ReactNode } from "react";
-import { EDR_COUNTER_KEYS } from "../data/contracts";
-import type { AuditPage, DeviceDetail as DeviceDetailDto, EdrCounterKey, ProductRecord, TermivarSummary } from "../data/contracts";
+import { EDR_CAPABILITY_KEYS, EDR_COUNTER_KEYS, EDR_V3_COUNTER_KEYS } from "../data/contracts";
+import type { AuditPage, CapabilityState, DeviceDetail as DeviceDetailDto, EdrAgentState, EdrAgentStateV3, EdrCapabilityKey,
+  EdrCounterKey, EdrV3CounterKey, IsolationState, PreviousRunEnd, ProductRecord, ResponseChannelState, RuleSetState,
+  ServiceConfigState, TermivarSummary } from "../data/contracts";
+import { isEdrAgentStateV3 } from "../data/normalize";
 import { booleanLabel, displayText, formatAge, formatCount, formatDate, shortIdentifier } from "./display";
 import { useLocale } from "../i18n/LocaleProvider";
 import type { ProductTextKey } from "../i18n/catalogs/products";
@@ -10,7 +14,9 @@ type ProductId = ProductRecord["product_id"];
 type FirewallRecord = Extract<ProductRecord, { product_id: "hostbasedfirewall" }>;
 type TermivarRecord = Extract<ProductRecord, { product_id: "termivar" }>;
 type AntivirusRecord = Extract<ProductRecord, { product_id: "antivirus" }>;
-type EdrAgentRecord = Extract<ProductRecord, { product_id: "edr_agent" }>;
+type EdrAgentAnyRecord = Extract<ProductRecord, { product_id: "edr_agent" }>;
+type EdrAgentRecord = Omit<EdrAgentAnyRecord, "state"> & { readonly state: EdrAgentState };
+type EdrAgentV3Record = Omit<EdrAgentAnyRecord, "state"> & { readonly state: EdrAgentStateV3 };
 type DisplayPair = readonly [label: string, value: ReactNode];
 
 const PRODUCT_LABELS: Readonly<Record<ProductId, ProductTextKey>> = {
@@ -26,6 +32,44 @@ const EDR_COUNTER_LABELS: Readonly<Record<EdrCounterKey, ProductTextKey>> = {
   events_unmapped: "product.edr.counter.events_unmapped", events_skipped: "product.edr.counter.events_skipped",
   events_evicted: "product.edr.counter.events_evicted", events_discarded: "product.edr.counter.events_discarded",
   events_degraded: "product.edr.counter.events_degraded", outbox_backlog: "product.edr.counter.outbox_backlog",
+};
+/** Snapshot V3: the V2 counters, then the Stage 3 ones. */
+const EDR_V3_COUNTER_LABELS: Readonly<Record<EdrV3CounterKey, ProductTextKey>> = {
+  ...EDR_COUNTER_LABELS, scans_completed: "product.edr.counter.scans_completed",
+  scans_detected: "product.edr.counter.scans_detected", scans_no_verdict: "product.edr.counter.scans_no_verdict",
+  scan_jobs_dropped: "product.edr.counter.scan_jobs_dropped", scan_cache_hits: "product.edr.counter.scan_cache_hits",
+  etw_events_lost: "product.edr.counter.etw_events_lost", file_change_gaps: "product.edr.counter.file_change_gaps",
+  cmdline_unavailable: "product.edr.counter.cmdline_unavailable",
+};
+const EDR_CAPABILITY_LABELS: Readonly<Record<EdrCapabilityKey, ProductTextKey>> = {
+  realtime_scan_state: "product.edrV3.realtimeScan", file_change_sensor_state: "product.edrV3.fileChangeSensor",
+  command_line_sensor_state: "product.edrV3.commandLineSensor", persistence_watch_state: "product.edrV3.persistenceWatch",
+};
+const RULE_SET_LABELS: Readonly<Record<RuleSetState, ProductTextKey>> = {
+  compiled: "product.edrV3.ruleSet.compiled", missing: "product.edrV3.ruleSet.missing",
+  invalid: "product.edrV3.ruleSet.invalid", unreadable: "product.edrV3.ruleSet.unreadable", unknown: "display.unknown",
+};
+const CAPABILITY_LABELS: Readonly<Record<CapabilityState, ProductTextKey>> = {
+  running: "product.edrV3.capability.running", degraded: "product.edrV3.capability.degraded",
+  stopped: "product.edrV3.capability.stopped", failed: "product.edrV3.capability.failed",
+  not_available: "product.edrV3.capability.not_available", unknown: "display.unknown",
+};
+const RESPONSE_CHANNEL_LABELS: Readonly<Record<ResponseChannelState, ProductTextKey>> = {
+  ready: "product.edrV3.responseChannel.ready", not_configured: "product.edrV3.responseChannel.not_configured",
+  awaiting_tenant_binding: "product.edrV3.responseChannel.awaiting_tenant_binding",
+  journal_invalid: "product.edrV3.responseChannel.journal_invalid", unknown: "display.unknown",
+};
+const ISOLATION_LABELS: Readonly<Record<IsolationState, ProductTextKey>> = {
+  inactive: "product.edrV3.isolation.inactive", active: "product.edrV3.isolation.active",
+  partial: "product.edrV3.isolation.partial", unknown: "display.unknown",
+};
+const SERVICE_CONFIG_LABELS: Readonly<Record<ServiceConfigState, ProductTextKey>> = {
+  as_installed: "product.edrV3.serviceConfig.as_installed", changed: "product.edrV3.serviceConfig.changed",
+  unknown: "display.unknown",
+};
+const PREVIOUS_RUN_LABELS: Readonly<Record<PreviousRunEnd, ProductTextKey>> = {
+  clean: "product.edrV3.previousRun.clean", unclean: "product.edrV3.previousRun.unclean",
+  first_start: "product.edrV3.previousRun.first_start", unknown: "display.unknown",
 };
 const ERROR_LABELS: Readonly<Record<string, ProductTextKey>> = {
   config_error: "product.error.config_error", policy_error: "product.error.policy_error", temp_error: "product.error.temp_error",
@@ -198,6 +242,69 @@ function AntivirusCard({ record }: { record: AntivirusRecord }) {
   </article>;
 }
 
+/** The agent's own state (Snapshot V3), told from V2 by its key set. Every value is the agent's claim: "compiled" is
+ * only that it compiled its rule file, its scan runs after a process starts and blocks nothing, an isolation state is
+ * its report about its own filters, and the console sends it no action. */
+function EdrAgentV3Card({ record }: { record: EdrAgentV3Record }) {
+  const { locale, t } = useLocale();
+  const state = record.state;
+  const running = state.status === "running";
+  const unstable = state.sensor_state === "lost" || state.sensor_state === "failed";
+  const errorCode = state.sensor_error_code !== null ? <code>{state.sensor_error_code}</code>
+    : t(unstable ? "product.edr.sensorError.notReported" : "product.edr.sensorError.notApplicable");
+  const count = (value: number | null): string => value === null ? t("display.unknown") : formatCount(value, locale);
+  const hex = (value: string): ReactNode => <code title={value}>{value.slice(0, 16)}…</code>;
+  const heartbeat = state.heartbeat_interval_seconds;
+  const keys = state.response_key_ids;
+  return <article className="product-card">
+    <ProductHeading id="edr_agent" label={t(running ? "product.edr.running" : "display.unknown")} tone={running ? "purple" : "neutral"}/>
+    <p className="product-description">{t("product.edrV3.description")}</p>
+    <KeyValues values={[
+      [t("product.edr.version"), displayText(state.version, t("display.unknown"))],
+      [t("product.edr.startedAt"), formatDate(state.agent_started_at, locale)],
+      [t("product.edr.engine"), displayText(state.engine_id, t("display.unknown"))],
+      [t("product.edrV3.ruleSet"), t(mapped(RULE_SET_LABELS, state.rule_set_state, "display.unknown"))],
+      [t("product.edrV3.ruleSetId"), state.rule_set_id === null ? t("display.unknown") : hex(state.rule_set_id)],
+      [t("product.edrV3.behaviorRules"), displayText(state.behavior_rules_version, t("display.unknown"))],
+      [t("product.edr.sensorState"), t(mapped(EDR_SENSOR_LABELS, state.sensor_state, "display.unknown"))],
+      [t("product.edr.sensorError"), errorCode],
+      [t("product.edrV3.serviceConfig"), t(mapped(SERVICE_CONFIG_LABELS, state.service_config_state, "display.unknown"))],
+      [t("product.edrV3.previousRun"), t(mapped(PREVIOUS_RUN_LABELS, state.previous_run_end, "display.unknown"))],
+      [t("product.edrV3.heartbeat"), heartbeat === null ? t("display.unknown")
+        : t("product.edrV3.seconds", formatCount(heartbeat, locale), heartbeat)],
+      [t("product.label.received"), formatDate(record.received_at, locale)],
+      [t("product.label.sourceAge"), formatAge(record.observation, locale)],
+      [t("product.edr.claims"), `${t("app.claim.device")} (${state.source}) · ${t("app.claim.notVerified")} (${state.producer_verification})`],
+    ]}/>
+    <h4>{t("product.edrV3.capabilitiesTitle")}</h4>
+    <KeyValues values={EDR_CAPABILITY_KEYS.map((key): DisplayPair =>
+      [t(EDR_CAPABILITY_LABELS[key]), t(mapped(CAPABILITY_LABELS, state[key], "display.unknown"))])}/>
+    <p className="state-note">{t("product.edrV3.scanNote")}</p>
+    <h4>{t("product.edrV3.responseTitle")}</h4>
+    <KeyValues values={[
+      [t("product.edrV3.responseChannel"), t(mapped(RESPONSE_CHANNEL_LABELS, state.response_channel_state, "display.unknown"))],
+      [t("product.edrV3.responseActions"), state.response_actions_enabled.length ? state.response_actions_enabled.join(", ")
+        : t("product.edrV3.none")],
+      [t("product.edrV3.responseKeys"), keys.length
+        ? keys.map((id, index) => <Fragment key={id}>{index ? " " : null}{hex(id)}</Fragment>) : t("product.edrV3.none")],
+      [t("product.edrV3.lastAction"), count(state.last_action_seq)],
+      [t("product.edrV3.isolation"), t(mapped(ISOLATION_LABELS, state.isolation_state, "display.unknown"))],
+      [t("product.edrV3.isolationUntil"), formatDate(state.isolation_until, locale)],
+      [t("product.edrV3.isolationChecked"), formatDate(state.isolation_checked_at, locale)],
+      [t("product.edrV3.quarantine"), count(state.quarantine_items)],
+    ]}/>
+    <p className="muted">{t("product.edrV3.responseScope")}</p>
+    <h4>{t("product.edr.countersTitle")}</h4>
+    <KeyValues values={EDR_V3_COUNTER_KEYS.map((key): DisplayPair => [t(EDR_V3_COUNTER_LABELS[key]), count(state[key])])}/>
+    <p className="muted">{t("product.edrV3.countersScope")}</p>
+    <p className="state-note">{t("product.edrV3.notice")}</p>
+  </article>;
+}
+
+function isV3Record(record: EdrAgentRecord | EdrAgentV3Record): record is EdrAgentV3Record {
+  return isEdrAgentStateV3(record.state);
+}
+
 /** The agent's own state (Snapshot V2). Presence of the rule file only; nothing here is a protection claim. */
 function EdrAgentCard({ record }: { record: EdrAgentRecord }) {
   const { locale, t } = useLocale();
@@ -234,12 +341,16 @@ function ProductGrid({ detail }: { detail: DeviceDetailDto | null }) {
   const firewall = detail?.products.find((product): product is FirewallRecord => product.product_id === "hostbasedfirewall");
   const termivar = detail?.products.find((product): product is TermivarRecord => product.product_id === "termivar");
   const antivirus = detail?.products.find((product): product is AntivirusRecord => product.product_id === "antivirus");
-  const agent = detail?.products.find((product): product is EdrAgentRecord => product.product_id === "edr_agent");
+  const edr = detail?.products.find((product): product is EdrAgentRecord | EdrAgentV3Record => product.product_id === "edr_agent");
+  // V3 is told from V2 by its key set (normalize.ts isEdrAgentStateV3); a V2 device keeps the V2 card.
+  const agentV3 = edr !== undefined && isV3Record(edr) ? edr : undefined;
+  const agent = edr !== undefined && !isV3Record(edr) ? edr : undefined;
   return <div className="product-grid">
     {firewall ? <FirewallCard record={firewall}/> : <MissingProduct id="hostbasedfirewall" selected={detail !== null}/>}
     {termivar ? <TermivarCard record={termivar}/> : <MissingProduct id="termivar" selected={detail !== null}/>}
     {antivirus ? <AntivirusCard record={antivirus}/> : <MissingProduct id="antivirus" selected={detail !== null}/>}
-    {agent ? <EdrAgentCard record={agent}/> : <MissingProduct id="edr_agent" selected={detail !== null}/>}
+    {agentV3 ? <EdrAgentV3Card record={agentV3}/>
+      : agent ? <EdrAgentCard record={agent}/> : <MissingProduct id="edr_agent" selected={detail !== null}/>}
   </div>;
 }
 

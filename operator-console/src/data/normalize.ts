@@ -1,10 +1,17 @@
 /** Closed runtime validation shared by fixtures and the real GET adapter. */
-import { ALERT_RULES, ALERT_STATUSES, ClientError, EDR_COUNTER_KEYS, EDR_SENSOR_STATES, HBF_ERROR_CODES, PRODUCT_IDS,
-  SENSOR_ERROR_CODES, SENSOR_STATES } from "./contracts";
-import type { AgeObservation, Alert, AlertCursor, AlertPage, AlertRule, AlertSeverity, AlertStatus, AuditAction,
-  AuditEvent, AuditObject, ClientErrorCode, Device, DeviceDetail, DispositionCounts, EdrAgentState, EdrCounterKey, Page,
-  ProductId, ProductRecord, ProductState, SeverityCounts, SourceClaims, Tenant, TermivarSummary, TimelineEvent,
-  TimelinePage } from "./contracts";
+import { AGENT_STATE_CODES, AGENT_STATE_SUBJECTS, ALERT_RULES, ALERT_STATUSES, BEHAVIOR_RULES, CAPABILITY_DOWN_STATES,
+  CAPABILITY_STATES, ClientError, COMMAND_LINE_SOURCES, COVERAGE_REASONS, COVERAGE_SOURCES, EDR_CAPABILITY_KEYS,
+  EDR_COUNTER_KEYS, EDR_SENSOR_STATES, EDR_V3_COUNTER_KEYS, EVENT_FIELDS, EVENT_KINDS, EVENT_VIEW_FIELDS,
+  HBF_ERROR_CODES, ISOLATION_STATES,
+  PERSISTENCE_CHANGES, PERSISTENCE_LOCATIONS, PERSISTENCE_SCOPES, PREVIOUS_RUN_ENDS, PRODUCT_IDS, RESPONSE_ACTIONS,
+  RESPONSE_CHANNEL_STATES, RULE_SET_STATES, SCAN_HIT_SEVERITIES, SCAN_TRIGGERS, SENSOR_ERROR_CODES, SENSOR_STATES,
+  SERVICE_CONFIG_STATES, TAMPER_DETAILS, TAMPER_SIGNALS } from "./contracts";
+import type { AgeObservation, AgentStateFields, AgentStateSubject, Alert, AlertCursor, AlertPage, AlertRule,
+  AlertSeverity, AlertStatus, AuditAction, AuditEvent, AuditObject, BehaviorMatchFields, CapabilityDownEvidence,
+  ClientErrorCode, Device, DeviceDetail, DispositionCounts, EdrAgentState, EdrAgentStateV3, EdrCapabilityKey,
+  EdrCounterKey, EdrV3CounterKey, EventKind, Page, PersistenceChange, PersistenceChangeFields, ProductId, ProductRecord,
+  ProductState, ScanDetectedFields, ScanHit, SeverityCounts, SourceClaims, TamperSignalFields, Tenant, TermivarSummary,
+  TimelineEvent, TimelinePage } from "./contracts";
 
 const CLAIM_KEYS = ["source", "producer_verification"];
 const DEVICE_KEYS = ["id", "tenant_id", "label", "identity_status", "connection_status", "created_at", "revoked_at",
@@ -18,9 +25,22 @@ const PRODUCT_STATE_KEYS: Readonly<Record<ProductId, readonly string[]>> = {
   edr_agent: ["status", "agent_started_at", "engine_id", "rule_file_present", "sensor_state", "sensor_error_code",
     ...EDR_COUNTER_KEYS],
 };
+/** contracts.EdrAgentStatusV3's own keys (Snapshot V3): every V2 key but rule_file_present, then the Stage 3 keys.
+ * With PRODUCT_KEYS, the model's exact key set. */
+const EDR_V3_STATE_KEYS: readonly string[] = ["status", "agent_started_at", "engine_id", "sensor_state",
+  "sensor_error_code", ...EDR_V3_COUNTER_KEYS, "rule_set_state", "rule_set_id", ...EDR_CAPABILITY_KEYS,
+  "response_channel_state", "response_actions_enabled", "response_key_ids", "last_action_seq", "isolation_state",
+  "isolation_until", "isolation_checked_at", "quarantine_items", "service_config_state", "previous_run_end",
+  "heartbeat_interval_seconds", "behavior_rules_version"];
 /** contracts.VersionText and contracts.EngineText (ASCII only). */
 const VERSION_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._+\-]*$/;
 const ENGINE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._+\/ -]*$/;
+/** EdrAgentStatusV3.behavior_rules_version. */
+const BEHAVIOR_RULES_VERSION_PATTERN = /^altay-behavior\/v[1-9][0-9]{0,5}$/;
+/** A scan_detected hit's rule: a rule identifier, ASCII only, 1-64 characters. */
+const SCAN_RULE_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$/;
+/** A lowercase SHA-256 text: sha256, rule_set_id, entry_id and the response key IDs. */
+const HEX64_PATTERN = /^[a-f0-9]{64}$/;
 const AUDIT_OBJECTS: Readonly<Record<AuditAction, AuditObject>> = {
   tenant_created: "tenant", membership_set: "membership", membership_revoked: "membership",
   enrollment_grant_created: "enrollment_grant", enrollment_grant_revoked: "enrollment_grant",
@@ -92,6 +112,35 @@ function unique<T>(values: T[]): T[] {
   requireValue(new Set(values).size === values.length);
   return values;
 }
+/** Strictly increasing (so also unique), as Python's sorted() orders these ASCII values. */
+function ascending<T extends string>(values: T[]): T[] {
+  requireValue(values.every((value, index) => index === 0 || (values[index - 1] ?? "") < value));
+  return values;
+}
+function flag(value: unknown): boolean {
+  requireValue(typeof value === "boolean");
+  return value;
+}
+function hex64(value: unknown): string {
+  requireValue(typeof value === "string" && HEX64_PATTERN.test(value));
+  return value;
+}
+/** A device time in the observed_at window [1970-01-01, 9999-01-01): create_time, parent_create_time, isolation_until,
+ * isolation_checked_at (contracts.MIN_OBSERVED_AT and MAX_OBSERVED_AT). */
+function windowTime(value: unknown): string;
+function windowTime(value: unknown, nullable: true): string | null;
+function windowTime(value: unknown, nullable = false): string | null {
+  if (value === null && nullable) return null;
+  const result = timestamp(value);
+  const year = Number(result.slice(0, 4));
+  requireValue(year >= 1970 && year <= 9998);
+  return result;
+}
+/** Snapshot V3's edr_agent state is told from V2's by its key set alone: rule_set_state, and no rule_file_present. */
+export function isEdrAgentStateV3(state: object): state is EdrAgentStateV3 {
+  return Object.prototype.hasOwnProperty.call(state, "rule_set_state")
+    && !Object.prototype.hasOwnProperty.call(state, "rule_file_present");
+}
 function age(input: unknown, observed?: string | null): AgeObservation {
   const value = shape(input, ["age_seconds", "clock_state"]);
   const state = choice(value.clock_state, ["unknown", "future", "not_verified"]);
@@ -139,6 +188,41 @@ function report(input: unknown): TermivarSummary {
     subject_count: integer(value.subject_count, 1, 1024), item_count: count, counts, severity_counts: severities,
     ...claims(value), scope: "offline_report_summary" };
 }
+type ProductCommon = { readonly catalog_available: boolean | null; readonly source: "self_reported";
+  readonly producer_verification: "not_verified"; readonly version: string | null; readonly source_observed_at: string | null };
+/** Snapshot V3: V2's rules (no catalog claim, a sensor code only with lost or failed) and the Stage 3 closed sets. */
+function edrAgentStateV3(value: Record<string, unknown>, common: ProductCommon): EdrAgentStateV3 {
+  requireValue(common.catalog_available === null);
+  const engineId = value.engine_id === null ? null : text(value.engine_id, 128);
+  requireValue(engineId === null || ENGINE_PATTERN.test(engineId));
+  const sensor = choice(value.sensor_state, EDR_SENSOR_STATES);
+  const code = value.sensor_error_code === null ? null : choice(value.sensor_error_code, SENSOR_ERROR_CODES);
+  requireValue(code === null || sensor === "lost" || sensor === "failed");
+  const counters = Object.fromEntries(EDR_V3_COUNTER_KEYS.map((key) =>
+    [key, value[key] === null ? null : integer(value[key])])) as { readonly [K in EdrV3CounterKey]: number | null };
+  const capabilities = Object.fromEntries(EDR_CAPABILITY_KEYS.map((key) =>
+    [key, choice(value[key], CAPABILITY_STATES)])) as { readonly [K in EdrCapabilityKey]: typeof CAPABILITY_STATES[number] };
+  const rules = value.behavior_rules_version;
+  requireValue(rules === null || (typeof rules === "string" && BEHAVIOR_RULES_VERSION_PATTERN.test(rules)));
+  return { ...common, ...counters, ...capabilities, product_id: "edr_agent", catalog_available: null,
+    status: choice(value.status, ["running", "unknown"]), agent_started_at: timestamp(value.agent_started_at, true),
+    engine_id: engineId, sensor_state: sensor, sensor_error_code: code,
+    rule_set_state: choice(value.rule_set_state, RULE_SET_STATES),
+    rule_set_id: value.rule_set_id === null ? null : hex64(value.rule_set_id),
+    response_channel_state: choice(value.response_channel_state, RESPONSE_CHANNEL_STATES),
+    response_actions_enabled: ascending(array(value.response_actions_enabled, RESPONSE_ACTIONS.length,
+      (action) => choice(action, RESPONSE_ACTIONS))),
+    response_key_ids: ascending(array(value.response_key_ids, 4, hex64)),
+    last_action_seq: value.last_action_seq === null ? null : integer(value.last_action_seq),
+    isolation_state: choice(value.isolation_state, ISOLATION_STATES),
+    isolation_until: windowTime(value.isolation_until, true), isolation_checked_at: windowTime(value.isolation_checked_at, true),
+    quarantine_items: value.quarantine_items === null ? null : integer(value.quarantine_items),
+    service_config_state: choice(value.service_config_state, SERVICE_CONFIG_STATES),
+    previous_run_end: choice(value.previous_run_end, PREVIOUS_RUN_ENDS),
+    heartbeat_interval_seconds: value.heartbeat_interval_seconds === null ? null
+      : integer(value.heartbeat_interval_seconds, 30, 3600),
+    behavior_rules_version: rules };
+}
 /** The agent's own status: exact keys, nullability, safe integers, a code only with lost or failed. */
 function edrAgentState(value: Record<string, unknown>, common: { readonly catalog_available: boolean | null;
   readonly source: "self_reported"; readonly producer_verification: "not_verified"; readonly version: string | null;
@@ -158,12 +242,16 @@ function edrAgentState(value: Record<string, unknown>, common: { readonly catalo
     sensor_error_code: code };
 }
 function productState(input: unknown, id: ProductId): ProductState {
-  const value = shape(input, [...PRODUCT_KEYS, ...PRODUCT_STATE_KEYS[id]]);
+  requireValue(input !== null && typeof input === "object" && !Array.isArray(input));
+  // An edr_agent state with rule_set_state and no rule_file_present must be exactly V3; any other is checked as V2.
+  const v3 = id === "edr_agent" && isEdrAgentStateV3(input);
+  const value = shape(input, [...PRODUCT_KEYS, ...(v3 ? EDR_V3_STATE_KEYS : PRODUCT_STATE_KEYS[id])]);
   requireValue(value.product_id === id);
   const version = value.version === null ? null : text(value.version, 64);
   requireValue(version === null || VERSION_PATTERN.test(version));
   const common = { catalog_available: nullableBoolean(value.catalog_available), ...claims(value),
     version, source_observed_at: timestamp(value.source_observed_at, true) };
+  if (v3) return edrAgentStateV3(value, common);
   if (id === "edr_agent") return edrAgentState(value, common);
   if (id === "hostbasedfirewall") return { ...common, product_id: id,
     status: choice(value.status, ["running", "observing", "degraded", "stopped", "unavailable", "unknown"]),
@@ -233,18 +321,17 @@ export const normalizeAuditPage = (input: unknown, options: Pagination, tenantId
   page(input, options, (value) => auditEvent(value, tenantId));
 
 const UINT32_MAX = 4294967295;
-const EVENT_KINDS = ["process_started", "process_stopped", "sensor_state"] as const;
-const EVENT_KEYS: Readonly<Record<TimelineEvent["kind"], readonly string[]>> = {
-  process_started: ["pid", "parent_pid", "session_id", "image"],
-  process_stopped: ["pid", "exit_code", "image"],
-  sensor_state: ["state", "error_code"],
-};
+const EVENT_VIEW_KEYS = ["event_seq", "kind", "observed_at", "received_at"];
 const ALERT_KEYS = ["id", "device_id", "rule", "severity", "status", "occurrences", "first_event_seq", "last_event_seq",
   "first_seen_at", "last_seen_at", "evidence", "acknowledged_at", "closed_at", ...CLAIM_KEYS];
-/** Rule codes and severities are fixed together by the Platform. */
+/** Rule codes and severities are fixed together by the Platform (alerts.SEVERITY). */
 const ALERT_SEVERITY: Readonly<Record<AlertRule, AlertSeverity>> = {
   user_writable_launch: "low", office_browser_spawned_tool: "medium", sensor_unstable: "medium", event_loss: "medium",
+  scan_detection: "medium", behavior_match: "medium", persistence_added: "low", capability_down: "medium",
+  tamper_signal: "medium", agent_silent: "medium",
 };
+/** agent_silent's evidence.threshold_seconds: max(SP_SILENCE_ALERT_SECONDS 300..86400, 3 x a heartbeat of 30..3600). */
+const MIN_SILENCE_THRESHOLD = 300, MAX_SILENCE_THRESHOLD = 86400;
 // The Unicode 16.0.0 Cc/Cf code points the Platform refuses in event text, as inclusive ranges; the same
 // numbers as event_contracts.REFUSED_TEXT_RANGES. Unpaired surrogates are refused too. Bidirectional
 // overrides or zero-width marks never reach the screen.
@@ -284,21 +371,84 @@ function shortImage(value: unknown): string {
 function processId(value: unknown): number {
   return integer(value, 0, UINT32_MAX);
 }
+/** The keys of one events._event_view item. EVENT_VIEW_FIELDS names coverage_gap's own source `gap_source`, so the
+ * claim key `source` means the claim in every item. */
+function eventViewKeys(kind: EventKind): string[] {
+  return [...EVENT_VIEW_KEYS, ...EVENT_VIEW_FIELDS[kind], ...CLAIM_KEYS];
+}
+function scanHit(input: unknown): ScanHit {
+  const value = shape(input, ["rule", "severity"]);
+  requireValue(typeof value.rule === "string" && SCAN_RULE_PATTERN.test(value.rule));
+  return { rule: value.rule, severity: choice(value.severity, SCAN_HIT_SEVERITIES) };
+}
+/** scan_detected: the only kind with a file SHA-256 and size; 1-8 hits of exactly {rule, severity}. */
+function scanFields(value: Record<string, unknown>): ScanDetectedFields {
+  const hits = array(value.hits, 8, scanHit);
+  requireValue(hits.length >= 1);
+  return { trigger: choice(value.trigger, SCAN_TRIGGERS), path: maskedImage(value.path), size: integer(value.size),
+    sha256: hex64(value.sha256), rule_set_id: hex64(value.rule_set_id), hits, omitted_hits: integer(value.omitted_hits, 0, 4096),
+    pid: value.pid === null ? null : processId(value.pid), create_time: windowTime(value.create_time, true),
+    action_id: value.action_id === null ? null : identifier(value.action_id) };
+}
+/** behavior_match: a closed rule ID and where the command line was read; never any command-line text. */
+function behaviorFields(value: Record<string, unknown>): BehaviorMatchFields {
+  return { rule: choice(value.rule, BEHAVIOR_RULES), rule_version: integer(value.rule_version, 1, 65535),
+    pid: processId(value.pid), create_time: windowTime(value.create_time), image: maskedImage(value.image),
+    parent_image: value.parent_image === null ? null : maskedImage(value.parent_image),
+    found_at_start: flag(value.found_at_start), command_line_source: choice(value.command_line_source, COMMAND_LINE_SOURCES) };
+}
+function persistenceFields<const C extends readonly PersistenceChange[]>(value: Record<string, unknown>,
+  changes: C): PersistenceChangeFields<C[number]> {
+  return { location: choice(value.location, PERSISTENCE_LOCATIONS), scope: choice(value.scope, PERSISTENCE_SCOPES),
+    change: choice(value.change, changes), entry_id: hex64(value.entry_id),
+    target_image: value.target_image === null ? null : maskedImage(value.target_image), found_at_start: flag(value.found_at_start) };
+}
+/** agent_state: an allowed (subject, state) pair; a code only with (service, started); a rule set ID only for rule_set. */
+function agentStateFields(value: Record<string, unknown>): AgentStateFields {
+  const subject = choice(value.subject, Object.keys(AGENT_STATE_SUBJECTS) as AgentStateSubject[]);
+  const state = choice(value.state, AGENT_STATE_SUBJECTS[subject]);
+  const code = value.code === null ? null : choice(value.code, AGENT_STATE_CODES);
+  const ruleSetId = value.rule_set_id === null ? null : hex64(value.rule_set_id);
+  requireValue((code === null || (subject === "service" && state === "started")) && (ruleSetId === null || subject === "rule_set"));
+  return { subject, state, code, rule_set_id: ruleSetId } as AgentStateFields;
+}
+/** event_log_cleared names its log in `detail`; every other signal has none. */
+function tamperFields(value: Record<string, unknown>): TamperSignalFields {
+  const signal = choice(value.signal, TAMPER_SIGNALS);
+  const detail = value.detail === null ? null : choice(value.detail, TAMPER_DETAILS);
+  requireValue((signal === "event_log_cleared") === (detail !== null));
+  return { signal, detail } as TamperSignalFields;
+}
 function timelineEvent(input: unknown): TimelineEvent {
   requireValue(input !== null && typeof input === "object" && !Array.isArray(input));
   const kind = choice((input as Record<string, unknown>).kind, EVENT_KINDS);
-  const value = shape(input, ["event_seq", "kind", "observed_at", "received_at", ...EVENT_KEYS[kind], ...CLAIM_KEYS]);
+  const value = shape(input, eventViewKeys(kind));
   const common = { event_seq: integer(value.event_seq, 1), observed_at: timestamp(value.observed_at),
     received_at: timestamp(value.received_at), ...claims(value) };
-  if (kind === "process_started") return { ...common, kind, pid: processId(value.pid), parent_pid: processId(value.parent_pid),
-    session_id: processId(value.session_id), image: maskedImage(value.image) };
+  if (kind === "process_started") {
+    const createTime = windowTime(value.create_time, true), parentCreateTime = windowTime(value.parent_create_time, true);
+    // A v1 row has neither time; a v2 row always has create_time, and parent_create_time only beside it.
+    requireValue(parentCreateTime === null || createTime !== null);
+    return { ...common, kind, pid: processId(value.pid), parent_pid: processId(value.parent_pid),
+      session_id: processId(value.session_id), image: maskedImage(value.image), create_time: createTime,
+      parent_create_time: parentCreateTime };
+  }
   if (kind === "process_stopped") return { ...common, kind, pid: processId(value.pid),
     exit_code: value.exit_code === null ? null : processId(value.exit_code),
-    image: value.image === null ? null : shortImage(value.image) };
-  const state = choice(value.state, SENSOR_STATES);
-  const errorCode = value.error_code === null ? null : choice(value.error_code, SENSOR_ERROR_CODES);
-  requireValue(errorCode === null || state === "lost" || state === "failed");
-  return { ...common, kind, state, error_code: errorCode };
+    image: value.image === null ? null : shortImage(value.image), create_time: windowTime(value.create_time, true) };
+  if (kind === "sensor_state") {
+    const state = choice(value.state, SENSOR_STATES);
+    const errorCode = value.error_code === null ? null : choice(value.error_code, SENSOR_ERROR_CODES);
+    requireValue(errorCode === null || state === "lost" || state === "failed");
+    return { ...common, kind, state, error_code: errorCode };
+  }
+  if (kind === "scan_detected") return { ...common, kind, ...scanFields(value) };
+  if (kind === "behavior_match") return { ...common, kind, ...behaviorFields(value) };
+  if (kind === "persistence_change") return { ...common, kind, ...persistenceFields(value, PERSISTENCE_CHANGES) };
+  if (kind === "agent_state") return { ...common, kind, ...agentStateFields(value) };
+  if (kind === "tamper_signal") return { ...common, kind, ...tamperFields(value) };
+  return { ...common, kind, gap_source: choice(value.gap_source, COVERAGE_SOURCES), reason: choice(value.reason, COVERAGE_REASONS),
+    lost: value.lost === null ? null : integer(value.lost) };
 }
 interface TimelineQuery { readonly limit: number; readonly beforeSeq: number | null }
 /** Newest first, strictly below `before_seq`; next_before_seq is the last item's sequence on a full page. */
@@ -334,6 +484,14 @@ export function alertCursor(input: unknown, code: ClientErrorCode = "malformed")
     return { seen_at: timestamp(value.seen_at), id: identifier(value.id) };
   } catch { throw new ClientError(code); }
 }
+/** capability_down's evidence: the agent_state fields of a pair that raises it (no code: never the service subject). */
+function capabilityDownEvidence(value: Record<string, unknown>): CapabilityDownEvidence {
+  const fields = agentStateFields(value);
+  const states: readonly string[] = Object.hasOwn(CAPABILITY_DOWN_STATES, fields.subject)
+    ? CAPABILITY_DOWN_STATES[fields.subject as keyof typeof CAPABILITY_DOWN_STATES] : [];
+  requireValue(states.includes(fields.state) && fields.code === null);
+  return fields as CapabilityDownEvidence;
+}
 function alert(input: unknown): Alert {
   const value = shape(input, ALERT_KEYS);
   const rule = choice(value.rule, ALERT_RULES);
@@ -343,12 +501,32 @@ function alert(input: unknown): Alert {
   // open -> acknowledged -> closed, or open -> closed; a closed alert never reopens.
   requireValue((status === "closed") === (closedAt !== null) && (status !== "open" || acknowledgedAt === null)
     && (status !== "acknowledged" || acknowledgedAt !== null));
+  const unsequenced = { id: identifier(value.id), device_id: identifier(value.device_id), status,
+    occurrences: integer(value.occurrences, 1), first_seen_at: timestamp(value.first_seen_at),
+    last_seen_at: timestamp(value.last_seen_at), acknowledged_at: acknowledgedAt, closed_at: closedAt, ...claims(value) };
+  if (rule === "agent_silent") {
+    // `security-platform sweep` opens it from the server clock, never an event: the only rule with null sequences.
+    requireValue(value.first_event_seq === null && value.last_event_seq === null);
+    const evidence = shape(value.evidence, ["last_received_at", "threshold_seconds"]);
+    return { ...unsequenced, rule, severity: "medium", first_event_seq: null, last_event_seq: null,
+      evidence: { last_received_at: timestamp(evidence.last_received_at),
+        threshold_seconds: integer(evidence.threshold_seconds, MIN_SILENCE_THRESHOLD, MAX_SILENCE_THRESHOLD) } };
+  }
+  // Every other rule has an event_seq range; null sequences are malformed.
   const firstSeq = integer(value.first_event_seq, 1), lastSeq = integer(value.last_event_seq, 1);
   requireValue(firstSeq <= lastSeq);
-  const common = { id: identifier(value.id), device_id: identifier(value.device_id), status,
-    occurrences: integer(value.occurrences, 1), first_event_seq: firstSeq, last_event_seq: lastSeq,
-    first_seen_at: timestamp(value.first_seen_at), last_seen_at: timestamp(value.last_seen_at),
-    acknowledged_at: acknowledgedAt, closed_at: closedAt, ...claims(value) };
+  const common = { ...unsequenced, first_event_seq: firstSeq, last_event_seq: lastSeq };
+  // The five Stage 3 event rules keep the triggering event's own fields as evidence, under the same names.
+  if (rule === "scan_detection") return { ...common, rule, severity: "medium",
+    evidence: scanFields(shape(value.evidence, EVENT_FIELDS.scan_detected)) };
+  if (rule === "behavior_match") return { ...common, rule, severity: "medium",
+    evidence: behaviorFields(shape(value.evidence, EVENT_FIELDS.behavior_match)) };
+  if (rule === "persistence_added") return { ...common, rule, severity: "low",
+    evidence: persistenceFields(shape(value.evidence, EVENT_FIELDS.persistence_change), ["added", "modified"]) };
+  if (rule === "capability_down") return { ...common, rule, severity: "medium",
+    evidence: capabilityDownEvidence(shape(value.evidence, EVENT_FIELDS.agent_state)) };
+  if (rule === "tamper_signal") return { ...common, rule, severity: "medium",
+    evidence: tamperFields(shape(value.evidence, EVENT_FIELDS.tamper_signal)) };
   if (rule === "user_writable_launch") {
     const evidence = shape(value.evidence, ["image", "pid"]);
     return { ...common, rule, severity: "low", evidence: { image: maskedImage(evidence.image), pid: processId(evidence.pid) } };
@@ -401,6 +579,8 @@ const STRICT_JSON_BUDGETS = {
   // Device timeline and alert pages: the default limits, but an event image may hold 1,024 code points = 2,048
   // UTF-16 units (event_contracts.ProcessStarted.image), exactly what maskedImage()/text() accept.
   "sp-events-alerts-v1": { depth: 12, nodes: 12000, stringUnits: 2048, arrayItems: 100, objectKeys: 32, tokens: 60000 },
+  // A device detail: the default limits, but Snapshot V3's edr_agent state has 45 keys (EdrAgentStatusV3), above 32.
+  "sp-device-detail-v1": { depth: 12, nodes: 12000, stringUnits: 1024, arrayItems: 100, objectKeys: 45, tokens: 60000 },
 } as const;
 export type StrictJsonProfile = keyof typeof STRICT_JSON_BUDGETS;
 type StrictJsonBudget = typeof STRICT_JSON_BUDGETS[StrictJsonProfile];
@@ -435,7 +615,7 @@ export function freeze<T>(value: T): T {
 export function strictJson(textValue: string, profile: StrictJsonProfile = "default"): unknown {
   // A trusted caller selects a closed profile; JSON never supplies arbitrary limits.
   requireValue(profile === "default" || profile === "termivar-comparison-v1" || profile === "termivar-assessment-v1" || profile === "sp-hbf-preview-v1"
-    || profile === "sp-events-alerts-v1");
+    || profile === "sp-events-alerts-v1" || profile === "sp-device-detail-v1");
   const budget = STRICT_JSON_BUDGETS[profile];
   // Native JSON.parse loses duplicate keys and rounds unsafe/fractional values.
   const token = /"(?:\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|[^"\\\u0000-\u001f])*"|[{}\[\]:,]|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?|true|false|null/gy;

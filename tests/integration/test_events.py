@@ -526,8 +526,10 @@ def test_timeline_pages_newest_first_with_a_keyset_cursor(event_tenants):
         assert set(item) == {"event_seq", "kind", "observed_at", "received_at", "source", "producer_verification",
                              *EVENT_FIELDS[item["kind"]]}
         assert (item["source"], item["producer_verification"]) == ("self_reported", "not_verified")
+    # A v1 row shows null for the fields that exist only in v2 (EVENT_FIELDS is the v1/v2 superset).
     assert by_seq[1] == {"event_seq": 1, "kind": "process_started", "observed_at": "2030-01-02T03:00:00.000001Z",
         "received_at": "2030-01-02T03:04:05Z", "pid": 4001, "parent_pid": 4, "session_id": 1, "image": MASKED,
+        "create_time": None, "parent_create_time": None,
         "source": "self_reported", "producer_verification": "not_verified"}
     assert by_seq[5]["exit_code"] is None and by_seq[5]["image"] is None
     assert by_seq[6]["received_at"] == "2030-01-02T03:04:10Z" and by_seq[6]["error_code"] == "session_in_use"
@@ -885,18 +887,26 @@ def migration_module(name):
 def test_migration_0002_downgrades_and_upgrades_in_a_rolled_back_transaction(pg_service_databases):
     owner, _ = pg_service_databases
     module, alerts_migration = migration_module("0002_endpoint_events"), migration_module("0003_alerts")
+    # 0005 (Stage 3) changes these tables after 0003: it is downgraded first and upgraded last.
+    stage3 = migration_module("0005_stage3_detection")
     assert (module.revision, module.down_revision) == ("0002_endpoint_events", "0001_initial")
     assert alerts_migration.down_revision == module.revision
     expected = model_schema()
-    # 0003 adds suppressed_alerts and its CHECK to the cursor table; the rest is 0002's.
+    # 0005 adds ix_endpoint_events_process_identity (its CHECK changes keep their names); 0003 adds
+    # suppressed_alerts and its CHECK to the cursor table; the rest is 0002's.
+    event_columns, event_checks, event_foreign_keys, event_indexes, event_primary_key = expected["endpoint_events"]
+    at_0004 = {**expected, "endpoint_events": (event_columns, event_checks, event_foreign_keys,
+        event_indexes - {"ix_endpoint_events_process_identity"}, event_primary_key)}
     columns, checks, foreign_keys, indexes, primary_key = expected["device_event_cursors"]
-    at_0002 = {**expected, "device_event_cursors": (columns - {"suppressed_alerts"},
+    at_0002 = {**at_0004, "device_event_cursors": (columns - {"suppressed_alerts"},
         checks - {"ck_event_cursor_suppressed_alerts"}, foreign_keys, indexes, primary_key)}
     with owner.engine.connect() as connection:
         transaction = connection.begin()
         try:
             with Operations.context(MigrationContext.configure(connection)):
                 assert event_schema(connection) == expected
+                stage3.downgrade()
+                assert event_schema(connection) == at_0004
                 alerts_migration.downgrade()
                 assert event_schema(connection) == at_0002
                 module.downgrade()
@@ -904,6 +914,8 @@ def test_migration_0002_downgrades_and_upgrades_in_a_rolled_back_transaction(pg_
                 module.upgrade()
                 assert event_schema(connection) == at_0002
                 alerts_migration.upgrade()
+                assert event_schema(connection) == at_0004
+                stage3.upgrade()
                 assert event_schema(connection) == expected
         finally:
             transaction.rollback()

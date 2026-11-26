@@ -1,8 +1,9 @@
 """Local administration requires the separate migration/owner DB credential.
 
 No bootstrap or membership mutation is exposed by the HTTP service. Event
-retention (`events prune`) is routine runtime work and, like `serve`, uses only
-the unprivileged runtime credential.
+retention (`events prune`) and the silence sweep (`sweep`) are routine runtime
+work and, like `serve`, use only the unprivileged runtime credential. Nothing
+here is scheduled: an operator runs both, for example from Task Scheduler.
 """
 import argparse
 import json
@@ -25,10 +26,10 @@ def _owner_database():
     return Database(url)
 
 
-def _runtime_database():
+def _runtime_database(purpose="event retention"):
     url = os.environ.get("SP_DATABASE_URL")
     if not url or not url.startswith("postgresql+psycopg://"):
-        raise ValueError("SP_DATABASE_URL is required for event retention")
+        raise ValueError(f"SP_DATABASE_URL is required for {purpose}")
     # There is deliberately no fallback to the migration/owner credential.
     return Database(url)
 
@@ -62,6 +63,7 @@ def main(argv=None):
     events = commands.add_parser("events")
     event_commands = events.add_subparsers(dest="events_command", required=True)
     event_commands.add_parser("prune")
+    commands.add_parser("sweep")
     commands.add_parser("migrate")
     serve = commands.add_parser("serve")
     serve.add_argument("--host", default="127.0.0.1")
@@ -116,6 +118,30 @@ def main(argv=None):
                 # Earlier chunks were committed, so "no success was recorded" would be false.
                 print(f"events prune incomplete: {result['failed_tenants']} tenant(s) failed and were skipped; "
                       "deleted events stay deleted and the next run retries the rest.", file=sys.stderr)
+                return 1
+            return 0
+        if args.command == "sweep":
+            from security_platform.app import validate_runtime_role
+            from security_platform.services.common import ServiceLimits
+            from security_platform.services.sweep import sweep_silent_agents
+            from security_platform.settings import max_open_alerts_from_environment, silence_alert_seconds_from_environment
+            # These two settings only: the sweep needs none of the HTTP server's operator settings.
+            silence_alert_seconds = silence_alert_seconds_from_environment()
+            limits = ServiceLimits(max_open_alerts_per_device=max_open_alerts_from_environment())
+            database = _runtime_database("the silence sweep")
+            try:
+                try:
+                    validate_runtime_role(database)
+                except ValueError:
+                    raise ValueError("sweep requires the separate unprivileged runtime database role") from None
+                result = sweep_silent_agents(database, silence_alert_seconds=silence_alert_seconds, limits=limits)
+            finally:
+                database.close()
+            print(json.dumps(result))
+            if result["failed_tenants"]:
+                # Earlier chunks were committed, so "no success was recorded" would be false.
+                print(f"sweep incomplete: {result['failed_tenants']} tenant(s) failed and were skipped; "
+                      "alerts already opened stay open and the next run retries the rest.", file=sys.stderr)
                 return 1
             return 0
         database = _owner_database()

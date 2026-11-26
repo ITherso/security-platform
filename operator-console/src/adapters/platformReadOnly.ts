@@ -26,6 +26,8 @@ function target(input: unknown): string {
 
 /** The strictJson profile of a read, chosen by its fixed route, never by the response. */
 function responseProfile(operation: ReadOperation): StrictJsonProfile {
+  // A device detail may carry Snapshot V3's edr_agent state, an object of 45 keys.
+  if (operation.type === "detail") return "sp-device-detail-v1";
   // Timeline and alert pages carry event images of up to 1,024 code points (2,048 UTF-16 units).
   return operation.type === "events" || operation.type === "alerts" ? "sp-events-alerts-v1" : "default";
 }

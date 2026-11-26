@@ -74,7 +74,8 @@ def product_check(connection):
 def test_migrated_database_is_at_0004_with_the_widened_product_check(pg_service_databases):
     owner, _ = pg_service_databases
     with owner.engine.connect() as connection:
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0004_edr_agent_product"
+        # The name dates from Stage 2: 0005_stage3_detection (Stage 3) follows 0004 and leaves ck_product_id alone.
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0005_stage3_detection"
         assert product_check(connection) == PRODUCT_IDS
 
 

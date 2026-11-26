@@ -4,8 +4,8 @@ from fastapi import APIRouter, Body, Depends, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from security_platform.auth.principals import DevicePrincipal, EnrollmentPrincipal
-from security_platform.contracts import SnapshotEnvelope
-from security_platform.event_contracts import EventBatch
+from security_platform.contracts import DeviceSnapshot
+from security_platform.event_contracts import DeviceEventBatch
 from security_platform.services import enrollment, events, snapshots
 from .dependencies import SessionDependency, device_principal, enrollment_principal
 
@@ -29,13 +29,15 @@ def enroll(body: EnrollRequest, actor: EnrollmentDependency, session: SessionDep
     return enrollment.enroll_device(session, actor, label=body.label, limits=request.app.state.limits)
 
 
+# Both bodies are unions discriminated by an integer schema_version: Snapshot V1/V2 or V3, event batch v1 or v2.
+# A non-int, bool or unknown version is a 422 before anything is stored.
 @router.put("/device/snapshot")
-def snapshot(body: SnapshotEnvelope, actor: DeviceDependency, session: SessionDependency):
+def snapshot(body: DeviceSnapshot, actor: DeviceDependency, session: SessionDependency):
     return snapshots.ingest_snapshot(session, actor, body)
 
 
 @router.post("/device/events")
-def event_batch(body: EventBatch, actor: DeviceDependency, session: SessionDependency, request: Request):
+def event_batch(body: DeviceEventBatch, actor: DeviceDependency, session: SessionDependency, request: Request):
     return events.ingest_events(session, actor, body, limits=request.app.state.limits)
 
 

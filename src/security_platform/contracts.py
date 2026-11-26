@@ -1,12 +1,18 @@
-"""Closed V1/V2 device reports. Identity authenticates a sender, never its claims."""
+"""Closed V1/V2/V3 device reports. Identity authenticates a sender, never its claims.
+
+Snapshot V1 and V2 share SnapshotEnvelope and are unchanged. Snapshot V3 (ADR 0004 section 1.3) is a separate
+envelope class: canonical JSON includes defaults, so adding fields to the V2 models would change the V1 and V2
+digests.
+"""
 from datetime import datetime, timezone
 import hashlib
 import json
 import re
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Union
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (BaseModel, ConfigDict, Discriminator, Field, Tag, TypeAdapter, field_validator,
+                      model_validator)
 
 
 MAX_SNAPSHOT_BYTES = 16 * 1024
@@ -66,6 +72,19 @@ def utc_text(value: str) -> str:
     except ValueError as exc:
         raise ValueError("invalid_utc_timestamp") from exc
     return parsed.astimezone(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
+def bounded_utc_text(value: str, error: str) -> str:
+    """utc_text inside MIN_OBSERVED_AT <= t < MAX_OBSERVED_AT (the bound applies to the normalized instant).
+
+    The rule of an event's observed_at and of the envelope's source_observed_at, written once for the Stage 3
+    times (v2 create_time and parent_create_time, the V3 envelope and isolation times); the V1/V2 and v1 checks
+    keep their own unchanged code.
+    """
+    normalized = utc_text(value)
+    if not MIN_OBSERVED_AT <= datetime.fromisoformat(normalized.replace("Z", "+00:00")) < MAX_OBSERVED_AT:
+        raise ValueError(error)
+    return normalized
 
 
 class StrictDTO(BaseModel):
@@ -265,7 +284,158 @@ class SnapshotEnvelope(StrictDTO):
         return self
 
 
-def canonical_json(snapshot: SnapshotEnvelope) -> bytes:
+# --- Snapshot V3 (ADR 0004 section 1.3) --------------------------------------------------------------------
+#
+# Every agent-reported value stays self_reported/not_verified. A state says what the agent's own loop reported
+# about one of its parts, never that the device is protected: no field name claims protection, loaded rules or
+# real-time protection, and StrictDTO's extra="forbid" refuses any such key.
+
+# The V2 counters, in EdrAgentStatus's order, then the eight V3 counters. Each saturates at 2^53-1 (SafeCount).
+EDR_V2_COUNTER_KEYS = ("events_queue_dropped", "events_write_failed", "events_unmapped", "events_skipped",
+                       "events_evicted", "events_discarded", "events_degraded", "outbox_backlog")
+EDR_V3_COUNTER_KEYS = EDR_V2_COUNTER_KEYS + ("scans_completed", "scans_detected", "scans_no_verdict",
+                                             "scan_jobs_dropped", "scan_cache_hits", "etw_events_lost",
+                                             "file_change_gaps", "cmdline_unavailable")
+RULE_SET_STATES = ("compiled", "missing", "invalid", "unreadable", "unknown")
+CAPABILITY_STATES = ("running", "degraded", "stopped", "failed", "not_available", "unknown")
+RESPONSE_CHANNEL_STATES = ("ready", "not_configured", "awaiting_tenant_binding", "journal_invalid", "unknown")
+RESPONSE_ACTIONS = ("scan_path", "terminate_process", "quarantine_file", "restore_file", "isolate_host",
+                    "release_host")
+MAX_RESPONSE_KEY_IDS = 4
+ISOLATION_STATES = ("inactive", "active", "partial", "unknown")
+SERVICE_CONFIG_STATES = ("as_installed", "changed", "unknown")
+PREVIOUS_RUN_ENDS = ("clean", "unclean", "first_start", "unknown")
+# The agent's own accepted range for its heartbeat interval.
+MIN_HEARTBEAT_INTERVAL_SECONDS, MAX_HEARTBEAT_INTERVAL_SECONDS = 30, 3600
+BEHAVIOR_RULES_VERSION_PATTERN = r"^altay-behavior/v[1-9][0-9]{0,5}$"
+CapabilityState = Literal[CAPABILITY_STATES]
+
+
+def _unique_sorted(value, error):
+    if list(value) != sorted(set(value)):
+        raise ValueError(error)
+    return value
+
+
+class EdrAgentStatusV3(ReportedProduct):
+    """The Altay EDR agent's own self-reported state (Snapshot V3): every V2 field except rule_file_present,
+    plus the Stage 3 states and counters.
+
+    rule_set_state=compiled says only that this agent process compiled a rule set (rule_set_id names it),
+    never that the device is protected. A capability state says what that part of the agent reported about
+    itself. The scanner scans after start and does not block. Counters count since the agent process started.
+    """
+    product_id: Literal["edr_agent"]
+    status: Literal["running", "unknown"] = "unknown"
+    agent_started_at: UTCText | None = None
+    engine_id: EngineText | None = None
+    sensor_state: EdrSensorState = "unknown"
+    sensor_error_code: EdrSensorErrorCode | None = None
+    events_queue_dropped: SafeCount | None = None
+    events_write_failed: SafeCount | None = None
+    events_unmapped: SafeCount | None = None
+    events_skipped: SafeCount | None = None
+    events_evicted: SafeCount | None = None
+    events_discarded: SafeCount | None = None
+    events_degraded: SafeCount | None = None
+    outbox_backlog: SafeCount | None = None
+    rule_set_state: Literal[RULE_SET_STATES] = "unknown"
+    rule_set_id: DigestText | None = None
+    realtime_scan_state: CapabilityState = "unknown"
+    file_change_sensor_state: CapabilityState = "unknown"
+    command_line_sensor_state: CapabilityState = "unknown"
+    persistence_watch_state: CapabilityState = "unknown"
+    scans_completed: SafeCount | None = None
+    scans_detected: SafeCount | None = None
+    scans_no_verdict: SafeCount | None = None
+    scan_jobs_dropped: SafeCount | None = None
+    scan_cache_hits: SafeCount | None = None
+    etw_events_lost: SafeCount | None = None
+    file_change_gaps: SafeCount | None = None
+    cmdline_unavailable: SafeCount | None = None
+    response_channel_state: Literal[RESPONSE_CHANNEL_STATES] = "unknown"
+    response_actions_enabled: Annotated[list[Literal[RESPONSE_ACTIONS]],
+                                        Field(max_length=len(RESPONSE_ACTIONS))] = Field(default_factory=list)
+    response_key_ids: Annotated[list[DigestText], Field(max_length=MAX_RESPONSE_KEY_IDS)] = Field(
+        default_factory=list)
+    last_action_seq: SafeCount | None = None
+    isolation_state: Literal[ISOLATION_STATES] = "unknown"
+    isolation_until: UTCText | None = None
+    isolation_checked_at: UTCText | None = None
+    quarantine_items: SafeCount | None = None
+    service_config_state: Literal[SERVICE_CONFIG_STATES] = "unknown"
+    previous_run_end: Literal[PREVIOUS_RUN_ENDS] = "unknown"
+    heartbeat_interval_seconds: Annotated[int, Field(strict=True, ge=MIN_HEARTBEAT_INTERVAL_SECONDS,
+                                                     le=MAX_HEARTBEAT_INTERVAL_SECONDS)] | None = None
+    behavior_rules_version: Annotated[str, Field(pattern=BEHAVIOR_RULES_VERSION_PATTERN)] | None = None
+
+    @field_validator("agent_started_at")
+    @classmethod
+    def validate_started_time(cls, value):
+        return utc_text(value) if value is not None else None
+
+    @field_validator("isolation_until", "isolation_checked_at")
+    @classmethod
+    def validate_isolation_time(cls, value, info):
+        return bounded_utc_text(value, f"{info.field_name}_out_of_range") if value is not None else None
+
+    @field_validator("response_actions_enabled")
+    @classmethod
+    def unique_sorted_actions(cls, value):
+        return _unique_sorted(value, "response_actions_not_unique_and_sorted")
+
+    @field_validator("response_key_ids")
+    @classmethod
+    def unique_sorted_keys(cls, value):
+        return _unique_sorted(value, "response_key_ids_not_unique_and_sorted")
+
+    @model_validator(mode="after")
+    def no_catalog_claim_and_code_only_when_unstable(self):
+        if self.catalog_available is not None:
+            raise ValueError("edr_agent_catalog_claim_not_supported")
+        if self.sensor_error_code is not None and self.sensor_state not in ("lost", "failed"):
+            raise ValueError("sensor_error_code_requires_lost_or_failed")
+        return self
+
+
+ProductStatusV3 = Annotated[HostBasedFirewallStatus | TermivarStatus | AntivirusStatus | EdrAgentStatusV3,
+                            Field(discriminator="product_id")]
+
+
+class SnapshotEnvelopeV3(StrictDTO):
+    """Snapshot V3: the V1/V2 envelope rules (message_id, sequence, source_observed_at window, unique products)
+    with the V3 edr_agent product. It is a whole state, like V1 and V2: omitted products are replaced."""
+    schema_version: Literal[3]
+    message_id: Annotated[str, Field(min_length=36, max_length=36)]
+    sequence: Annotated[int, Field(strict=True, ge=1, le=MAX_SNAPSHOT_SEQUENCE)]
+    source_observed_at: UTCText | None = None
+    products: Annotated[list[ProductStatusV3], Field(max_length=len(PRODUCT_IDS))]
+
+    @field_validator("schema_version", mode="before")
+    @classmethod
+    def strict_schema_version(cls, value):
+        if type(value) is not int:
+            raise ValueError("invalid_schema_version")
+        return value
+
+    @field_validator("message_id")
+    @classmethod
+    def validate_message_id(cls, value):
+        return canonical_uuid(value)
+
+    @field_validator("source_observed_at")
+    @classmethod
+    def validate_observed_time(cls, value):
+        return bounded_utc_text(value, "source_observed_at_out_of_range") if value is not None else None
+
+    @model_validator(mode="after")
+    def unique_products(self):
+        if len({product.product_id for product in self.products}) != len(self.products):
+            raise ValueError("duplicate_product")
+        return self
+
+
+def canonical_json(snapshot: "SnapshotEnvelope | SnapshotEnvelopeV3") -> bytes:
     encoded = json.dumps(snapshot.model_dump(mode="json"), ensure_ascii=False, sort_keys=True,
                          separators=(",", ":"), allow_nan=False).encode("utf-8")
     if len(encoded) > MAX_SNAPSHOT_BYTES:
@@ -273,5 +443,29 @@ def canonical_json(snapshot: SnapshotEnvelope) -> bytes:
     return encoded
 
 
-def snapshot_digest(snapshot: SnapshotEnvelope) -> str:
+def snapshot_digest(snapshot: "SnapshotEnvelope | SnapshotEnvelopeV3") -> str:
     return hashlib.sha256(canonical_json(snapshot)).hexdigest()
+
+
+SNAPSHOT_MODELS = {1: SnapshotEnvelope, 2: SnapshotEnvelope, 3: SnapshotEnvelopeV3}
+
+
+def _snapshot_tag(value):
+    """The envelope class a body names by its schema_version; only an int (never a bool) of a known version."""
+    version = value.get("schema_version") if isinstance(value, dict) else getattr(value, "schema_version", None)
+    model = SNAPSHOT_MODELS.get(version) if type(version) is int else None
+    return model.__name__ if model is not None else None
+
+
+# The device snapshot route's body: V1/V2 (one class) or V3, chosen by schema_version. A non-int, bool or
+# unknown version fails as invalid_schema_version.
+DeviceSnapshot = Annotated[Union[Annotated[SnapshotEnvelope, Tag("SnapshotEnvelope")],
+                                 Annotated[SnapshotEnvelopeV3, Tag("SnapshotEnvelopeV3")]],
+                           Discriminator(_snapshot_tag, custom_error_type="invalid_schema_version",
+                                         custom_error_message="invalid_schema_version")]
+_DEVICE_SNAPSHOT = TypeAdapter(DeviceSnapshot)
+
+
+def parse_snapshot(value) -> "SnapshotEnvelope | SnapshotEnvelopeV3":
+    """Validate a body as the envelope version it names; a V1 or V2 body validates exactly as SnapshotEnvelope."""
+    return _DEVICE_SNAPSHOT.validate_python(value)

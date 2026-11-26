@@ -7,6 +7,12 @@ reports the device's accepted position. Events are never upgraded beyond
 self_reported/not_verified and, like snapshot ingestion, write no audit row.
 The alert rules (services/alerts.py) run on a newly accepted batch only, in
 the same transaction, so events and their alerts commit together.
+
+A batch is altay-edr-event/v1 or v2, chosen by its integer schema_version
+(event_contracts.parse_event_batch). The cursor, exact-retry, conflict, 413
+and 422 rules do not depend on the version, so a device may interleave v1 and
+v2 batches; the digest covers schema_version, so the same position resent in
+the other version is new content (409).
 """
 from collections import Counter
 from datetime import datetime, timedelta
@@ -17,7 +23,8 @@ from sqlalchemy import BigInteger, Uuid, column, delete, insert, select, tuple_,
 from sqlalchemy.exc import SQLAlchemyError
 
 from security_platform.contracts import MAX_SEQUENCE
-from security_platform.event_contracts import EVENT_FIELDS, EventBatch, EventBatchTooLarge, canonical_event_batch
+from security_platform.event_contracts import (EVENT_FIELDS, EVENT_VIEW_FIELDS, EventBatch, EventBatchTooLarge,
+                                               EventBatchV2, canonical_event_batch, parse_event_batch)
 from security_platform.models import Device, DeviceEventCursor, EndpointEvent, Tenant
 from security_platform.services.alerts import raise_alerts
 from security_platform.services.common import (DEFAULT_LIMITS, ContentTooLarge, EventCursorConflict, NotFound,
@@ -76,8 +83,9 @@ def _trim_to_cap(session, device, stored, batch_events, limits):
 
 def ingest_events(session, device_principal, batch, *, limits=DEFAULT_LIMITS, now=None):
     try:
-        supplied = batch.model_dump(mode="json") if isinstance(batch, EventBatch) else batch
-        batch = EventBatch.model_validate(supplied)
+        supplied = batch.model_dump(mode="json") if isinstance(batch, (EventBatch, EventBatchV2)) else batch
+        # A schema_version 1 body validates exactly as EventBatch; 2 as EventBatchV2; anything else is 422.
+        batch = parse_event_batch(supplied)
         canonical = canonical_event_batch(batch)
     except EventBatchTooLarge as exc:
         raise ContentTooLarge("Event batch too large") from exc
@@ -124,9 +132,18 @@ def ingest_events(session, device_principal, batch, *, limits=DEFAULT_LIMITS, no
 
 
 def _event_view(row):
+    """The stored payload's fields of the row's kind (EVENT_FIELDS, the v1/v2 superset) under their view names
+    (EVENT_VIEW_FIELDS); a v1 row shows null for the fields that exist only in v2, and only scan_detected has
+    sha256 and size.
+
+    coverage_gap's own ``source`` field (the part of the agent that lost records, ADR 0004 section 1.2) is shown
+    as ``gap_source``, so the trust label ``source`` keeps its meaning; the stored payload keeps the wire name.
+    The trust labels come last, so no payload value can ever replace them.
+    """
     payload = row.payload
     return {"event_seq": row.event_seq, "kind": row.kind, "observed_at": iso(row.observed_at),
-            "received_at": iso(row.received_at), **{name: payload.get(name) for name in EVENT_FIELDS[row.kind]},
+            "received_at": iso(row.received_at),
+            **{view: payload.get(name) for name, view in zip(EVENT_FIELDS[row.kind], EVENT_VIEW_FIELDS[row.kind])},
             "source": "self_reported", "producer_verification": "not_verified"}
 
 

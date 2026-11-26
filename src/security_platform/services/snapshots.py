@@ -1,10 +1,17 @@
-"""One last state per device; retries never manufacture a fresh heartbeat."""
+"""One last state per device; retries never manufacture a fresh heartbeat.
+
+A snapshot is V1/V2 (SnapshotEnvelope) or V3 (SnapshotEnvelopeV3), chosen by its integer schema_version
+(contracts.parse_snapshot). Every version is a whole state: it replaces all stored products of the device, so
+an omitted product is gone. The sequence and replay rules are shared, and the digest covers schema_version.
+Stored product payloads are the model dumps: for a V3 edr_agent, the V3 dump.
+"""
 from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import delete
 
-from security_platform.contracts import SnapshotEnvelope, canonical_json, snapshot_digest
+from security_platform.contracts import (SnapshotEnvelope, SnapshotEnvelopeV3, canonical_json, parse_snapshot,
+                                         snapshot_digest)
 from security_platform.models import ProductState
 from security_platform.services.common import Conflict, ServiceError, iso, locked_device_credential, utc_now
 
@@ -16,8 +23,9 @@ def _acceptance(device):
 
 def ingest_snapshot(session, device_principal, snapshot, *, now=None):
     try:
-        supplied = snapshot.model_dump(mode="json") if isinstance(snapshot, SnapshotEnvelope) else snapshot
-        snapshot = SnapshotEnvelope.model_validate(supplied)
+        supplied = (snapshot.model_dump(mode="json") if isinstance(snapshot, (SnapshotEnvelope, SnapshotEnvelopeV3))
+                    else snapshot)
+        snapshot = parse_snapshot(supplied)
         canonical_json(snapshot)
         digest = snapshot_digest(snapshot)
     except (ValueError, TypeError, AttributeError) as exc:

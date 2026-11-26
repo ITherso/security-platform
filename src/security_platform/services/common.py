@@ -94,6 +94,11 @@ def iso(value):
     return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z") if value is not None else None
 
 
+def canonical_utc(value):
+    """A server time as the contracts' canonical UTC text: YYYY-MM-DDTHH:MM:SS.ffffffZ, six fraction digits."""
+    return value.astimezone(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+
+
 def secret_digest(token, prefix):
     if not isinstance(token, str) or re.fullmatch(re.escape(prefix) + r"[A-Za-z0-9_-]{43}", token) is None:
         raise Unauthorized("Invalid credential")

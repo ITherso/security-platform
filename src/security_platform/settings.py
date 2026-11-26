@@ -5,6 +5,16 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 
+# SP_SILENCE_ALERT_SECONDS: `security-platform sweep` opens agent_silent once a device's Altay EDR agent has sent
+# no snapshot for more than max(this, 3 x its reported heartbeat interval). Its default and accepted range are
+# defined here only.
+DEFAULT_SILENCE_ALERT_SECONDS = 900
+SILENCE_ALERT_SECONDS_RANGE = (300, 86400)
+# SP_MAX_OPEN_ALERTS_PER_DEVICE: the per-device cap on alerts that are not closed, for ingestion and the sweep.
+DEFAULT_MAX_OPEN_ALERTS_PER_DEVICE = 500
+MAX_OPEN_ALERTS_PER_DEVICE_RANGE = (10, 100000)
+
+
 @dataclass(frozen=True)
 class Settings:
     database_url: str = field(repr=False)
@@ -21,7 +31,8 @@ class Settings:
     max_active_grants_per_tenant: int = 1000
     max_audit_events_per_tenant: int = 10000
     max_events_per_device: int = 250000
-    max_open_alerts_per_device: int = 500
+    max_open_alerts_per_device: int = DEFAULT_MAX_OPEN_ALERTS_PER_DEVICE
+    silence_alert_seconds: int = DEFAULT_SILENCE_ALERT_SECONDS
     requests_per_minute: int = 120
     body_timeout_seconds: int = 5
 
@@ -41,7 +52,8 @@ class Settings:
             (self.max_enrollment_ttl_seconds, 1, 3600), (self.credential_ttl_seconds, 60, 2592000),
             (self.max_devices_per_tenant, 1, 100000), (self.max_active_grants_per_tenant, 1, 100000),
             (self.max_audit_events_per_tenant, 10, 1000000), (self.max_events_per_device, 1000, 10000000),
-            (self.max_open_alerts_per_device, 10, 100000),
+            (self.max_open_alerts_per_device, *MAX_OPEN_ALERTS_PER_DEVICE_RANGE),
+            (self.silence_alert_seconds, *SILENCE_ALERT_SECONDS_RANGE),
             (self.requests_per_minute, 1, 10000), (self.body_timeout_seconds, 1, 30),
         ):
             if type(value) is not int or not minimum <= value <= maximum:
@@ -67,7 +79,7 @@ class Settings:
         for field in ("stale_after_seconds", "enrollment_ttl_seconds", "max_enrollment_ttl_seconds",
                       "credential_ttl_seconds", "max_devices_per_tenant", "max_active_grants_per_tenant",
                       "max_audit_events_per_tenant", "max_events_per_device", "max_open_alerts_per_device",
-                      "requests_per_minute", "body_timeout_seconds"):
+                      "silence_alert_seconds", "requests_per_minute", "body_timeout_seconds"):
             key = "SP_" + field.upper()
             if key in os.environ:
                 try:
@@ -75,3 +87,37 @@ class Settings:
                 except ValueError:
                     raise ValueError(f"Invalid integer setting: {key}") from None
         return cls(**values)
+
+
+def _environment_integer(key, default, bounds):
+    """One integer setting, parsed and bounded exactly as Settings.from_environment and Settings do it."""
+    value = default
+    if key in os.environ:
+        try:
+            value = int(os.environ[key])
+        except ValueError:
+            raise ValueError(f"Invalid integer setting: {key}") from None
+    minimum, maximum = bounds
+    if type(value) is not int or not minimum <= value <= maximum:
+        raise ValueError("Invalid bounded platform setting")
+    return value
+
+
+def silence_alert_seconds_from_environment():
+    """SP_SILENCE_ALERT_SECONDS alone, with the Settings default (900) and bounds (300..86400).
+
+    `security-platform sweep` reads only this and the open-alert cap: never the
+    HTTP server's operator settings (issuer, audience, JWKS file, hosts).
+    """
+    return _environment_integer("SP_SILENCE_ALERT_SECONDS", DEFAULT_SILENCE_ALERT_SECONDS,
+                                SILENCE_ALERT_SECONDS_RANGE)
+
+
+def max_open_alerts_from_environment():
+    """SP_MAX_OPEN_ALERTS_PER_DEVICE alone, with the Settings default and bounds.
+
+    The sweep opens agent_silent under the same per-device cap that event
+    ingestion applies, so it reads the server's cap setting too.
+    """
+    return _environment_integer("SP_MAX_OPEN_ALERTS_PER_DEVICE", DEFAULT_MAX_OPEN_ALERTS_PER_DEVICE,
+                                MAX_OPEN_ALERTS_PER_DEVICE_RANGE)

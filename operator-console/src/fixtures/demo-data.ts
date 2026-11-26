@@ -1,8 +1,10 @@
 /** Synthetic DTO-shaped fixtures. No real device/account/security action. */
-import { EDR_COUNTER_KEYS, PRODUCT_IDS } from "../data/contracts";
-import type { AgeObservation, Alert, AlertStatus, AntivirusState, AuditEvent, Device, DeviceDetail, EdrAgentState,
-  EdrCounterKey, EdrSensorState, HostBasedFirewallState, HbfErrorCode, ProductRecord, ProductState, ReportedProduct,
-  SensorErrorCode, SensorStateValue, SourceClaims, Tenant, TermivarState, TimelineEvent } from "../data/contracts";
+import { EDR_COUNTER_KEYS, EDR_V3_COUNTER_KEYS, PRODUCT_IDS } from "../data/contracts";
+import type { AgeObservation, AgentStateFields, Alert, AlertStatus, AntivirusState, AuditEvent, BehaviorMatchFields,
+  CoverageReason, CoverageSource, Device, DeviceDetail, EdrAgentState, EdrAgentStateV3, EdrCounterKey, EdrSensorState, EdrV3CounterKey,
+  HostBasedFirewallState, HbfErrorCode, PersistenceChangeFields, ProductRecord, ProductState, ReportedProduct,
+  ScanDetectedFields, SensorErrorCode, SensorStateValue, SourceClaims, TamperSignalFields, Tenant, TermivarState,
+  TimelineEvent } from "../data/contracts";
 
 export const DEMO_TENANT_IDS = ["10000000-0000-4000-8000-000000000001", "10000000-0000-4000-8000-000000000002"] as const;
 /** One device's stored events, newest first, with the platform's counters for it. */
@@ -66,6 +68,23 @@ export function createDemoData(): DemoDataset {
       engine_id: "edr-agent/0.3.0", rule_file_present: options.ruleFile === undefined ? true : options.ruleFile,
       sensor_state: sensor, sensor_error_code: options.code ?? null };
   };
+  /** A sample Snapshot V3 agent state: every V2 key but rule_file_present, and the Stage 3 states and counters. The
+   * rule set ID is a visibly fake pattern; no rule file exists. */
+  const edrAgentV3 = (observed: number): EdrAgentStateV3 => {
+    // EDR_V3_COUNTER_KEYS order: the eight V2 counters, then scans completed, detected, without a result, jobs
+    // dropped, cache hits, ETW events lost, file change gaps, processes without a command line.
+    const counts = [0, 0, 0, 0, 0, 0, 0, 2, 1840, 1, 3, 0, 912, 14, 1, 2];
+    const counters = Object.fromEntries(EDR_V3_COUNTER_KEYS.map((key, index) =>
+      [key, counts[index] ?? 0])) as { readonly [K in EdrV3CounterKey]: number | null };
+    return { ...base(observed, "0.4.0"), ...counters, catalog_available: null, product_id: "edr_agent", status: "running",
+      agent_started_at: at(observed + 86400), engine_id: "edr-agent/0.4.0", sensor_state: "started", sensor_error_code: null,
+      rule_set_state: "compiled", rule_set_id: "0123456789abcdef".repeat(4), realtime_scan_state: "running",
+      file_change_sensor_state: "degraded", command_line_sensor_state: "running", persistence_watch_state: "running",
+      response_channel_state: "awaiting_tenant_binding", response_actions_enabled: [], response_key_ids: [],
+      last_action_seq: null, isolation_state: "inactive", isolation_until: null, isolation_checked_at: null,
+      quarantine_items: 0, service_config_state: "as_installed", previous_run_end: "clean", heartbeat_interval_seconds: 300,
+      behavior_rules_version: "altay-behavior/v1" };
+  };
   // Counter order: EDR_COUNTER_KEYS (queue dropped, write failed, unmapped, skipped, evicted, discarded, degraded, backlog).
   const specs: DeviceSpec[] = [
     { n: 1, tenant: 0, label: "DEMO · Ankara uç noktası", connection: "recent", received: 45, observed: 90,
@@ -93,6 +112,9 @@ export function createDemoData(): DemoDataset {
         edrAgent(97200, "unknown", { started: null, counts: null })] },
     { n: 6, tenant: 1, label: "DEMO · İptal edilmiş cihaz kaydı", connection: "stale", received: 7200, observed: 7260,
       sequence: 11, revoked: 3600, states: [firewall("stopped", "unknown", 7260), termivar(7260, false), antivirus()] },
+    // A sample Snapshot V3 agent; silent for 30 minutes, so the sample sweep opened agent_silent.
+    { n: 10, tenant: 0, label: "DEMO · Bursa V3 ajan örneği", connection: "stale", received: 1800, observed: 1830,
+      sequence: 63, states: [edrAgentV3(1830)] },
   ];
   const devices: DeviceDetail[] = specs.map((spec) => {
     const device: Device = {
@@ -141,7 +163,8 @@ export function createDemoData(): DemoDataset {
   return { tenants, devices, audit, timelines, alerts, referenceTime: at(0) };
 }
 
-/** Synthetic process and sensor events with the rule matches they would raise; all masked, all fictional. */
+/** Synthetic events (v1 process and sensor events, and one sample v2 agent's) with the rule matches they would raise,
+ * and one sample sweep alert; all masked, all fictional. */
 function createDemoEvents(at: (secondsAgo: number) => string, alertId: (n: number) => string): {
   timelines: DemoTimeline[]; alerts: Alert[];
 } {
@@ -152,12 +175,30 @@ function createDemoEvents(at: (secondsAgo: number) => string, alertId: (n: numbe
   const recorder = (clockAhead: number) => {
     const times = (age: number) => ({ observed_at: at6(age - clockAhead), received_at: at6(Math.max(0, Math.floor(age / 30) * 30 - 30)) });
     return {
-      start: (seq: number, age: number, pid: number, parent: number, image: string): TimelineEvent =>
-        ({ event_seq: seq, ...times(age), kind: "process_started", pid, parent_pid: parent, session_id: 1, image, ...claims }),
-      stop: (seq: number, age: number, pid: number, exit: number | null, image: string | null): TimelineEvent =>
-        ({ event_seq: seq, ...times(age), kind: "process_stopped", pid, exit_code: exit, image, ...claims }),
+      /** `created`/`parentCreated`: the v2 creation times' ages; a v1 row has neither (null). */
+      start: (seq: number, age: number, pid: number, parent: number, image: string, created: number | null = null,
+        parentCreated: number | null = null): TimelineEvent =>
+        ({ event_seq: seq, ...times(age), kind: "process_started", pid, parent_pid: parent, session_id: 1, image,
+          create_time: created === null ? null : at6(created - clockAhead),
+          parent_create_time: parentCreated === null ? null : at6(parentCreated - clockAhead), ...claims }),
+      stop: (seq: number, age: number, pid: number, exit: number | null, image: string | null,
+        created: number | null = null): TimelineEvent =>
+        ({ event_seq: seq, ...times(age), kind: "process_stopped", pid, exit_code: exit, image,
+          create_time: created === null ? null : at6(created - clockAhead), ...claims }),
       sensor: (seq: number, age: number, state: SensorStateValue, error: SensorErrorCode | null = null): TimelineEvent =>
         ({ event_seq: seq, ...times(age), kind: "sensor_state", state, error_code: error, ...claims }),
+      scan: (seq: number, age: number, fields: ScanDetectedFields): TimelineEvent =>
+        ({ event_seq: seq, ...times(age), kind: "scan_detected", ...fields, ...claims }),
+      behavior: (seq: number, age: number, fields: BehaviorMatchFields): TimelineEvent =>
+        ({ event_seq: seq, ...times(age), kind: "behavior_match", ...fields, ...claims }),
+      persistence: (seq: number, age: number, fields: PersistenceChangeFields): TimelineEvent =>
+        ({ event_seq: seq, ...times(age), kind: "persistence_change", ...fields, ...claims }),
+      agent: (seq: number, age: number, fields: AgentStateFields): TimelineEvent =>
+        ({ event_seq: seq, ...times(age), kind: "agent_state", ...fields, ...claims }),
+      tamper: (seq: number, age: number, fields: TamperSignalFields): TimelineEvent =>
+        ({ event_seq: seq, ...times(age), kind: "tamper_signal", ...fields, ...claims }),
+      gap: (seq: number, age: number, gapSource: CoverageSource, reason: CoverageReason, lost: number | null): TimelineEvent =>
+        ({ event_seq: seq, ...times(age), kind: "coverage_gap", gap_source: gapSource, reason, lost, ...claims }),
     };
   };
   const v3 = "\\Device\\HarddiskVolume3", v2 = "\\Device\\HarddiskVolume2";
@@ -172,6 +213,7 @@ function createDemoEvents(at: (secondsAgo: number) => string, alertId: (n: numbe
   const roaming = `${v3}\\Users\\*\\AppData\\Roaming\\demo-arac.exe`;
   const smss = `${v2}\\Windows\\System32\\smss.exe`, firefox = `${v2}\\Program Files\\Mozilla Firefox\\firefox.exe`;
   const mshta = `${v2}\\Windows\\System32\\mshta.exe`;
+  const sample = `${v3}\\Users\\*\\Downloads\\demo-ornek.exe`, updater = `${v3}\\Users\\*\\AppData\\Roaming\\demo-guncelleyici.exe`;
 
   const d1 = recorder(0);
   const ankara = [
@@ -210,6 +252,30 @@ function createDemoEvents(at: (secondsAgo: number) => string, alertId: (n: numbe
     d4.stop(204, 2150, 3150, 0, "cmd.exe"), d4.sensor(205, 1600, "lost", "session_in_use"), d4.sensor(206, 1550, "started"),
     d4.start(207, 900, 3400, 900, roaming), d4.stop(208, 850, 3400, 0, "demo-arac.exe"),
   ];
+  // The sample v2 agent (Snapshot V3 device 10). Every hex value is a visibly fake pattern, every name a demo name.
+  const d10 = recorder(0);
+  const ruleSetId = "0123456789abcdef".repeat(4);
+  const persisted: PersistenceChangeFields = { location: "run_key", scope: "user", change: "added",
+    entry_id: "fedcba9876543210".repeat(4), target_image: updater, found_at_start: false };
+  const scanned: ScanDetectedFields = { trigger: "process_start", path: sample, size: 482304, sha256: "deadbeef".repeat(8),
+    rule_set_id: ruleSetId, hits: [{ rule: "Demo_Sample_Rule", severity: "medium" }], omitted_hits: 0, pid: 9120,
+    create_time: at6(5000), action_id: null };
+  const matched: BehaviorMatchFields = { rule: "encoded_powershell", rule_version: 1, pid: 9204, create_time: at6(4000),
+    image: powershell, parent_image: cmd, found_at_start: false, command_line_source: "kernel_logger" };
+  const tampered: TamperSignalFields = { signal: "data_dir_acl_changed", detail: null };
+  const scanStopped: AgentStateFields = { subject: "realtime_scan", state: "stopped", code: null, rule_set_id: null };
+  const bursa = [
+    d10.agent(50, 9000, { subject: "service", state: "started", code: "clean_stop", rule_set_id: null }),
+    d10.agent(51, 8990, { subject: "rule_set", state: "compiled", code: null, rule_set_id: ruleSetId }),
+    d10.agent(52, 8980, { subject: "persistence_watch", state: "baseline_created", code: null, rule_set_id: null }),
+    d10.persistence(53, 7000, persisted), d10.start(54, 5000, 9120, 1180, sample, 5000, 86000),
+    d10.scan(55, 4990, scanned), d10.behavior(56, 4000, matched), d10.stop(57, 3990, 9204, 0, "powershell.exe", 4000),
+    d10.gap(58, 3500, "process_sensor", "etw_events_lost", 14),
+    d10.agent(59, 3000, { subject: "file_change_sensor", state: "degraded", code: null, rule_set_id: null }),
+    d10.tamper(60, 2800, tampered), d10.agent(61, 2500, scanStopped),
+    d10.agent(62, 2400, { subject: "realtime_scan", state: "running", code: null, rule_set_id: null }),
+    d10.start(63, 1900, 9310, 1180, notepad, 1900, 86000),
+  ];
   const newestFirst = (events: readonly TimelineEvent[]): readonly TimelineEvent[] => [...events].reverse();
   const timelines: DemoTimeline[] = [
     { deviceId: deviceId(1), events: newestFirst(ankara), capDeletedEvents: 0, suppressedAlerts: 0 },
@@ -217,6 +283,7 @@ function createDemoEvents(at: (secondsAgo: number) => string, alertId: (n: numbe
     { deviceId: deviceId(7), events: newestFirst(revoked), capDeletedEvents: 0, suppressedAlerts: 0 },
     { deviceId: deviceId(8), events: newestFirst(ahead), capDeletedEvents: 1500, suppressedAlerts: 0 },
     { deviceId: deviceId(4), events: newestFirst(research), capDeletedEvents: 0, suppressedAlerts: 0 },
+    { deviceId: deviceId(10), events: newestFirst(bursa), capDeletedEvents: 0, suppressedAlerts: 0 },
   ];
 
   /** first/last seen are the server receipt times of the matching events' batches. */
@@ -253,6 +320,18 @@ function createDemoEvents(at: (secondsAgo: number) => string, alertId: (n: numbe
       evidence: { state: "lost", error_code: "session_in_use" } },
     { ...base(11, 4, research, 207, 207, 1, "open"), rule: "user_writable_launch", severity: "low",
       evidence: { image: roaming, pid: 3400 } },
+    // Stage 3 sample rules: the evidence is the matching event's own fields.
+    { ...base(12, 10, bursa, 53, 53, 1, "open"), rule: "persistence_added", severity: "low",
+      evidence: { ...persisted, change: "added" } },
+    { ...base(13, 10, bursa, 55, 55, 1, "open"), rule: "scan_detection", severity: "medium", evidence: scanned },
+    { ...base(14, 10, bursa, 56, 56, 1, "acknowledged", 1500), rule: "behavior_match", severity: "medium", evidence: matched },
+    { ...base(15, 10, bursa, 60, 60, 1, "open"), rule: "tamper_signal", severity: "medium", evidence: tampered },
+    { ...base(16, 10, bursa, 61, 61, 1, "open"), rule: "capability_down", severity: "medium",
+      evidence: { subject: "realtime_scan", state: "stopped", code: null, rule_set_id: null } },
+    // The sample sweep: no event, so no event sequences; first and last seen are the sweep time.
+    { id: alertId(17), device_id: deviceId(10), status: "open", occurrences: 1, first_event_seq: null, last_event_seq: null,
+      first_seen_at: at6(600), last_seen_at: at6(600), acknowledged_at: null, closed_at: null, ...claims,
+      rule: "agent_silent", severity: "medium", evidence: { last_received_at: at6(1800), threshold_seconds: 900 } },
   ];
   return { timelines, alerts };
 }

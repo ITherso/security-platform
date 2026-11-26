@@ -636,7 +636,8 @@ ALERT_COLUMNS = {
     "id": ("uuid", "NO", None), "tenant_id": ("uuid", "NO", None), "device_id": ("uuid", "NO", None),
     "rule": ("text", "NO", None), "severity": ("text", "NO", None), "dedup_key": ("character", "NO", 64),
     "status": ("text", "NO", None), "occurrences": ("bigint", "NO", None),
-    "first_event_seq": ("bigint", "NO", None), "last_event_seq": ("bigint", "NO", None),
+    # Nullable since 0005: null exactly for agent_silent, which ck_alert_event_seq checks.
+    "first_event_seq": ("bigint", "YES", None), "last_event_seq": ("bigint", "YES", None),
     "first_seen_at": ("timestamp with time zone", "NO", None), "last_seen_at": ("timestamp with time zone", "NO", None),
     "evidence": ("jsonb", "NO", None), "acknowledged_at": ("timestamp with time zone", "YES", None),
     "acknowledged_by": ("uuid", "YES", None), "closed_at": ("timestamp with time zone", "YES", None),
@@ -651,6 +652,9 @@ ALERT_INDEXES = {
                             "(tenant_id, last_seen_at DESC, id DESC)",
     "ix_alert_device_seen": "CREATE INDEX ix_alert_device_seen ON public.alerts USING btree "
                             "(tenant_id, device_id, last_seen_at DESC, id DESC)",
+    # 0005: agent_silent alerts of a device by silence-episode key, whatever their status.
+    "ix_alert_silence_episode": "CREATE INDEX ix_alert_silence_episode ON public.alerts USING btree "
+                                "(tenant_id, device_id, dedup_key) WHERE (rule = 'agent_silent'::text)",
 }
 ALERT_FOREIGN_KEYS = {
     "fk_alert_tenant_device": (("tenant_id", "device_id"), "devices", ("tenant_id", "id")),
@@ -710,14 +714,17 @@ def test_migrated_alert_table_matches_the_model(pg_service_databases):
     assert has_counter and tuple(counter) == ("bigint", "NO", "0") and check == "CHECK ((suppressed_alerts >= 0))"
     column = DeviceEventCursor.__table__.c.suppressed_alerts
     assert column.nullable is False and column.server_default.arg.text == "0"
-    # 0004 (Snapshot V2) follows 0003 and changes only product_states.ck_product_id.
-    assert head == "0004_edr_agent_product"
+    # 0004 (Snapshot V2) follows 0003 and changes only product_states.ck_product_id; 0005 (Stage 3) widens
+    # ck_alert_rule, lets agent_silent's sequences be null and adds ix_alert_silence_episode.
+    assert head == "0005_stage3_detection"
 
 
 def test_the_alembic_chain_is_linear_up_to_0004():
+    # The name dates from Stage 2; the chain now ends at 0005_stage3_detection.
     script = ScriptDirectory.from_config(Config(str(PROJECT / "alembic.ini")))
-    assert script.get_heads() == ["0004_edr_agent_product"]
+    assert script.get_heads() == ["0005_stage3_detection"]
     assert [(revision.revision, revision.down_revision) for revision in script.walk_revisions()] == [
+        ("0005_stage3_detection", "0004_edr_agent_product"),
         ("0004_edr_agent_product", "0003_alerts"), ("0003_alerts", "0002_endpoint_events"),
         ("0002_endpoint_events", "0001_initial"), ("0001_initial", None)]
 
@@ -726,6 +733,9 @@ def test_migration_0003_upgrades_a_0002_database_in_a_rolled_back_transaction(ev
     ctx = event_tenants
     device_id = UUID(enrolled(ctx.runtime, ctx.admin_a, ctx.a)["device_id"])
     module = migration_module("0003_alerts")
+    # 0005 (Stage 3) changes the alerts table after 0003: it is downgraded first and upgraded last, so that 0003
+    # runs on the schema it was written for.
+    stage3 = migration_module("0005_stage3_detection")
     assert (module.revision, module.down_revision) == ("0003_alerts", "0002_endpoint_events")
     with ctx.owner.engine.connect() as connection:
         transaction = connection.begin()
@@ -733,6 +743,9 @@ def test_migration_0003_upgrades_a_0002_database_in_a_rolled_back_transaction(ev
             head, counter = alert_schema(connection)
             assert head is not None and counter
             with Operations.context(MigrationContext.configure(connection)):
+                stage3.downgrade()
+                at_0004 = alert_schema(connection)
+                assert at_0004[0] != head and at_0004[1]
                 module.downgrade()
                 assert alert_schema(connection) == (None, False)
                 # A cursor written at 0002 gets suppressed_alerts = 0 from the upgrade.
@@ -742,9 +755,11 @@ def test_migration_0003_upgrades_a_0002_database_in_a_rolled_back_transaction(ev
                     "VALUES (:tenant, :device, 1, :batch, :digest, 7, :at, 1, 0)"),
                     {"tenant": ctx.a, "device": device_id, "batch": uuid4(), "digest": "a" * 64, "at": NOW})
                 module.upgrade()
-                assert alert_schema(connection) == (head, True)
+                assert alert_schema(connection) == at_0004
                 assert connection.scalar(text("SELECT suppressed_alerts FROM device_event_cursors "
                                               "WHERE device_id = :device"), {"device": device_id}) == 0
+                stage3.upgrade()
+                assert alert_schema(connection) == (head, True)
         finally:
             transaction.rollback()
     with ctx.owner.engine.connect() as connection:

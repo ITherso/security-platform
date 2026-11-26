@@ -2,22 +2,29 @@
 
 A rule match is not a diagnosis. Alerts are derived from what a device says
 about itself, so every alert stays self_reported/not_verified like its events.
+No rule says that anything was protected, blocked or prevented.
 
-The rules run inside event ingestion, in the same transaction, only for the
-events of a newly accepted batch: an exact retry, a conflict, a 413 or a 422
-evaluates nothing. They read only contract fields: the masked image paths as
-stored, pids, kinds, states, codes and event_seq values.
+The event rules run inside event ingestion, in the same transaction, only for
+the events of a newly accepted batch: an exact retry, a conflict, a 413 or a
+422 evaluates nothing. They read only contract fields: the masked image paths
+as stored, pids, create times, kinds, the closed values of the v2 kinds, and
+event_seq values. The four Stage 2 rules apply unchanged to v1 events and to
+the v2 shapes of the three v1 kinds. The five Stage 3 event rules keep the
+triggering event's own fields as evidence. agent_silent is never raised by an
+event: `security-platform sweep` (services/sweep.py) opens it from the server
+clock, through the same upsert and cap.
 
 Deduplication: while an alert of a (tenant, device, rule, key) is not closed,
 a new match updates it. Every distinct key of a batch is one bounded INSERT ...
 ON CONFLICT on the partial unique index uq_alert_not_closed_key, so an
 operator's close racing an ingestion ends either in the closed alert plus a new
 open one, or in a closed alert that includes the match; never in two alerts
-that are not closed. The device row lock that ingestion holds serialises every
-opening of one device's alerts; operators only acknowledge or close.
+that are not closed. The device row lock that ingestion (or the sweep) holds
+serialises every opening of one device's alerts; operators only acknowledge or
+close.
 """
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 import hashlib
 import json
 import re
@@ -26,14 +33,45 @@ from uuid import UUID, uuid4
 from sqlalchemy import BigInteger, cast, func, literal, literal_column, or_, select, text, tuple_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
+from security_platform.event_contracts import BEHAVIOR_RULES
 from security_platform.models import Alert, Device, EndpointEvent
 from security_platform.services.audit import write_event
-from security_platform.services.common import (DEFAULT_LIMITS, Conflict, NotFound, ServiceError, iso, locked_tenant,
-    require_membership, utc_now)
+from security_platform.services.common import (DEFAULT_LIMITS, Conflict, NotFound, ServiceError, canonical_utc, iso,
+    locked_tenant, require_membership, utc_now)
 
 
+# Every rule's severity, low or medium only, in this order. RULES is the single source of the alert rules: the
+# alerts.ck_alert_rule CHECK (migration 0005 hardcodes its copy; a parity test compares them) and the operator
+# console mirror it.
 SEVERITY = {"user_writable_launch": "low", "office_browser_spawned_tool": "medium", "sensor_unstable": "medium",
-            "event_loss": "medium"}
+            "event_loss": "medium", "scan_detection": "medium", "behavior_match": "medium",
+            "persistence_added": "low", "capability_down": "medium", "tamper_signal": "medium",
+            "agent_silent": "medium"}
+RULES = tuple(SEVERITY)
+# A behavior_match alert's severity comes from this table, keyed by the closed behavior rule id: the server's,
+# never the agent's (the event carries no severity, and extra="forbid" refuses one). A new behavior rule ships
+# in the agent and the Platform together (ADR 0004 section 4).
+BEHAVIOR_SEVERITY = {rule: "medium" for rule in BEHAVIOR_RULES}
+# The evidence of the five Stage 3 event rules: these fields of the triggering event under the same names, as
+# stored. Each is the timeline field list of its kind (event_contracts.EVENT_FIELDS, the shape the console
+# requires), so the evidence is a subset of the event's own stored payload and fits the 4 KiB evidence CHECK
+# whenever the event fits its own 4 KiB payload CHECK.
+EVIDENCE_FIELDS = {
+    "scan_detection": ("trigger", "path", "size", "sha256", "rule_set_id", "hits", "omitted_hits", "pid",
+                       "create_time", "action_id"),
+    "behavior_match": ("rule", "rule_version", "pid", "create_time", "image", "parent_image", "found_at_start",
+                       "command_line_source"),
+    "persistence_added": ("location", "scope", "change", "entry_id", "target_image", "found_at_start"),
+    "capability_down": ("subject", "state", "code", "rule_set_id"),
+    "tamper_signal": ("signal", "detail"),
+}
+# capability_down: the agent_state (subject, state) pairs that raise it, keyed by subject. Every other pair
+# (running, degraded, not_available, stopping, a sensor's stopped, ...) raises nothing.
+CAPABILITY_DOWN = {"realtime_scan": ("stopped", "failed"), "rule_set": ("missing", "invalid", "unreadable"),
+                   "file_change_sensor": ("failed",), "command_line_sensor": ("failed",),
+                   "persistence_watch": ("failed",), "response_channel": ("journal_invalid",)}
+# persistence_added: the changes that raise it; a removal raises nothing.
+PERSISTENCE_ADDED_CHANGES = ("added", "modified")
 STATUSES = ("open", "acknowledged", "closed")
 TOOLS = frozenset({"mshta.exe", "regsvr32.exe", "rundll32.exe", "wscript.exe", "cscript.exe", "powershell.exe",
                    "pwsh.exe", "cmd.exe", "certutil.exe", "bitsadmin.exe", "msbuild.exe", "installutil.exe",
@@ -44,7 +82,9 @@ OFFICE_AND_BROWSERS = frozenset({"winword.exe", "excel.exe", "powerpnt.exe", "ou
 # A parent is looked for among the child's previous 2000 event_seq values of
 # the same device only. A parent outside this window, or one whose event was
 # already deleted (retention prune or the per-device cap), is not found, and
-# the rule stays silent.
+# the rule stays silent. A v2 child that names its parent's create time is the
+# exception: its parent is that exact process, at any distance (see
+# _stored_exact_parents), and only that one.
 PARENT_LOOKBACK = 2000
 # Equals the alerts evidence CHECK (octet_length(evidence::text) <= 4096).
 MAX_EVIDENCE_BYTES = 4096
@@ -134,13 +174,48 @@ def bounded_evidence(evidence):
 
 @dataclass
 class Match:
-    """All matches of one (rule, key text) in one batch; they become one upsert."""
+    """All matches of one (rule, key text) in one batch; they become one upsert.
+
+    first_seq and last_seq are None only for agent_silent, which no event raises (ck_alert_event_seq).
+    """
     rule: str
     key: str
-    first_seq: int
-    last_seq: int
+    first_seq: int | None
+    last_seq: int | None
     occurrences: int
     evidence: dict
+    severity: str
+
+
+# The exact parent of a v2 child: the device's stored v2 process_started event of one (pid, create_time),
+# through ix_endpoint_events_process_identity (migration 0005). The payload keys, the kind and the `?` operand
+# are literals, never bound parameters, so that the planner matches the partial index's expressions and
+# predicate in custom and generic plans alike; the identities travel as two text arrays, so every batch runs the
+# same statement text. LIMIT 1 per identity bounds the statement by the batch's distinct identities (at most
+# 200 rows): the contract gives one process one identity, and of out-of-contract duplicates any one is taken.
+_EXACT_PARENTS = text(
+    "SELECT wanted.pid, wanted.create_time, parent.image "
+    "FROM unnest(CAST(:pids AS text[]), CAST(:create_times AS text[])) AS wanted (pid, create_time) "
+    "CROSS JOIN LATERAL (SELECT payload ->> 'image' AS image FROM endpoint_events "
+    "WHERE tenant_id = :tenant_id AND device_id = :device_id AND kind = 'process_started' "
+    "AND payload ? 'create_time' AND payload ->> 'pid' = wanted.pid "
+    "AND payload ->> 'create_time' = wanted.create_time AND event_seq < :first_seq LIMIT 1) AS parent")
+
+
+def _stored_exact_parents(session, device, identities, first_seq):
+    """The image of the stored v2 process_started event of each (pid, create_time) identity that has one.
+
+    One index-backed statement per batch, whatever the distance: no 2000-event
+    window and no stop check, because the identity is exact. Only rows before
+    the batch count (event_seq < first_seq), as in the window's stored range:
+    the batch's own rows, already inserted in this transaction, were looked at
+    in order. A v1 row has no create_time and is never an exact parent.
+    """
+    wanted = sorted(identities)
+    rows = session.execute(_EXACT_PARENTS, {
+        "pids": [str(pid) for pid, _ in wanted], "create_times": [created for _, created in wanted],
+        "tenant_id": device.tenant_id, "device_id": device.id, "first_seq": first_seq}).all()
+    return {(int(pid), created): image for pid, created, image in rows}
 
 
 def _stored_process_events(session, device, pending, first_seq):
@@ -164,57 +239,107 @@ def _stored_process_events(session, device, pending, first_seq):
     return {row_pid: (seq, kind, image) for seq, kind, row_pid, image in rows}
 
 
+def behavior_key(rule, image):
+    """behavior_match's key text: the closed rule id, '>', the casefolded image (a rule id never holds '>')."""
+    return f"{rule}>{image.casefold()}"
+
+
 def batch_matches(session, device, events, previous_event_seq):
     """Every rule match of one accepted batch, grouped per (rule, key text), in order of first event_seq.
 
     `previous_event_seq` is the device cursor's last_event_seq before this
-    batch, or None for the device's first batch.
+    batch, or None for the device's first batch. A batch is v1 or v2; v2's
+    process_started and process_stopped carry the v1 fields too.
     """
     matches = {}
 
-    def add(rule, key, seq, evidence, count=1):
+    def add(rule, key, seq, evidence, count=1, severity=None):
         match = matches.get((rule, key))
         if match is None:
-            matches[(rule, key)] = Match(rule, key, seq, seq, count, bounded_evidence(evidence))
+            matches[(rule, key)] = Match(rule, key, seq, seq, count, bounded_evidence(evidence),
+                                         SEVERITY[rule] if severity is None else severity)
             return
         match.occurrences += count
         match.first_seq = min(match.first_seq, seq)
         if seq > match.last_seq:
             match.last_seq, match.evidence = seq, bounded_evidence(evidence)
 
+    def reported(rule, key, event):
+        """A Stage 3 event rule: its evidence is the event's own EVIDENCE_FIELDS, as stored."""
+        payload = event.model_dump(mode="json")
+        add(rule, key, event.event_seq, {name: payload[name] for name in EVIDENCE_FIELDS[rule]},
+            severity=BEHAVIOR_SEVERITY[event.rule] if rule == "behavior_match" else None)
+
+    def spawned(child, child_name, parent_image):
+        parent_name = file_name(parent_image)
+        if parent_name in OFFICE_AND_BROWSERS:
+            add("office_browser_spawned_tool", f"{parent_name}>{child_name}", child.event_seq,
+                {"image": child.image, "pid": child.pid, "parent_image": parent_image, "parent_pid": child.parent_pid})
+
     def tool_launch(child, child_name, earlier):
         seq, kind, image = earlier
         # The latest event of the parent pid decides: a stop means that process ended.
         if kind != "process_started" or seq < child.event_seq - PARENT_LOOKBACK:
             return
-        parent_name = file_name(image)
-        if parent_name in OFFICE_AND_BROWSERS:
-            add("office_browser_spawned_tool", f"{parent_name}>{child_name}", child.event_seq,
-                {"image": child.image, "pid": child.pid, "parent_image": image, "parent_pid": child.parent_pid})
+        spawned(child, child_name, image)
 
     latest = {}   # pid -> (event_seq, kind, image) of its latest process event so far in this batch
     pending = []  # tool launches whose parent pid has no earlier event in this batch
+    started = {}  # (pid, create_time) -> image of the latest v2 process_started of that process so far in this batch
+    exact = []    # v2 tool launches naming their parent's create time, whose parent is not earlier in this batch
     for event in events:
-        if event.kind == "process_started":
+        kind = event.kind
+        if kind == "process_started":
             if user_writable(event.image):
                 add("user_writable_launch", event.image.casefold(), event.event_seq,
                     {"image": event.image, "pid": event.pid})
             child_name = file_name(event.image)
             if child_name in TOOLS:
-                if event.parent_pid in latest:
+                parent_created = getattr(event, "parent_create_time", None)
+                if parent_created is not None:
+                    # The parent is exactly the process (parent_pid, parent_create_time), or none: no window.
+                    identity = (event.parent_pid, parent_created)
+                    if identity in started:
+                        spawned(event, child_name, started[identity])
+                    else:
+                        exact.append((event, child_name, identity))
+                elif event.parent_pid in latest:
                     tool_launch(event, child_name, latest[event.parent_pid])
                 else:
                     pending.append((event, child_name))
-            latest[event.pid] = (event.event_seq, event.kind, event.image)
-        elif event.kind == "process_stopped":
-            latest[event.pid] = (event.event_seq, event.kind, None)
-        elif event.state in {"lost", "failed"}:
-            add("sensor_unstable", event.state, event.event_seq, {"state": event.state, "error_code": event.error_code})
+            latest[event.pid] = (event.event_seq, kind, event.image)
+            created = getattr(event, "create_time", None)
+            if created is not None:
+                started[(event.pid, created)] = event.image
+        elif kind == "process_stopped":
+            latest[event.pid] = (event.event_seq, kind, None)
+        elif kind == "sensor_state":
+            if event.state in {"lost", "failed"}:
+                add("sensor_unstable", event.state, event.event_seq,
+                    {"state": event.state, "error_code": event.error_code})
+        elif kind == "scan_detected":
+            reported("scan_detection", event.sha256, event)
+        elif kind == "behavior_match":
+            reported("behavior_match", behavior_key(event.rule, event.image), event)
+        elif kind == "persistence_change":
+            if event.change in PERSISTENCE_ADDED_CHANGES:
+                reported("persistence_added", event.entry_id, event)
+        elif kind == "agent_state":
+            if event.state in CAPABILITY_DOWN.get(event.subject, ()):
+                reported("capability_down", event.subject, event)
+        elif kind == "tamper_signal":
+            reported("tamper_signal", event.signal, event)
+        # coverage_gap raises nothing: the timeline shows the gap the agent reported.
     if pending:
         stored = _stored_process_events(session, device, pending, events[0].event_seq)
         for child, child_name in pending:
             if child.parent_pid in stored:
                 tool_launch(child, child_name, stored[child.parent_pid])
+    if exact:
+        parents = _stored_exact_parents(session, device, {identity for _, _, identity in exact}, events[0].event_seq)
+        for child, child_name, identity in exact:
+            if identity in parents:
+                spawned(child, child_name, parents[identity])
     # A device's first batch may start above 1 and its numbering may carry
     # over from an earlier enrollment: only a device with a cursor can lose events.
     if previous_event_seq is not None:
@@ -250,10 +375,13 @@ def _upsert(device, match, proposed_id, received_at, *, cap=None):
     The conflict arbiter is the partial unique index. If an operator closes
     the conflicting alert while this statement waits for its row lock,
     PostgreSQL retries the insertion, which then opens a new alert.
+
+    agent_silent's null sequence columns pass through unchanged: greatest()
+    of two nulls is null, which ck_alert_event_seq requires for that rule.
     """
     table = Alert.__table__
     values = {"id": proposed_id, "tenant_id": device.tenant_id, "device_id": device.id, "rule": match.rule,
-              "severity": SEVERITY[match.rule], "dedup_key": dedup_key(match.key), "status": "open",
+              "severity": match.severity, "dedup_key": dedup_key(match.key), "status": "open",
               "occurrences": match.occurrences, "first_event_seq": match.first_seq, "last_event_seq": match.last_seq,
               "first_seen_at": received_at, "last_seen_at": received_at, "evidence": match.evidence,
               "created_at": received_at, "updated_at": received_at}
@@ -282,34 +410,43 @@ def _upsert(device, match, proposed_id, received_at, *, cap=None):
     ).returning(Alert.id)
 
 
-def raise_alerts(session, device, events, *, received_at, previous_event_seq, limits=DEFAULT_LIMITS):
-    """Open or update the alerts of one newly accepted batch; return how many openings the cap suppressed.
+def open_matches(session, device, matches, *, received_at, limits=DEFAULT_LIMITS):
+    """Open or update one alert per match, in order; return each match's outcome: opened, updated or suppressed.
 
-    The caller holds the device row lock, so no other transaction opens an
-    alert of this device meanwhile; operators can only close alerts, which
-    lowers the count. The count taken here is therefore never too low, and at
-    the cap each statement recounts in its own snapshot.
+    The caller holds the device row lock (event ingestion, or the sweep for
+    agent_silent), so no other transaction opens an alert of this device
+    meanwhile; operators can only close alerts, which lowers the count. The
+    count taken here is therefore never too low, and at the cap each statement
+    recounts in its own snapshot.
     """
-    matches = batch_matches(session, device, events, previous_event_seq)
-    if not matches:
-        return 0
     cap = limits.max_open_alerts_per_device
     open_alerts = session.scalar(_open_alerts(device.tenant_id, device.id, cap))
-    suppressed = 0
+    outcomes = []
     for match in matches:
         proposed_id = uuid4()
         alert_id = session.scalar(_upsert(device, match, proposed_id, received_at,
                                           cap=cap if open_alerts >= cap else None))
         if alert_id is None:
-            suppressed += 1
+            outcomes.append("suppressed")
         elif alert_id == proposed_id:
             open_alerts += 1
-    return suppressed
+            outcomes.append("opened")
+        else:
+            outcomes.append("updated")
+    return outcomes
+
+
+def raise_alerts(session, device, events, *, received_at, previous_event_seq, limits=DEFAULT_LIMITS):
+    """Open or update the alerts of one newly accepted batch; return how many openings the cap suppressed."""
+    matches = batch_matches(session, device, events, previous_event_seq)
+    if not matches:
+        return 0
+    return open_matches(session, device, matches, received_at=received_at, limits=limits).count("suppressed")
 
 
 def keyset_time(value):
     """A paging cursor time: ISO UTC with exactly six fraction digits."""
-    return value.astimezone(timezone.utc).isoformat(timespec="microseconds").replace("+00:00", "Z")
+    return canonical_utc(value)
 
 
 def parse_keyset(before_seen_at, before_id):

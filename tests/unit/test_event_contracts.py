@@ -9,7 +9,8 @@ from pydantic import ValidationError
 import pytest
 
 from security_platform.contracts import MAX_SEQUENCE
-from security_platform.event_contracts import (EVENT_FIELDS, MAX_BATCH_EVENTS, MAX_EVENT_BATCH_BYTES, MAX_EVENT_SEQ,
+from security_platform.event_contracts import (EVENT_FIELDS, EVENT_FIELDS_V1, MAX_BATCH_EVENTS, MAX_EVENT_BATCH_BYTES,
+    MAX_EVENT_SEQ,
     MAX_STORED_EVENT_BYTES, REFUSED_TEXT_RANGES, REFUSED_TEXT_UNICODE_VERSION, EventBatch, EventBatchTooLarge,
     ProcessStarted, ProcessStopped, SensorState, canonical_event_batch, event_batch_digest, stored_event_bytes)
 
@@ -48,11 +49,14 @@ def canonical_size(payload):
 def test_every_kind_validates_with_exactly_its_closed_fields():
     model = EventBatch.model_validate(batch())
     assert [type(event) for event in model.events] == [ProcessStarted, ProcessStopped, SensorState]
-    assert EVENT_FIELDS == {"process_started": ("pid", "parent_pid", "session_id", "image"),
-                            "process_stopped": ("pid", "exit_code", "image"),
-                            "sensor_state": ("state", "error_code")}
+    # Stage 3: EVENT_FIELDS is the timeline's v1/v2 superset (pinned in test_event_v2_contracts.py); the v1
+    # fields are unchanged and come first.
+    assert EVENT_FIELDS_V1 == {"process_started": ("pid", "parent_pid", "session_id", "image"),
+                               "process_stopped": ("pid", "exit_code", "image"),
+                               "sensor_state": ("state", "error_code")}
+    assert all(EVENT_FIELDS[kind][:len(fields)] == fields for kind, fields in EVENT_FIELDS_V1.items())
     for event in json.loads(canonical_event_batch(model))["events"]:
-        assert set(event) == {"kind", "event_seq", "observed_at", *EVENT_FIELDS[event["kind"]]}
+        assert set(event) == {"kind", "event_seq", "observed_at", *EVENT_FIELDS_V1[event["kind"]]}
     assert set(EventBatch.model_fields) == {"schema_version", "batch_id", "batch_sequence", "events"}
 
 

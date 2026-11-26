@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import type { TimelineEvent } from '../../data/contracts';
 import type { LoadStatus, TimelineView } from './eventsModel';
 import { exitCodeText, KIND_LABELS, MAX_TIMELINE_EVENTS, SENSOR_STATE_LABELS, sequenceRange, timelineRows } from './eventsModel';
+import { AgentStateFieldList, BehaviorFields, FieldList, Moment, PersistenceFields, ScanFields, TamperFields } from './EventFields';
 import { formatCount, formatPreciseDate } from '../../i18n/formatters';
 import { useLocale } from '../../i18n/LocaleProvider';
 import './events.css';
@@ -18,7 +19,7 @@ export interface DeviceTimelineProps {
 
 const COLUMNS = ['events.column.sequence', 'events.column.kind', 'events.column.observed', 'events.column.received',
   'events.column.image', 'events.column.pid', 'events.column.parentPid', 'events.column.exitCode', 'events.column.state',
-  'events.column.errorCode'] as const;
+  'events.column.errorCode', 'events.column.details'] as const;
 
 function NotApplicable() {
   const { t } = useLocale();
@@ -31,24 +32,57 @@ function Instant({ value }: { value: string }) {
   return <time dateTime={value} title={value}>{formatPreciseDate(value, locale)}</time>;
 }
 
-/** Each kind fills only the fields it has; the rest are marked as not part of that kind. */
+/** Each kind fills only the fields it has; the rest are marked as not part of that kind. A process image and PID go
+ * in their columns; every other field of a kind is in its details, under the field's own name. A v1 row has no v2
+ * field and shows it as not reported. Only scan_detected has a SHA-256 (ScanFields). */
 function EventRow({ event }: { event: TimelineEvent }) {
-  const { t } = useLocale();
+  const { locale, t } = useLocale();
   const none = <NotApplicable />;
   let image: ReactNode = none, pid: ReactNode = none, parentPid: ReactNode = none;
-  let exitCode: ReactNode = none, state: ReactNode = none, errorCode: ReactNode = none;
-  if (event.kind === 'process_started') {
-    image = <span className="event-path">{event.image}</span>;
-    pid = String(event.pid);
-    parentPid = String(event.parent_pid);
-  } else if (event.kind === 'process_stopped') {
-    image = event.image === null ? t('events.notReported') : <span className="event-path">{event.image}</span>;
-    pid = String(event.pid);
-    exitCode = event.exit_code === null ? t('events.notReported') : exitCodeText(event.exit_code);
-  } else {
-    state = t(SENSOR_STATE_LABELS[event.state]);
-    errorCode = event.error_code !== null ? <code className="event-code">{event.error_code}</code>
-      : event.state === 'lost' || event.state === 'failed' ? t('events.notReported') : none;
+  let exitCode: ReactNode = none, state: ReactNode = none, errorCode: ReactNode = none, details: ReactNode = none;
+  switch (event.kind) {
+    case 'process_started':
+      image = <span className="event-path">{event.image}</span>;
+      pid = String(event.pid);
+      parentPid = String(event.parent_pid);
+      details = <FieldList rows={[['events.field.session_id', String(event.session_id)],
+        ['events.field.create_time', <Moment value={event.create_time} />],
+        ['events.field.parent_create_time', <Moment value={event.parent_create_time} />]]} />;
+      break;
+    case 'process_stopped':
+      image = event.image === null ? t('events.notReported') : <span className="event-path">{event.image}</span>;
+      pid = String(event.pid);
+      exitCode = event.exit_code === null ? t('events.notReported') : exitCodeText(event.exit_code);
+      details = <FieldList rows={[['events.field.create_time', <Moment value={event.create_time} />]]} />;
+      break;
+    case 'sensor_state':
+      state = t(SENSOR_STATE_LABELS[event.state]);
+      errorCode = event.error_code !== null ? <code className="event-code">{event.error_code}</code>
+        : event.state === 'lost' || event.state === 'failed' ? t('events.notReported') : none;
+      break;
+    case 'scan_detected':
+      pid = event.pid === null ? t('events.notReported') : String(event.pid);
+      details = <ScanFields fields={event} pidShown />;
+      break;
+    case 'behavior_match':
+      image = <span className="event-path">{event.image}</span>;
+      pid = String(event.pid);
+      details = <BehaviorFields fields={event} processShown />;
+      break;
+    case 'persistence_change':
+      details = <PersistenceFields fields={event} />;
+      break;
+    case 'agent_state':
+      details = <AgentStateFieldList fields={event} />;
+      break;
+    case 'tamper_signal':
+      details = <TamperFields fields={event} />;
+      break;
+    case 'coverage_gap':
+      details = <FieldList rows={[['events.field.gap_source', <code className="event-code">{event.gap_source}</code>],
+        ['events.field.reason', <code className="event-code">{event.reason}</code>],
+        ['events.field.lost', event.lost === null ? t('events.notReported') : formatCount(event.lost, locale)]]} />;
+      break;
   }
   return <tr>
     <td className="event-sequence">{String(event.event_seq)}</td>
@@ -61,6 +95,7 @@ function EventRow({ event }: { event: TimelineEvent }) {
     <td>{exitCode}</td>
     <td>{state}</td>
     <td>{errorCode}</td>
+    <td className="event-details-cell">{details}</td>
   </tr>;
 }
 
@@ -80,6 +115,7 @@ export function DeviceTimeline({ timeline, status, older, errorMessage, onOlder,
       </div>
     </div>
     <p className="state-note">{t('events.timeline.trust')}</p>
+    <p className="event-note">{t('events.timeline.matchNote')}</p>
     {status === 'loading' ? <div className="empty-state" role="status">{t('events.timeline.loading')}</div>
       : status === 'error' ? <div className="empty-state" role="alert"><h4>{t('events.timeline.error')}</h4><p className="muted">{errorMessage}</p></div>
         : status !== 'ready' || timeline === null ? <div className="empty-state">{t('events.timeline.notLoaded')}</div>

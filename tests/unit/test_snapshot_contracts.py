@@ -81,8 +81,11 @@ def test_unknown_source_errors_are_not_copied_or_silently_treated_as_healthy():
 
 
 @pytest.mark.parametrize("changes", [
-    # schema_version 2 is Snapshot V2 (tests/unit/test_snapshot_v2_contracts.py); 3 and non-integers stay closed.
-    {"schema_version": True}, {"schema_version": 3}, {"schema_version": 0}, {"schema_version": 2.0},
+    # schema_version 2 is Snapshot V2 (tests/unit/test_snapshot_v2_contracts.py). 3 is Snapshot V3, a separate
+    # class (tests/unit/test_snapshot_v3_contracts.py), so this V1/V2 envelope still refuses it; 4 and
+    # non-integers are refused by every version.
+    {"schema_version": True}, {"schema_version": 3}, {"schema_version": 4}, {"schema_version": 0},
+    {"schema_version": 2.0},
     {"schema_version": "2"}, {"sequence": True}, {"sequence": 0}, {"sequence": MAX_SNAPSHOT_SEQUENCE + 1},
     {"sequence": MAX_SEQUENCE + 1}, {"sequence": 1.0}, {"sequence": "1"}, {"message_id": "not-a-uuid"},
     {"message_id": "A" * 36}, {"tenant_id": str(uuid4())}, {"device_id": str(uuid4())},

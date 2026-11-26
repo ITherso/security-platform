@@ -199,7 +199,8 @@ def test_host_header_guard_accepts_loopback_names(preview, host):
 # --- Static checks for the operator-console strictJson profiles (TypeScript is not compiled here).
 
 SRC = CONSOLE / "src"
-PROFILES = {"default", "termivar-comparison-v1", "termivar-assessment-v1", "sp-hbf-preview-v1", "sp-events-alerts-v1"}
+PROFILES = {"default", "termivar-comparison-v1", "termivar-assessment-v1", "sp-hbf-preview-v1", "sp-events-alerts-v1",
+            "sp-device-detail-v1"}
 BUDGET = re.compile(r'^\s*"?([a-z0-9-]+)"?: \{ depth: (\d+), nodes: (\d+), stringUnits: (\d+), arrayItems: (\d+), '
                     r'objectKeys: (\d+), tokens: (\d+) \},$', re.M)
 TOKEN = re.compile(r'"(?:\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|[^"\\\x00-\x1f])*"|[{}\[\]:,]'

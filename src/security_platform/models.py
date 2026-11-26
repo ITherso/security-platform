@@ -147,7 +147,10 @@ class EndpointEvent(Base):
         ForeignKeyConstraint(["tenant_id", "device_id"], ["devices.tenant_id", "devices.id"],
                              name="fk_endpoint_event_tenant_device"),
         CheckConstraint("event_seq >= 1", name="ck_endpoint_event_sequence"),
-        CheckConstraint("kind IN ('process_started','process_stopped','sensor_state')", name="ck_endpoint_event_kind"),
+        # event_contracts.EVENT_KINDS (v1 and v2); migration 0005 widened it from the three v1 kinds.
+        CheckConstraint("kind IN ('process_started','process_stopped','sensor_state','scan_detected',"
+                        "'behavior_match','persistence_change','agent_state','tamper_signal','coverage_gap')",
+                        name="ck_endpoint_event_kind"),
         # The contract's observed_at window; every instant in it loads in any session time zone.
         CheckConstraint("observed_at >= '1970-01-01 00:00:00+00' AND observed_at < '9999-01-01 00:00:00+00'",
                         name="ck_endpoint_event_observed_at"),
@@ -168,6 +171,9 @@ class Alert(Base):
 
     While an alert is not closed, later matches of the same (rule, dedup_key)
     update it; the partial unique index below allows one such alert per key.
+    agent_silent (raised by `security-platform sweep`, never by an event) is
+    the only rule whose first_event_seq and last_event_seq are null; every
+    other rule has both (ck_alert_event_seq, migration 0005).
     """
     __tablename__ = "alerts"
     __table_args__ = (
@@ -177,13 +183,18 @@ class Alert(Base):
                              name="fk_alert_acknowledger_membership"),
         ForeignKeyConstraint(["tenant_id", "closed_by"], ["memberships.tenant_id", "memberships.principal_id"],
                              name="fk_alert_closer_membership"),
-        CheckConstraint("rule IN ('user_writable_launch','office_browser_spawned_tool','sensor_unstable','event_loss')",
-                        name="ck_alert_rule"),
+        # The ten rules of services/alerts.py; migration 0005 widened it from the four Stage 2 rules.
+        CheckConstraint("rule IN ('user_writable_launch','office_browser_spawned_tool','sensor_unstable','event_loss',"
+                        "'scan_detection','behavior_match','persistence_added','capability_down','tamper_signal',"
+                        "'agent_silent')", name="ck_alert_rule"),
         CheckConstraint("severity IN ('low','medium')", name="ck_alert_severity"),
         CheckConstraint("dedup_key ~ '^[0-9a-f]{64}$'", name="ck_alert_dedup_key"),
         CheckConstraint("status IN ('open','acknowledged','closed')", name="ck_alert_status"),
         CheckConstraint("occurrences >= 1", name="ck_alert_occurrences"),
-        CheckConstraint("first_event_seq >= 1 AND last_event_seq >= first_event_seq", name="ck_alert_event_seq"),
+        # Nullness is checked explicitly: a CHECK whose result is null passes.
+        CheckConstraint("(rule = 'agent_silent' AND first_event_seq IS NULL AND last_event_seq IS NULL) OR "
+                        "(rule <> 'agent_silent' AND first_event_seq IS NOT NULL AND last_event_seq IS NOT NULL "
+                        "AND first_event_seq >= 1 AND last_event_seq >= first_event_seq)", name="ck_alert_event_seq"),
         CheckConstraint("jsonb_typeof(evidence) = 'object'", name="ck_alert_evidence_object"),
         CheckConstraint("octet_length(evidence::text) <= 4096", name="ck_alert_evidence_bytes"),
         CheckConstraint("(acknowledged_at IS NULL) = (acknowledged_by IS NULL)", name="ck_alert_acknowledgement"),
@@ -201,9 +212,10 @@ class Alert(Base):
     dedup_key: Mapped[str] = mapped_column(CHAR(64), nullable=False)
     status: Mapped[str] = mapped_column(Text, nullable=False)
     occurrences: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    first_event_seq: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    last_event_seq: Mapped[int] = mapped_column(BigInteger, nullable=False)
-    # The server's received_at of the first and the latest matching batch.
+    # Null only for agent_silent (ck_alert_event_seq).
+    first_event_seq: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    last_event_seq: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    # The server's received_at of the first and the latest matching batch (for agent_silent: the sweep time).
     first_seen_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
     last_seen_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
     evidence: Mapped[dict] = mapped_column(JSON().with_variant(JSONB(), "postgresql"), nullable=False)
@@ -241,3 +253,13 @@ Index("uq_alert_not_closed_key", Alert.tenant_id, Alert.device_id, Alert.rule, A
 # The alert list: newest activity first, per tenant and per device.
 Index("ix_alert_tenant_seen", Alert.tenant_id, Alert.last_seen_at.desc(), Alert.id.desc())
 Index("ix_alert_device_seen", Alert.tenant_id, Alert.device_id, Alert.last_seen_at.desc(), Alert.id.desc())
+# Migration 0005. The exact parent lookup of office_browser_spawned_tool: a v2 process_started by its
+# (pid, create_time) text, as stored in the payload. Only v2 rows carry create_time, so the predicate keeps
+# v1 rows out; a query uses it only when it repeats both predicate terms.
+Index("ix_endpoint_events_process_identity", EndpointEvent.tenant_id, EndpointEvent.device_id,
+      text("(payload ->> 'pid')"), text("(payload ->> 'create_time')"),
+      postgresql_where=text("kind = 'process_started' AND payload ? 'create_time'"))
+# One agent_silent alert per silence episode: the sweep looks for any alert of the device's episode key,
+# whatever its status.
+Index("ix_alert_silence_episode", Alert.tenant_id, Alert.device_id, Alert.dedup_key,
+      postgresql_where=text("rule = 'agent_silent'"))
