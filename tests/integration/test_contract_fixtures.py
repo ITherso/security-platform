@@ -226,7 +226,9 @@ def test_payload_gets_its_expected_decision(contract_app, path):
 def build_manifest():
     accepted = {golden_path(path): path for path, expected in EXPECTATIONS.items() if expected["decision"] == "accepted"}
     files = []
-    for file in sorted(FIXTURES.rglob("*")):
+    # Sorted by path parts as strings, so the order is the same on every OS: Windows paths compare without case
+    # (README.md after goldens/), POSIX paths with it (README.md first), and CI runs on Linux.
+    for file in sorted(FIXTURES.rglob("*"), key=lambda item: item.relative_to(FIXTURES).parts):
         if not file.is_file():
             continue
         path = file.relative_to(FIXTURES).as_posix()

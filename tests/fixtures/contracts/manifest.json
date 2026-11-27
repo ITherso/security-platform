@@ -3,6 +3,11 @@
   "about": "Every file of tests/fixtures/contracts but this one, with its sha256. Payloads carry their contract version, route and expected decision; goldens name their payload. Written by tests/integration/test_contract_fixtures.py with SP_REGENERATE_CONTRACT_GOLDENS=1.",
   "files": [
     {
+      "path": "README.md",
+      "sha256": "7ff8031e20cfa02e5f7d97812e7d23058c0200a260a07a51f96431232d38e6b9",
+      "kind": "readme"
+    },
+    {
       "path": "events/v1/invalid/batch_id_upper_case.json",
       "sha256": "cd8319fca0ea332c01aa2a3a535456a94f3ff8c098169d96028035c90f5a3742",
       "kind": "event_batch",
@@ -1060,11 +1065,6 @@
       "kind": "golden",
       "version": 3,
       "payload": "snapshots/v3/valid/v1_products_only.json"
-    },
-    {
-      "path": "README.md",
-      "sha256": "7ff8031e20cfa02e5f7d97812e7d23058c0200a260a07a51f96431232d38e6b9",
-      "kind": "readme"
     },
     {
       "path": "snapshots/v1/invalid/antivirus_version_claim.json",

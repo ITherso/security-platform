@@ -579,7 +579,11 @@ def test_the_prune_statements_use_the_closed_alert_index_under_a_generic_plan(ev
             # Each ran prepared, with its generic plan.
             assert len(statements[kind]) == 1 and statements[kind][0][1] >= 1, prepared
             [nodes] = plans[kind]
-            scans = [node for node in nodes if "Scan" in node[0]]
+            # A Bitmap Heap Scan names no index: it reads the rows that its Bitmap Index Scan child found. The planner
+            # picks it or an Index Scan by cost (CI's PostgreSQL 18 picked it for the delete), and either way every
+            # row comes through the partial index, as INDEX_RANGE_NODES in test_events.py allows for the cap delete.
+            # Every other scan node must name ix_alert_tenant_closed, so a Seq Scan or another index still fails.
+            scans = [node for node in nodes if "Scan" in node[0] and node[0] != "Bitmap Heap Scan"]
             assert scans and all(name == "ix_alert_tenant_closed" for _, name, _ in scans), nodes
             assert any("tenant_id = $1" in condition and "closed_at" in condition for _, _, condition in scans), nodes
     finally:
