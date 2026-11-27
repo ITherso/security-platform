@@ -12,20 +12,20 @@
       "reason": "Owner-approved explicit one-shot credential rotation and --ca-file private CA trust; TLS verification never disabled (cae7c18). Owner-approved Stage 2: the HBF sender stops at snapshot sequence 2^53-1 (90be449)"
     },
     "src/security_platform/services/audit.py": {
-      "commit": "45e0482",
-      "reason": "Owner-approved audit retention: device events evict device events first; per-tenant bound unchanged (cae7c18). Owner-approved Stage 2: actions tenant_event_retention_set, alert_acknowledged and alert_closed; object type alert (171960c, 45e0482)"
+      "commit": "0aa7a22",
+      "reason": "Owner-approved audit retention: device events evict device events first; per-tenant bound unchanged (cae7c18). Owner-approved Stage 2: actions tenant_event_retention_set, alert_acknowledged and alert_closed; object type alert (171960c, 45e0482). Owner-approved Stage 3: actions tenant_alert_retention_set and alerts_pruned; the details field, which the audit API does not return (0aa7a22)"
     },
     "src/security_platform/services/enrollment.py": {
       "commit": "cae7c18",
       "reason": "Owner-approved: capacity counts active devices; rotated credential TTL capped at configured TTL"
     },
     "scripts/managed_postgres.py": {
-      "commit": "45e0482",
-      "reason": "Owner-approved Stage 2: runtime role gets SELECT, INSERT and DELETE on endpoint_events and SELECT, INSERT and UPDATE on device_event_cursors and alerts (171960c, 45e0482)"
+      "commit": "0aa7a22",
+      "reason": "Owner-approved Stage 2: runtime role gets SELECT, INSERT and DELETE on endpoint_events and SELECT, INSERT and UPDATE on device_event_cursors and alerts (171960c, 45e0482). Owner-approved Stage 3: runtime role also gets DELETE on alerts, table-wide; only alerts prune uses it, and a stolen runtime credential can now delete any alert (accepted risk, docs/THREAT_MODEL.tr.md); no TRUNCATE (0aa7a22)"
     },
     "src/security_platform/api/device.py": {
-      "commit": "171960c",
-      "reason": "Owner-approved Stage 2: POST /api/v1/device/events accepts device-authenticated event batches (171960c)"
+      "commit": "f5e8838",
+      "reason": "Owner-approved Stage 2: POST /api/v1/device/events accepts device-authenticated event batches (171960c). Owner-approved Stage 3: the event and snapshot routes keep their paths, methods and authentication; each request body is a union chosen by schema_version (events v1 or v2; snapshots V1, V2 or V3); no new route, and the device routes' responses are unchanged (f5e8838)"
     },
     "src/security_platform/api/operator.py": {
       "commit": "45e0482",
@@ -36,28 +36,28 @@
       "reason": "Owner-approved Stage 2: event and alert bounds come from settings; an event cursor conflict (409) reports the last accepted position (171960c, 45e0482)"
     },
     "src/security_platform/cli.py": {
-      "commit": "171960c",
-      "reason": "Owner-approved Stage 2: local set-event-retention command; events prune runs only with the runtime identity and never falls back to the owner identity (171960c)"
+      "commit": "0aa7a22",
+      "reason": "Owner-approved Stage 2: local set-event-retention command; events prune runs only with the runtime identity and never falls back to the owner identity (171960c). Owner-approved Stage 3: local sweep command (f5e8838); alerts prune runs only with the runtime identity; local set-alert-retention command; these and the other local admin commands take the audit bound from SP_MAX_AUDIT_EVENTS_PER_TENANT and exit 1 before connecting when it is invalid (0aa7a22)"
     },
     "src/security_platform/contracts.py": {
-      "commit": "90be449",
-      "reason": "Owner-approved Stage 2: Snapshot V2 with the edr_agent product; in both versions the sequence stops at 2^53-1 and the envelope source_observed_at must lie in [1970-01-01, 9999-01-01) (90be449)"
+      "commit": "f5e8838",
+      "reason": "Owner-approved Stage 2: Snapshot V2 with the edr_agent product; in both versions the sequence stops at 2^53-1 and the envelope source_observed_at must lie in [1970-01-01, 9999-01-01) (90be449). Owner-approved Stage 3: Snapshot V3 (EdrAgentStatusV3, SnapshotEnvelopeV3); the V1 and V2 bytes and digests stay as they were (f5e8838)"
     },
     "src/security_platform/models.py": {
-      "commit": "90be449",
-      "reason": "Owner-approved Stage 2: endpoint_events, device_event_cursors and alerts tables; tenants.event_retention_days; ck_product_id accepts edr_agent (171960c, 45e0482, 90be449)"
+      "commit": "0aa7a22",
+      "reason": "Owner-approved Stage 2: endpoint_events, device_event_cursors and alerts tables; tenants.event_retention_days; ck_product_id accepts edr_agent (171960c, 45e0482, 90be449). Owner-approved Stage 3: event kind and alert rule CHECKs; first_event_seq and last_event_seq null for agent_silent only (ck_alert_event_seq); two partial indexes (f5e8838); tenants.alert_retention_days, audit_events.details and ix_alert_tenant_closed (0aa7a22)"
     },
     "src/security_platform/services/administration.py": {
-      "commit": "171960c",
-      "reason": "Owner-approved Stage 2: event retention is set between 1 and 90 days and audited (171960c)"
+      "commit": "0aa7a22",
+      "reason": "Owner-approved Stage 2: event retention is set between 1 and 90 days and audited (171960c). Owner-approved Stage 3: alert retention between 30 and 3650 days, audited (0aa7a22)"
     },
     "src/security_platform/services/common.py": {
-      "commit": "45e0482",
-      "reason": "Owner-approved Stage 2: EventCursorConflict (409), 413 and 422 error types; per-device event and open-alert bounds (171960c, 45e0482)"
+      "commit": "f5e8838",
+      "reason": "Owner-approved Stage 2: EventCursorConflict (409), 413 and 422 error types; per-device event and open-alert bounds (171960c, 45e0482). Owner-approved Stage 3: canonical_utc helper (f5e8838)"
     },
     "src/security_platform/settings.py": {
-      "commit": "45e0482",
-      "reason": "Owner-approved Stage 2: SP_MAX_EVENTS_PER_DEVICE (1000 to 10000000, default 250000) and SP_MAX_OPEN_ALERTS_PER_DEVICE (10 to 100000, default 500) (171960c, 45e0482)"
+      "commit": "0aa7a22",
+      "reason": "Owner-approved Stage 2: SP_MAX_EVENTS_PER_DEVICE (1000 to 10000000, default 250000) and SP_MAX_OPEN_ALERTS_PER_DEVICE (10 to 100000, default 500) (171960c, 45e0482). Owner-approved Stage 3: SP_SILENCE_ALERT_SECONDS (300 to 86400, default 900), with readers of it and of SP_MAX_OPEN_ALERTS_PER_DEVICE for the sweep (f5e8838); the SP_MAX_AUDIT_EVENTS_PER_TENANT bounds (10 to 1000000, default 10000) in one place, with a reader for the local commands (0aa7a22)"
     },
     "migrations/versions/0002_endpoint_events.py": {
       "commit": "171960c",
@@ -72,16 +72,32 @@
       "reason": "Owner-approved Stage 2 addition: product_states.ck_product_id accepts edr_agent (90be449)"
     },
     "src/security_platform/event_contracts.py": {
-      "commit": "90be449",
-      "reason": "Owner-approved Stage 2 addition: closed altay-edr-event/v1 batch contract; every event stays self_reported and not_verified (171960c, 45e0482, 90be449)"
+      "commit": "f5e8838",
+      "reason": "Owner-approved Stage 2 addition: closed altay-edr-event/v1 batch contract; every event stays self_reported and not_verified (171960c, 45e0482, 90be449). Owner-approved Stage 3: closed altay-edr-event/v2 batch contract with nine kinds; command_line, user, username, sid and content are refused; sha256 and size only in scan_detected; v1 keeps its canonical bytes, digests and API error codes; every event stays self_reported and not_verified (f5e8838)"
     },
     "src/security_platform/services/alerts.py": {
-      "commit": "45e0482",
-      "reason": "Owner-approved Stage 2 addition: built-in rules on self-reported events and the operator alert lifecycle; new alert keys above SP_MAX_OPEN_ALERTS_PER_DEVICE are suppressed and only counted (suppressed_alerts); a match is not a diagnosis (45e0482)"
+      "commit": "0aa7a22",
+      "reason": "Owner-approved Stage 2 addition: built-in rules on self-reported events and the operator alert lifecycle; new alert keys above SP_MAX_OPEN_ALERTS_PER_DEVICE are suppressed and only counted (suppressed_alerts); a match is not a diagnosis (45e0482). Owner-approved Stage 3: six new alert rules; office_browser_spawned_tool matches a v2 child to its exact parent by (parent_pid, parent_create_time) at any distance; behavior_match severity comes from a server-side table; open_matches, the upsert and cap that the sweep also uses (f5e8838); closed-alert retention prune, which keeps the closed agent_silent alert of a current episode (0aa7a22)"
     },
     "src/security_platform/services/events.py": {
-      "commit": "45e0482",
-      "reason": "Owner-approved Stage 2 addition: ordered event ingestion that runs the alert rules and deletes the device's oldest events above SP_MAX_EVENTS_PER_DEVICE (counted as cap_deleted_events); timeline reads and retention (171960c, 45e0482)"
+      "commit": "f5e8838",
+      "reason": "Owner-approved Stage 2 addition: ordered event ingestion that runs the alert rules and deletes the device's oldest events above SP_MAX_EVENTS_PER_DEVICE (counted as cap_deleted_events); timeline reads and retention (171960c, 45e0482). Owner-approved Stage 3: v2 batches go through the parser their version selects; the operator timeline shows each kind's v1/v2 field superset, so v1 rows show null for the v2-only fields, and coverage_gap's own source field is shown as gap_source (f5e8838)"
+    },
+    "src/security_platform/services/snapshots.py": {
+      "commit": "f5e8838",
+      "reason": "Owner-approved Stage 3: V3 snapshots go through the parser their version selects; a V3 edr_agent is stored as its V3 dump, which the operator device view returns as state (f5e8838)"
+    },
+    "migrations/versions/0005_stage3_detection.py": {
+      "commit": "75e60ba",
+      "reason": "Owner-approved Stage 3 addition: event v2 kinds, the ten alert rules, null sequences for agent_silent only, two partial indexes (f5e8838); statement_timeout lifted for its own statements only (75e60ba)"
+    },
+    "migrations/versions/0006_alert_retention.py": {
+      "commit": "0aa7a22",
+      "reason": "Owner-approved Stage 3 addition: tenants.alert_retention_days (default 60, 30 to 3650), audit_events.details and ix_alert_tenant_closed, with its three table locks taken first in a fixed order and statement_timeout lifted for its own statements only; the downgrade deletes the audit rows of the two new actions (0aa7a22)"
+    },
+    "src/security_platform/services/sweep.py": {
+      "commit": "0aa7a22",
+      "reason": "Owner-approved Stage 3 addition: agent_silent sweep (f5e8838); already-alerted episodes read without a lock, EpisodeUpdated on an unexpected update (a1ecb4a); comments on alerts prune only (0aa7a22)"
     }
   },
   "platform_files": {
@@ -109,6 +125,14 @@
       "commit": "90be449",
       "sha256": "29fcdc4569084e5b1e94a2309458ea09bb183b38519ac6c4b6f91562a0aaf3bf"
     },
+    "migrations/versions/0005_stage3_detection.py": {
+      "commit": "75e60ba",
+      "sha256": "8a7334783ef9d970d772c1bf671db9a93ead251962d733c3c1ad0ecd23308743"
+    },
+    "migrations/versions/0006_alert_retention.py": {
+      "commit": "0aa7a22",
+      "sha256": "d8df14da7c33b263bf2840b299a16a3d0ec0977548d4b2767b68942466e6360c"
+    },
     "src/security_platform/__init__.py": {
       "commit": "2755336",
       "sha256": "c7d46ab53e479f05664abad99a22b9dce43857c975c34659402570b87f05d830"
@@ -122,8 +146,8 @@
       "sha256": "ead8a1e831cdc34e7ae3ee7dfd52096f124c70146fecc002caca3c3b1b4a55f3"
     },
     "src/security_platform/api/device.py": {
-      "commit": "171960c",
-      "sha256": "9b3fc0be330f01a8993de53eee59ff92251cfdc226d084b264b8f2bff7cbca8d"
+      "commit": "f5e8838",
+      "sha256": "2eea8cfb55373298021105565999ef8f05c3abdb666cccff7bfd8bc0266c72df"
     },
     "src/security_platform/api/operator.py": {
       "commit": "45e0482",
@@ -150,8 +174,8 @@
       "sha256": "c2bb89b0e6b9aaefaee05b15879ba6032f3d968cc4e391c0120ac31357fcbb54"
     },
     "src/security_platform/cli.py": {
-      "commit": "171960c",
-      "sha256": "1470288b2a442ee92b31932a6edd6cc553a427a351208651fd085bbeb262eb1d"
+      "commit": "0aa7a22",
+      "sha256": "08b851404fcb1afd8d5630879ed40038b7f0887aef8371d028f094f94d2b5bee"
     },
     "src/security_platform/connectors/__init__.py": {
       "commit": "2755336",
@@ -174,68 +198,72 @@
       "sha256": "e21a4fe2258283c4455dc21bdadda211f1a71b0f116dd8140817c10b8985324f"
     },
     "src/security_platform/contracts.py": {
-      "commit": "90be449",
-      "sha256": "3d44ebba8c14724ba6d637454ab8ad13a9854efdca186cf9397bb6b799dbb3d6"
+      "commit": "f5e8838",
+      "sha256": "1854f96ce1dc728de54be0a97831892772078337c50a94fba7ae47df2b5f540b"
     },
     "src/security_platform/db.py": {
       "commit": "2755336",
       "sha256": "c393ea7a4bc9630cecbd9367ea8387e2b941eb9279ae7c0e299e1e6204907468"
     },
     "src/security_platform/event_contracts.py": {
-      "commit": "90be449",
-      "sha256": "20330ce2fb91c29ab3e13644630d97e2abe68963cd5c9200382775a879a30409"
+      "commit": "f5e8838",
+      "sha256": "57086b2b7946d96348d60a139b818449ee8961fa6347272e51144bbcb0793708"
     },
     "src/security_platform/models.py": {
-      "commit": "90be449",
-      "sha256": "77a032de41f7ba9bf44ed6128f2e15a2ecb11c5fd887eeace495421ed0718cdc"
+      "commit": "0aa7a22",
+      "sha256": "a2a29d971ceb8615e609deb4bf29c09a3c483eca7a0d144d3ab09cddf513cfa1"
     },
     "src/security_platform/services/__init__.py": {
       "commit": "2755336",
       "sha256": "264052c7dde21012c10ca761ef468b5cf178e2aa2b20dd56cd102e5b64f178b5"
     },
     "src/security_platform/services/administration.py": {
-      "commit": "171960c",
-      "sha256": "b3dfe9429319ce2bc9af8e0733cd006e2abb2755bd99adcb23e950cbb6466808"
+      "commit": "0aa7a22",
+      "sha256": "d317f63150ef8edb5cd18559d0af79a02000a1903e450bc6e0ffa355b0f2ce9e"
     },
     "src/security_platform/services/alerts.py": {
-      "commit": "45e0482",
-      "sha256": "46260e572045a11f0f616713fed9554cd72090d6c1ac72f7d527cc1b59429871"
+      "commit": "0aa7a22",
+      "sha256": "0df393889a7a9812f0b9bd822caf60ef51fd4dc2c5955ae8e1b5542e0e87a37b"
     },
     "src/security_platform/services/audit.py": {
-      "commit": "45e0482",
-      "sha256": "2917e844fb4c416fa248ea5afbd72204c2c493c7c1f742dd2a024149a3ba7e9b"
+      "commit": "0aa7a22",
+      "sha256": "b0054998f9321b5524943415a8f3a4f2eea50a18b0a41713de342d14257176c2"
     },
     "src/security_platform/services/common.py": {
-      "commit": "45e0482",
-      "sha256": "e1fa5377d0f339f745edba7b2132ed4f407161f759fd4ba33721e16371a8257d"
+      "commit": "f5e8838",
+      "sha256": "cb41db2c47060abc5e0b39d5469bf5f25079fed60d48ddf6fe8dee27c1484d35"
     },
     "src/security_platform/services/enrollment.py": {
       "commit": "cae7c18",
       "sha256": "de194608a3a85407fd661cc5c71f8089de4cccd9e696f81ee7064cc5afe0e4fd"
     },
     "src/security_platform/services/events.py": {
-      "commit": "45e0482",
-      "sha256": "46fbf22aa377d30975866b8012bd29f6b5ec5a89fb1d8d68d121e2adac544077"
+      "commit": "f5e8838",
+      "sha256": "3160022d1889a03c77d21c6eba0b7008d7502351fc8092a7892b25872103d0ec"
     },
     "src/security_platform/services/inventory.py": {
       "commit": "90be449",
       "sha256": "4e0ce68531045004eefdd5ccb4f5c18a84aeb99d8bf0fe33d93d12a69b87c029"
     },
     "src/security_platform/services/snapshots.py": {
-      "commit": "2755336",
-      "sha256": "f0ad6cbcd1194c688d08bd0e296a2d1cd71dca54b62ce59a61d60db9e223f328"
+      "commit": "f5e8838",
+      "sha256": "78731361618e984e356cba2206078c7b1f04ea49e04d84fdb7af0df237f387c7"
+    },
+    "src/security_platform/services/sweep.py": {
+      "commit": "0aa7a22",
+      "sha256": "7810b69819e23630052d2137a88d79033caf34eb6483fd1e25203a64a1ec7936"
     },
     "src/security_platform/settings.py": {
-      "commit": "45e0482",
-      "sha256": "d3fa66e81c4e25c861c5e1bcb47f872e053b82910534173912574d3707c3149f"
+      "commit": "0aa7a22",
+      "sha256": "0abf1f1149f5f7ab79b6855a22b96f6120d7e84712230bf0c76ea499a7365eda"
     },
     "alembic.ini": {
       "commit": "2755336",
       "sha256": "dfa8ba5f65ce739811838702b177f38044fb21c46b09406bfcf779f03e7b9e01"
     },
     "scripts/managed_postgres.py": {
-      "commit": "45e0482",
-      "sha256": "9193e0278027dd76b49ca14141c4d6c173c8c59c72c48fc46a8c848811b758ea"
+      "commit": "0aa7a22",
+      "sha256": "40241c136eb6434474630c635cb2afbf2fffbb4a4eb8722c25517b0e809de0c5"
     },
     "requirements-lock.txt": {
       "commit": "2755336",
@@ -264,7 +292,9 @@
       "migrations/versions/0001_initial.py",
       "migrations/versions/0002_endpoint_events.py",
       "migrations/versions/0003_alerts.py",
-      "migrations/versions/0004_edr_agent_product.py"
+      "migrations/versions/0004_edr_agent_product.py",
+      "migrations/versions/0005_stage3_detection.py",
+      "migrations/versions/0006_alert_retention.py"
     ]
   },
   "openapi": {
@@ -1160,7 +1190,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SnapshotEnvelope"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/SnapshotEnvelope"
+                    },
+                    {
+                      "$ref": "#/components/schemas/SnapshotEnvelopeV3"
+                    }
+                  ],
+                  "title": "Body"
                 }
               }
             },
@@ -1204,7 +1242,15 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/EventBatch"
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/EventBatch"
+                    },
+                    {
+                      "$ref": "#/components/schemas/EventBatchV2"
+                    }
+                  ],
+                  "title": "Body"
                 }
               }
             },
@@ -1284,6 +1330,110 @@
     },
     "components": {
       "schemas": {
+        "AgentState": {
+          "properties": {
+            "event_seq": {
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": 1.0,
+              "title": "Event Seq"
+            },
+            "observed_at": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Observed At"
+            },
+            "kind": {
+              "type": "string",
+              "const": "agent_state",
+              "title": "Kind"
+            },
+            "subject": {
+              "type": "string",
+              "enum": [
+                "service",
+                "rule_set",
+                "realtime_scan",
+                "file_change_sensor",
+                "command_line_sensor",
+                "persistence_watch",
+                "response_channel",
+                "isolation",
+                "quarantine"
+              ],
+              "title": "Subject"
+            },
+            "state": {
+              "type": "string",
+              "enum": [
+                "started",
+                "stopping",
+                "compiled",
+                "missing",
+                "invalid",
+                "unreadable",
+                "running",
+                "degraded",
+                "stopped",
+                "failed",
+                "not_available",
+                "baseline_created",
+                "ready",
+                "not_configured",
+                "awaiting_tenant_binding",
+                "journal_invalid",
+                "active",
+                "renewed",
+                "released",
+                "expired",
+                "released_locally",
+                "reverted_no_contact",
+                "reapplied",
+                "restored_locally"
+              ],
+              "title": "State"
+            },
+            "code": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "first_start",
+                    "clean_stop",
+                    "unclean_stop"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            },
+            "rule_set_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rule Set Id"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "event_seq",
+            "observed_at",
+            "kind",
+            "subject",
+            "state"
+          ],
+          "title": "AgentState"
+        },
         "AntivirusStatus": {
           "properties": {
             "catalog_available": {
@@ -1377,6 +1527,173 @@
             "product_id"
           ],
           "title": "AntivirusStatus"
+        },
+        "BehaviorMatch": {
+          "properties": {
+            "event_seq": {
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": 1.0,
+              "title": "Event Seq"
+            },
+            "observed_at": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Observed At"
+            },
+            "kind": {
+              "type": "string",
+              "const": "behavior_match",
+              "title": "Kind"
+            },
+            "rule": {
+              "type": "string",
+              "enum": [
+                "encoded_powershell",
+                "powershell_download_cradle",
+                "certutil_download_or_decode",
+                "mshta_remote_or_script",
+                "regsvr32_scriptlet",
+                "rundll32_script",
+                "bitsadmin_transfer",
+                "shadow_copy_deletion",
+                "defender_tampering_command",
+                "event_log_clearing_command"
+              ],
+              "title": "Rule"
+            },
+            "rule_version": {
+              "type": "integer",
+              "maximum": 65535.0,
+              "minimum": 1.0,
+              "title": "Rule Version"
+            },
+            "pid": {
+              "type": "integer",
+              "maximum": 4294967295.0,
+              "minimum": 0.0,
+              "title": "Pid"
+            },
+            "create_time": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Create Time"
+            },
+            "image": {
+              "type": "string",
+              "maxLength": 1024,
+              "minLength": 1,
+              "title": "Image"
+            },
+            "parent_image": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 1024,
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parent Image"
+            },
+            "found_at_start": {
+              "type": "boolean",
+              "title": "Found At Start"
+            },
+            "command_line_source": {
+              "type": "string",
+              "enum": [
+                "kernel_logger",
+                "process_query"
+              ],
+              "title": "Command Line Source"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "event_seq",
+            "observed_at",
+            "kind",
+            "rule",
+            "rule_version",
+            "pid",
+            "create_time",
+            "image",
+            "found_at_start",
+            "command_line_source"
+          ],
+          "title": "BehaviorMatch",
+          "description": "A behavior rule the agent evaluated in memory; the event carries the rule id, never the command line."
+        },
+        "CoverageGap": {
+          "properties": {
+            "event_seq": {
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": 1.0,
+              "title": "Event Seq"
+            },
+            "observed_at": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Observed At"
+            },
+            "kind": {
+              "type": "string",
+              "const": "coverage_gap",
+              "title": "Kind"
+            },
+            "source": {
+              "type": "string",
+              "enum": [
+                "process_sensor",
+                "file_change_sensor",
+                "command_line_sensor",
+                "agent_records"
+              ],
+              "title": "Source"
+            },
+            "reason": {
+              "type": "string",
+              "enum": [
+                "etw_events_lost",
+                "usn_journal_reset",
+                "usn_entries_deleted",
+                "volume_unmonitored",
+                "queue_overflow"
+              ],
+              "title": "Reason"
+            },
+            "lost": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Lost"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "event_seq",
+            "observed_at",
+            "kind",
+            "source",
+            "reason"
+          ],
+          "title": "CoverageGap"
         },
         "DispositionCounts": {
           "properties": {
@@ -1657,6 +1974,570 @@
           "title": "EdrAgentStatus",
           "description": "The Altay EDR agent's own self-reported state (Snapshot V2); no claim of protection or loaded rules."
         },
+        "EdrAgentStatusV3": {
+          "properties": {
+            "catalog_available": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Catalog Available"
+            },
+            "source": {
+              "type": "string",
+              "const": "self_reported",
+              "title": "Source",
+              "default": "self_reported"
+            },
+            "producer_verification": {
+              "type": "string",
+              "const": "not_verified",
+              "title": "Producer Verification",
+              "default": "not_verified"
+            },
+            "version": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._+\\-]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Version"
+            },
+            "source_observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Observed At"
+            },
+            "product_id": {
+              "type": "string",
+              "const": "edr_agent",
+              "title": "Product Id"
+            },
+            "status": {
+              "type": "string",
+              "enum": [
+                "running",
+                "unknown"
+              ],
+              "title": "Status",
+              "default": "unknown"
+            },
+            "agent_started_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Agent Started At"
+            },
+            "engine_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "pattern": "^[A-Za-z0-9][A-Za-z0-9._+/ -]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Engine Id"
+            },
+            "sensor_state": {
+              "type": "string",
+              "enum": [
+                "started",
+                "lost",
+                "failed",
+                "stopped",
+                "disabled",
+                "unknown"
+              ],
+              "title": "Sensor State",
+              "default": "unknown"
+            },
+            "sensor_error_code": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "session_name_invalid",
+                    "session_in_use",
+                    "access_denied",
+                    "session_start_failed",
+                    "session_stop_failed",
+                    "unknown"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sensor Error Code"
+            },
+            "events_queue_dropped": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Events Queue Dropped"
+            },
+            "events_write_failed": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Events Write Failed"
+            },
+            "events_unmapped": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Events Unmapped"
+            },
+            "events_skipped": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Events Skipped"
+            },
+            "events_evicted": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Events Evicted"
+            },
+            "events_discarded": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Events Discarded"
+            },
+            "events_degraded": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Events Degraded"
+            },
+            "outbox_backlog": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outbox Backlog"
+            },
+            "rule_set_state": {
+              "type": "string",
+              "enum": [
+                "compiled",
+                "missing",
+                "invalid",
+                "unreadable",
+                "unknown"
+              ],
+              "title": "Rule Set State",
+              "default": "unknown"
+            },
+            "rule_set_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[a-f0-9]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Rule Set Id"
+            },
+            "realtime_scan_state": {
+              "type": "string",
+              "enum": [
+                "running",
+                "degraded",
+                "stopped",
+                "failed",
+                "not_available",
+                "unknown"
+              ],
+              "title": "Realtime Scan State",
+              "default": "unknown"
+            },
+            "file_change_sensor_state": {
+              "type": "string",
+              "enum": [
+                "running",
+                "degraded",
+                "stopped",
+                "failed",
+                "not_available",
+                "unknown"
+              ],
+              "title": "File Change Sensor State",
+              "default": "unknown"
+            },
+            "command_line_sensor_state": {
+              "type": "string",
+              "enum": [
+                "running",
+                "degraded",
+                "stopped",
+                "failed",
+                "not_available",
+                "unknown"
+              ],
+              "title": "Command Line Sensor State",
+              "default": "unknown"
+            },
+            "persistence_watch_state": {
+              "type": "string",
+              "enum": [
+                "running",
+                "degraded",
+                "stopped",
+                "failed",
+                "not_available",
+                "unknown"
+              ],
+              "title": "Persistence Watch State",
+              "default": "unknown"
+            },
+            "scans_completed": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scans Completed"
+            },
+            "scans_detected": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scans Detected"
+            },
+            "scans_no_verdict": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scans No Verdict"
+            },
+            "scan_jobs_dropped": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scan Jobs Dropped"
+            },
+            "scan_cache_hits": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Scan Cache Hits"
+            },
+            "etw_events_lost": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Etw Events Lost"
+            },
+            "file_change_gaps": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "File Change Gaps"
+            },
+            "cmdline_unavailable": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cmdline Unavailable"
+            },
+            "response_channel_state": {
+              "type": "string",
+              "enum": [
+                "ready",
+                "not_configured",
+                "awaiting_tenant_binding",
+                "journal_invalid",
+                "unknown"
+              ],
+              "title": "Response Channel State",
+              "default": "unknown"
+            },
+            "response_actions_enabled": {
+              "items": {
+                "type": "string",
+                "enum": [
+                  "scan_path",
+                  "terminate_process",
+                  "quarantine_file",
+                  "restore_file",
+                  "isolate_host",
+                  "release_host"
+                ]
+              },
+              "type": "array",
+              "maxItems": 6,
+              "title": "Response Actions Enabled"
+            },
+            "response_key_ids": {
+              "items": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "type": "array",
+              "maxItems": 4,
+              "title": "Response Key Ids"
+            },
+            "last_action_seq": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Last Action Seq"
+            },
+            "isolation_state": {
+              "type": "string",
+              "enum": [
+                "inactive",
+                "active",
+                "partial",
+                "unknown"
+              ],
+              "title": "Isolation State",
+              "default": "unknown"
+            },
+            "isolation_until": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Isolation Until"
+            },
+            "isolation_checked_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Isolation Checked At"
+            },
+            "quarantine_items": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 9007199254740991.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Quarantine Items"
+            },
+            "service_config_state": {
+              "type": "string",
+              "enum": [
+                "as_installed",
+                "changed",
+                "unknown"
+              ],
+              "title": "Service Config State",
+              "default": "unknown"
+            },
+            "previous_run_end": {
+              "type": "string",
+              "enum": [
+                "clean",
+                "unclean",
+                "first_start",
+                "unknown"
+              ],
+              "title": "Previous Run End",
+              "default": "unknown"
+            },
+            "heartbeat_interval_seconds": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 3600.0,
+                  "minimum": 30.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Heartbeat Interval Seconds"
+            },
+            "behavior_rules_version": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^altay-behavior/v[1-9][0-9]{0,5}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Behavior Rules Version"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "product_id"
+          ],
+          "title": "EdrAgentStatusV3",
+          "description": "The Altay EDR agent's own self-reported state (Snapshot V3): every V2 field except rule_file_present,\nplus the Stage 3 states and counters.\n\nrule_set_state=compiled says only that this agent process compiled a rule set (rule_set_id names it),\nnever that the device is protected. A capability state says what that part of the agent reported about\nitself. The scanner scans after start and does not block. Counters count since the agent process started."
+        },
         "EmptyRequest": {
           "properties": {},
           "additionalProperties": false,
@@ -1736,6 +2617,88 @@
             "events"
           ],
           "title": "EventBatch"
+        },
+        "EventBatchV2": {
+          "properties": {
+            "schema_version": {
+              "type": "integer",
+              "const": 2,
+              "title": "Schema Version"
+            },
+            "batch_id": {
+              "type": "string",
+              "maxLength": 36,
+              "minLength": 36,
+              "title": "Batch Id"
+            },
+            "batch_sequence": {
+              "type": "integer",
+              "maximum": 9.223372036854776e+18,
+              "minimum": 1.0,
+              "title": "Batch Sequence"
+            },
+            "events": {
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ProcessStartedV2"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ProcessStoppedV2"
+                  },
+                  {
+                    "$ref": "#/components/schemas/SensorState"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ScanDetected"
+                  },
+                  {
+                    "$ref": "#/components/schemas/BehaviorMatch"
+                  },
+                  {
+                    "$ref": "#/components/schemas/PersistenceChange"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AgentState"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TamperSignal"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CoverageGap"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "kind",
+                  "mapping": {
+                    "agent_state": "#/components/schemas/AgentState",
+                    "behavior_match": "#/components/schemas/BehaviorMatch",
+                    "coverage_gap": "#/components/schemas/CoverageGap",
+                    "persistence_change": "#/components/schemas/PersistenceChange",
+                    "process_started": "#/components/schemas/ProcessStartedV2",
+                    "process_stopped": "#/components/schemas/ProcessStoppedV2",
+                    "scan_detected": "#/components/schemas/ScanDetected",
+                    "sensor_state": "#/components/schemas/SensorState",
+                    "tamper_signal": "#/components/schemas/TamperSignal"
+                  }
+                }
+              },
+              "type": "array",
+              "maxItems": 200,
+              "minItems": 1,
+              "title": "Events"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "schema_version",
+            "batch_id",
+            "batch_sequence",
+            "events"
+          ],
+          "title": "EventBatchV2",
+          "description": "The v2 batch: the v1 envelope rules (batch_id, batch_sequence, 1-200 events, increasing event_seq, the\n16 KiB canonical and 4 KiB stored-event bounds) with the nine v2 kinds."
         },
         "GrantRequest": {
           "properties": {
@@ -1922,6 +2885,91 @@
           ],
           "title": "HostBasedFirewallStatus"
         },
+        "PersistenceChange": {
+          "properties": {
+            "event_seq": {
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": 1.0,
+              "title": "Event Seq"
+            },
+            "observed_at": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Observed At"
+            },
+            "kind": {
+              "type": "string",
+              "const": "persistence_change",
+              "title": "Kind"
+            },
+            "location": {
+              "type": "string",
+              "enum": [
+                "run_key",
+                "run_once_key",
+                "service",
+                "scheduled_task",
+                "startup_folder"
+              ],
+              "title": "Location"
+            },
+            "scope": {
+              "type": "string",
+              "enum": [
+                "machine",
+                "user"
+              ],
+              "title": "Scope"
+            },
+            "change": {
+              "type": "string",
+              "enum": [
+                "added",
+                "modified",
+                "removed"
+              ],
+              "title": "Change"
+            },
+            "entry_id": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Entry Id"
+            },
+            "target_image": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 1024,
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Target Image"
+            },
+            "found_at_start": {
+              "type": "boolean",
+              "title": "Found At Start"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "event_seq",
+            "observed_at",
+            "kind",
+            "location",
+            "scope",
+            "change",
+            "entry_id",
+            "found_at_start"
+          ],
+          "title": "PersistenceChange",
+          "description": "A change of a persistence entry, named by its salted entry_id; never a value name, command text or SID."
+        },
         "ProcessStarted": {
           "properties": {
             "event_seq": {
@@ -1978,6 +3026,84 @@
             "image"
           ],
           "title": "ProcessStarted"
+        },
+        "ProcessStartedV2": {
+          "properties": {
+            "event_seq": {
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": 1.0,
+              "title": "Event Seq"
+            },
+            "observed_at": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Observed At"
+            },
+            "kind": {
+              "type": "string",
+              "const": "process_started",
+              "title": "Kind"
+            },
+            "pid": {
+              "type": "integer",
+              "maximum": 4294967295.0,
+              "minimum": 0.0,
+              "title": "Pid"
+            },
+            "parent_pid": {
+              "type": "integer",
+              "maximum": 4294967295.0,
+              "minimum": 0.0,
+              "title": "Parent Pid"
+            },
+            "session_id": {
+              "type": "integer",
+              "maximum": 4294967295.0,
+              "minimum": 0.0,
+              "title": "Session Id"
+            },
+            "image": {
+              "type": "string",
+              "maxLength": 1024,
+              "minLength": 1,
+              "title": "Image"
+            },
+            "create_time": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Create Time"
+            },
+            "parent_create_time": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parent Create Time"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "event_seq",
+            "observed_at",
+            "kind",
+            "pid",
+            "parent_pid",
+            "session_id",
+            "image",
+            "create_time"
+          ],
+          "title": "ProcessStartedV2",
+          "description": "v1's process_started plus the payload's CreateTime (required) and the parent's, when the agent knows it."
         },
         "ProcessStopped": {
           "properties": {
@@ -2041,6 +3167,81 @@
           ],
           "title": "ProcessStopped"
         },
+        "ProcessStoppedV2": {
+          "properties": {
+            "event_seq": {
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": 1.0,
+              "title": "Event Seq"
+            },
+            "observed_at": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Observed At"
+            },
+            "kind": {
+              "type": "string",
+              "const": "process_stopped",
+              "title": "Kind"
+            },
+            "pid": {
+              "type": "integer",
+              "maximum": 4294967295.0,
+              "minimum": 0.0,
+              "title": "Pid"
+            },
+            "exit_code": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 4294967295.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Exit Code"
+            },
+            "image": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 260,
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Image"
+            },
+            "create_time": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Create Time"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "event_seq",
+            "observed_at",
+            "kind",
+            "pid"
+          ],
+          "title": "ProcessStoppedV2"
+        },
         "RotateRequest": {
           "properties": {
             "ttl_seconds": {
@@ -2060,6 +3261,158 @@
           "additionalProperties": false,
           "type": "object",
           "title": "RotateRequest"
+        },
+        "ScanDetected": {
+          "properties": {
+            "event_seq": {
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": 1.0,
+              "title": "Event Seq"
+            },
+            "observed_at": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Observed At"
+            },
+            "kind": {
+              "type": "string",
+              "const": "scan_detected",
+              "title": "Kind"
+            },
+            "trigger": {
+              "type": "string",
+              "enum": [
+                "process_start",
+                "startup_scan",
+                "file_change",
+                "remote_scan",
+                "persistence_target"
+              ],
+              "title": "Trigger"
+            },
+            "path": {
+              "type": "string",
+              "maxLength": 1024,
+              "minLength": 1,
+              "title": "Path"
+            },
+            "size": {
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": 0.0,
+              "title": "Size"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Sha256"
+            },
+            "rule_set_id": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$",
+              "title": "Rule Set Id"
+            },
+            "hits": {
+              "items": {
+                "$ref": "#/components/schemas/ScanHit"
+              },
+              "type": "array",
+              "maxItems": 8,
+              "minItems": 1,
+              "title": "Hits"
+            },
+            "omitted_hits": {
+              "type": "integer",
+              "maximum": 4096.0,
+              "minimum": 0.0,
+              "title": "Omitted Hits"
+            },
+            "pid": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "maximum": 4294967295.0,
+                  "minimum": 0.0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Pid"
+            },
+            "create_time": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Create Time"
+            },
+            "action_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 36,
+                  "minLength": 36
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action Id"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "event_seq",
+            "observed_at",
+            "kind",
+            "trigger",
+            "path",
+            "size",
+            "sha256",
+            "rule_set_id",
+            "hits",
+            "omitted_hits"
+          ],
+          "title": "ScanDetected",
+          "description": "A file the agent's scanner matched; size and sha256 are carried in this kind only (ADR 1.4)."
+        },
+        "ScanHit": {
+          "properties": {
+            "rule": {
+              "type": "string",
+              "maxLength": 64,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]{0,63}$",
+              "title": "Rule"
+            },
+            "severity": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "title": "Severity"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "rule",
+            "severity"
+          ],
+          "title": "ScanHit",
+          "description": "One matching rule: its name and severity only, never its description or strings."
         },
         "SensorState": {
           "properties": {
@@ -2247,6 +3600,142 @@
           ],
           "title": "SnapshotEnvelope",
           "description": "V1 and V2 share one body. V2 only adds the edr_agent product; sequence and replay rules are common."
+        },
+        "SnapshotEnvelopeV3": {
+          "properties": {
+            "schema_version": {
+              "type": "integer",
+              "const": 3,
+              "title": "Schema Version"
+            },
+            "message_id": {
+              "type": "string",
+              "maxLength": 36,
+              "minLength": 36,
+              "title": "Message Id"
+            },
+            "sequence": {
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": 1.0,
+              "title": "Sequence"
+            },
+            "source_observed_at": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 32,
+                  "minLength": 20
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Source Observed At"
+            },
+            "products": {
+              "items": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/HostBasedFirewallStatus"
+                  },
+                  {
+                    "$ref": "#/components/schemas/TermivarStatus"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AntivirusStatus"
+                  },
+                  {
+                    "$ref": "#/components/schemas/EdrAgentStatusV3"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "product_id",
+                  "mapping": {
+                    "antivirus": "#/components/schemas/AntivirusStatus",
+                    "edr_agent": "#/components/schemas/EdrAgentStatusV3",
+                    "hostbasedfirewall": "#/components/schemas/HostBasedFirewallStatus",
+                    "termivar": "#/components/schemas/TermivarStatus"
+                  }
+                }
+              },
+              "type": "array",
+              "maxItems": 4,
+              "title": "Products"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "schema_version",
+            "message_id",
+            "sequence",
+            "products"
+          ],
+          "title": "SnapshotEnvelopeV3",
+          "description": "Snapshot V3: the V1/V2 envelope rules (message_id, sequence, source_observed_at window, unique products)\nwith the V3 edr_agent product. It is a whole state, like V1 and V2: omitted products are replaced."
+        },
+        "TamperSignal": {
+          "properties": {
+            "event_seq": {
+              "type": "integer",
+              "maximum": 9007199254740991.0,
+              "minimum": 1.0,
+              "title": "Event Seq"
+            },
+            "observed_at": {
+              "type": "string",
+              "maxLength": 32,
+              "minLength": 20,
+              "title": "Observed At"
+            },
+            "kind": {
+              "type": "string",
+              "const": "tamper_signal",
+              "title": "Kind"
+            },
+            "signal": {
+              "type": "string",
+              "enum": [
+                "service_config_changed",
+                "service_dacl_changed",
+                "data_dir_acl_changed",
+                "isolation_filters_missing",
+                "isolation_filters_disabled",
+                "isolation_released_locally",
+                "event_log_cleared",
+                "response_trust_changed",
+                "previous_run_unclean",
+                "quarantine_changed"
+              ],
+              "title": "Signal"
+            },
+            "detail": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "security",
+                    "system"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Detail"
+            }
+          },
+          "additionalProperties": false,
+          "type": "object",
+          "required": [
+            "event_seq",
+            "observed_at",
+            "kind",
+            "signal"
+          ],
+          "title": "TamperSignal",
+          "description": "Tamper evidence the agent reports about itself; a signal is not proof and nothing was prevented."
         },
         "TermivarStatus": {
           "properties": {
@@ -2503,7 +3992,7 @@
     "security-policy"
   ],
   "alembic_heads": [
-    "0004_edr_agent_product"
+    "0006_alert_retention"
   ],
   "database_tables": [
     "alerts",
