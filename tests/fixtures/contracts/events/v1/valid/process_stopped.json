@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "batch_id": "e0000001-0000-4000-8000-000000000002",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "process_stopped",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:01Z",
+      "pid": 4001,
+      "exit_code": 0,
+      "image": "setup.exe"
+    },
+    {
+      "kind": "process_stopped",
+      "event_seq": 2,
+      "observed_at": "2030-01-02T03:00:01Z",
+      "pid": 4002,
+      "exit_code": 4294967295,
+      "image": "�=45:A.exe"
+    },
+    {
+      "kind": "process_stopped",
+      "event_seq": 3,
+      "observed_at": "2030-01-02T03:00:01Z",
+      "pid": 4003
+    },
+    {
+      "kind": "process_stopped",
+      "event_seq": 4,
+      "observed_at": "2030-01-02T03:00:01Z",
+      "pid": 4004,
+      "exit_code": null,
+      "image": null
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+{
+  "payload": "snapshots/v1/valid/all_v1_products.json",
+  "ack": {
+    "accepted": true,
+    "message_id": "50000001-0000-4000-8000-000000000002",
+    "sequence": 5,
+    "received_at": "2030-01-02T03:04:05Z"
+  },
+  "timeline": {
+    "items": [],
+    "next_before_seq": null,
+    "cap_deleted_events": 0,
+    "suppressed_alerts": 0
+  },
+  "device": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "tenant_id": "11111111-1111-4111-8111-111111111111",
+    "label": "Contract fixture device",
+    "identity_status": "active",
+    "connection_status": "recent",
+    "created_at": "2030-01-02T03:04:05Z",
+    "revoked_at": null,
+    "last_sequence": 5,
+    "last_received_at": "2030-01-02T03:04:05Z",
+    "source_observed_at": "2030-01-02T03:00:00Z",
+    "source_observation": {
+      "age_seconds": 245,
+      "clock_state": "not_verified"
+    },
+    "source": "self_reported",
+    "producer_verification": "not_verified",
+    "products": [
+      {
+        "product_id": "antivirus",
+        "snapshot_sequence": 5,
+        "received_at": "2030-01-02T03:04:05Z",
+        "observation": {
+          "age_seconds": null,
+          "clock_state": "unknown"
+        },
+        "state": {
+          "source": "self_reported",
+          "status": "planned",
+          "version": null,
+          "product_id": "antivirus",
+          "availability": "unavailable",
+          "catalog_available": null,
+          "source_observed_at": null,
+          "execution_available": null,
+          "producer_verification": "not_verified"
+        }
+      },
+      {
+        "product_id": "hostbasedfirewall",
+        "snapshot_sequence": 5,
+        "received_at": "2030-01-02T03:04:05Z",
+        "observation": {
+          "age_seconds": 365,
+          "clock_state": "not_verified"
+        },
+        "state": {
+          "source": "self_reported",
+          "status": "running",
+          "version": "2.4.1",
+          "installed": true,
+          "product_id": "hostbasedfirewall",
+          "error_codes": [],
+          "firewall_mode": "enforce",
+          "reported_stale": false,
+          "reported_running": true,
+          "catalog_available": null,
+          "source_observed_at": "2030-01-02T02:58:00.000000Z",
+          "producer_verification": "not_verified"
+        }
+      },
+      {
+        "product_id": "termivar",
+        "snapshot_sequence": 5,
+        "received_at": "2030-01-02T03:04:05Z",
+        "observation": {
+          "age_seconds": null,
+          "clock_state": "unknown"
+        },
+        "state": {
+          "source": "self_reported",
+          "status": "experimental",
+          "version": null,
+          "product_id": "termivar",
+          "latest_report": {
+            "scope": "offline_report_summary",
+            "counts": {
+              "confirmed": 1,
+              "needs_review": 2,
+              "informational": 2
+            },
+            "digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "source": "self_reported",
+            "item_count": 5,
+            "imported_at": "2030-01-01T12:00:00.000000Z",
+            "report_schema": "venom-rendered-assessment/v1",
+            "subject_count": 2,
+            "severity_counts": {
+              "low": 1,
+              "high": 1,
+              "info": 2,
+              "medium": 1,
+              "critical": 0,
+              "unassigned": 0
+            },
+            "producer_verification": "not_verified"
+          },
+          "report_presence": "present",
+          "catalog_available": null,
+          "scanner_installed": true,
+          "source_observed_at": null,
+          "execution_available": false,
+          "producer_verification": "not_verified"
+        },
+        "report_import_age": {
+          "age_seconds": 54245,
+          "clock_state": "not_verified"
+        }
+      }
+    ],
+    "missing_products": [
+      "edr_agent"
+    ]
+  }
+}

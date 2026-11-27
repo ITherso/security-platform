@@ -11,11 +11,14 @@ from security_platform.db import Base
 
 class Tenant(Base):
     __tablename__ = "tenants"
-    __table_args__ = (CheckConstraint("event_retention_days BETWEEN 1 AND 90", name="ck_tenant_event_retention"),)
+    __table_args__ = (CheckConstraint("event_retention_days BETWEEN 1 AND 90", name="ck_tenant_event_retention"),
+                      # Migration 0006; `alerts prune` keeps closed alerts this many days after closed_at.
+                      CheckConstraint("alert_retention_days BETWEEN 30 AND 3650", name="ck_tenant_alert_retention"))
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
     event_retention_days: Mapped[int] = mapped_column(SmallInteger, nullable=False, server_default=text("30"))
+    alert_retention_days: Mapped[int] = mapped_column(Integer, nullable=False, server_default=text("60"))
 
 
 class Principal(Base):
@@ -232,6 +235,9 @@ class AuditEvent(Base):
     __table_args__ = (
         CheckConstraint("actor_type IN ('operator','device','local_admin')", name="ck_audit_actor"),
         CheckConstraint("outcome = 'success'", name="ck_audit_outcome"),
+        # Migration 0006. Only the `alerts prune` record has details (its counts); the audit API never returns them.
+        CheckConstraint("details IS NULL OR (jsonb_typeof(details) = 'object' AND octet_length(details::text) <= 1024)",
+                        name="ck_audit_details"),
         Index("ix_audit_tenant_created", "tenant_id", "created_at", "id"),
     )
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
@@ -243,6 +249,9 @@ class AuditEvent(Base):
     object_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
     outcome: Mapped[str] = mapped_column(String(16), nullable=False, default="success")
     created_at: Mapped[object] = mapped_column(DateTime(timezone=True), nullable=False)
+    # SQL NULL, never a JSON null, when there are no details: ck_audit_details accepts only NULL or an object.
+    details: Mapped[dict | None] = mapped_column(
+        JSON(none_as_null=True).with_variant(JSONB(none_as_null=True), "postgresql"))
 
 
 Index("uq_credential_active_device", DeviceCredential.tenant_id, DeviceCredential.device_id,
@@ -263,3 +272,6 @@ Index("ix_endpoint_events_process_identity", EndpointEvent.tenant_id, EndpointEv
 # whatever its status.
 Index("ix_alert_silence_episode", Alert.tenant_id, Alert.device_id, Alert.dedup_key,
       postgresql_where=text("rule = 'agent_silent'"))
+# Migration 0006. The closed alerts of a tenant by closing time: the range `alerts prune` reads and deletes. A
+# query uses it only when it repeats the predicate with the literal 'closed', in custom and generic plans alike.
+Index("ix_alert_tenant_closed", Alert.tenant_id, Alert.closed_at, postgresql_where=text("status = 'closed'"))

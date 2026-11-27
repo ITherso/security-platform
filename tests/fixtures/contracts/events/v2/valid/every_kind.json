@@ -1,0 +1,102 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-00000000000a",
+  "batch_sequence": 3,
+  "events": [
+    {
+      "kind": "process_started",
+      "event_seq": 21,
+      "observed_at": "2030-01-02T03:00:00.000001Z",
+      "pid": 4021,
+      "parent_pid": 4,
+      "session_id": 1,
+      "image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "create_time": "2030-01-02T02:59:00.000001Z",
+      "parent_create_time": "2030-01-02T02:00:00Z"
+    },
+    {
+      "kind": "process_stopped",
+      "event_seq": 22,
+      "observed_at": "2030-01-02T03:00:01Z",
+      "pid": 4022,
+      "exit_code": 0,
+      "image": "setup.exe",
+      "create_time": "2030-01-02T02:59:00.000001Z"
+    },
+    {
+      "kind": "sensor_state",
+      "event_seq": 23,
+      "observed_at": "2030-01-02T03:00:02Z",
+      "state": "lost",
+      "error_code": "session_in_use"
+    },
+    {
+      "kind": "scan_detected",
+      "event_seq": 24,
+      "observed_at": "2030-01-02T03:00:03Z",
+      "trigger": "startup_scan",
+      "path": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "size": 68,
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "rule_set_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hits": [
+        {
+          "rule": "Sample_Rule",
+          "severity": "medium"
+        }
+      ],
+      "omitted_hits": 0,
+      "pid": 4321,
+      "create_time": "2030-01-02T02:59:00.000001Z",
+      "action_id": null
+    },
+    {
+      "kind": "behavior_match",
+      "event_seq": 25,
+      "observed_at": "2030-01-02T03:00:04Z",
+      "rule": "encoded_powershell",
+      "rule_version": 1,
+      "pid": 4321,
+      "create_time": "2030-01-02T02:59:00.000001Z",
+      "image": "\\Device\\HarddiskVolume3\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_image": null,
+      "found_at_start": false,
+      "command_line_source": "kernel_logger"
+    },
+    {
+      "kind": "persistence_change",
+      "event_seq": 26,
+      "observed_at": "2030-01-02T03:00:05Z",
+      "location": "run_key",
+      "scope": "user",
+      "change": "added",
+      "entry_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "target_image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "found_at_start": true
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 27,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "rule_set",
+      "state": "compiled",
+      "code": null,
+      "rule_set_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "kind": "tamper_signal",
+      "event_seq": 28,
+      "observed_at": "2030-01-02T03:00:07Z",
+      "signal": "service_config_changed",
+      "detail": null
+    },
+    {
+      "kind": "coverage_gap",
+      "event_seq": 29,
+      "observed_at": "2030-01-02T03:00:08Z",
+      "source": "file_change_sensor",
+      "reason": "usn_journal_reset",
+      "lost": null
+    }
+  ]
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-000000000001",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "process_started",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:00.000001Z",
+      "pid": 4001,
+      "parent_pid": 4,
+      "session_id": 1,
+      "image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "create_time": "2030-01-02T02:59:00.000001Z",
+      "parent_create_time": "2030-01-02T02:00:00Z"
+    },
+    {
+      "kind": "process_started",
+      "event_seq": 2,
+      "observed_at": "2030-01-02T03:00:00.000001Z",
+      "pid": 4002,
+      "parent_pid": 4,
+      "session_id": 1,
+      "image": "\\Device\\HarddiskVolume3\\Windows\\System32\\svchost.exe",
+      "create_time": "2030-01-02T02:59:00.000001Z",
+      "parent_create_time": null
+    },
+    {
+      "kind": "process_started",
+      "event_seq": 3,
+      "observed_at": "2030-01-02T03:00:00.000001Z",
+      "pid": 4003,
+      "parent_pid": 4,
+      "session_id": 1,
+      "image": "\\Device\\HarddiskVolume3\\Users\\*\\Masaüstü\\ödev.exe",
+      "create_time": "2030-01-02T02:59:00.000001Z"
+    }
+  ]
+}

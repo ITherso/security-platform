@@ -1,0 +1,11 @@
+{
+  "schema_version": 2,
+  "message_id": "50000002-0000-4000-8000-000000000004",
+  "sequence": 1,
+  "source_observed_at": null,
+  "products": [
+    {
+      "product_id": "edr_agent"
+    }
+  ]
+}

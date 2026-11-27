@@ -1,9 +1,10 @@
 """Local administration requires the separate migration/owner DB credential.
 
 No bootstrap or membership mutation is exposed by the HTTP service. Event
-retention (`events prune`) and the silence sweep (`sweep`) are routine runtime
-work and, like `serve`, use only the unprivileged runtime credential. Nothing
-here is scheduled: an operator runs both, for example from Task Scheduler.
+retention (`events prune`), alert retention (`alerts prune`) and the silence
+sweep (`sweep`) are routine runtime work and, like `serve`, use only the
+unprivileged runtime credential. Nothing here is scheduled: an operator runs
+them, for example from Task Scheduler.
 """
 import argparse
 import json
@@ -60,9 +61,15 @@ def main(argv=None):
     retention = commands.add_parser("set-event-retention")
     retention.add_argument("--tenant-id", required=True, type=UUID)
     retention.add_argument("--days", required=True, type=int)
+    alert_retention = commands.add_parser("set-alert-retention")
+    alert_retention.add_argument("--tenant-id", required=True, type=UUID)
+    alert_retention.add_argument("--days", required=True, type=int)
     events = commands.add_parser("events")
     event_commands = events.add_subparsers(dest="events_command", required=True)
     event_commands.add_parser("prune")
+    alerts = commands.add_parser("alerts")
+    alert_commands = alerts.add_subparsers(dest="alerts_command", required=True)
+    alert_commands.add_parser("prune")
     commands.add_parser("sweep")
     commands.add_parser("migrate")
     serve = commands.add_parser("serve")
@@ -120,6 +127,29 @@ def main(argv=None):
                       "deleted events stay deleted and the next run retries the rest.", file=sys.stderr)
                 return 1
             return 0
+        if args.command == "alerts":
+            from security_platform.app import validate_runtime_role
+            from security_platform.services.alerts import prune_closed_alerts
+            from security_platform.services.common import ServiceLimits
+            from security_platform.settings import max_audit_events_from_environment
+            # Its alerts_pruned records fall under the server's audit bound, not the default one.
+            limits = ServiceLimits(max_audits=max_audit_events_from_environment())
+            database = _runtime_database("alert retention")
+            try:
+                try:
+                    validate_runtime_role(database)
+                except ValueError:
+                    raise ValueError("alerts prune requires the separate unprivileged runtime database role") from None
+                result = prune_closed_alerts(database, limits=limits)
+            finally:
+                database.close()
+            print(json.dumps(result))
+            if result["failed_tenants"]:
+                # Earlier chunks were committed, so "no success was recorded" would be false.
+                print(f"alerts prune incomplete: {result['failed_tenants']} tenant(s) failed and were skipped; "
+                      "deleted alerts stay deleted and the next run retries the rest.", file=sys.stderr)
+                return 1
+            return 0
         if args.command == "sweep":
             from security_platform.app import validate_runtime_role
             from security_platform.services.common import ServiceLimits
@@ -144,17 +174,25 @@ def main(argv=None):
                       "alerts already opened stay open and the next run retries the rest.", file=sys.stderr)
                 return 1
             return 0
+        from security_platform.services.common import ServiceLimits
+        from security_platform.settings import max_audit_events_from_environment
+        # Every owner command writes one audit record, under the server's audit bound.
+        limits = ServiceLimits(max_audits=max_audit_events_from_environment())
         database = _owner_database()
         try:
             with database.session() as session:
                 if args.command == "create-tenant":
-                    result = administration.create_tenant(session, args.name)
+                    result = administration.create_tenant(session, args.name, limits=limits)
                 elif args.command == "set-membership":
-                    result = administration.set_membership(session, args.tenant_id, args.issuer, args.subject, args.role)
+                    result = administration.set_membership(session, args.tenant_id, args.issuer, args.subject, args.role,
+                                                           limits=limits)
                 elif args.command == "set-event-retention":
-                    result = administration.set_event_retention(session, args.tenant_id, args.days)
+                    result = administration.set_event_retention(session, args.tenant_id, args.days, limits=limits)
+                elif args.command == "set-alert-retention":
+                    result = administration.set_alert_retention(session, args.tenant_id, args.days, limits=limits)
                 else:
-                    result = administration.revoke_membership(session, args.tenant_id, args.issuer, args.subject)
+                    result = administration.revoke_membership(session, args.tenant_id, args.issuer, args.subject,
+                                                              limits=limits)
             print(json.dumps(result, ensure_ascii=False))
         finally:
             database.close()

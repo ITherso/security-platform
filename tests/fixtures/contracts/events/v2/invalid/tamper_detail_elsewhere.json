@@ -1,0 +1,14 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-000000000025",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "tamper_signal",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:07Z",
+      "signal": "service_config_changed",
+      "detail": "system"
+    }
+  ]
+}

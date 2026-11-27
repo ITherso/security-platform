@@ -40,7 +40,9 @@ from test_services import NOW, enrolled, pg_service_databases  # noqa: F401  (sh
 
 
 pytestmark = pytest.mark.integration
-HEAD = "0005_stage3_detection"
+# The Stage 3 migration; 0006_alert_retention (alert retention) follows it and is the head.
+STAGE3 = "0005_stage3_detection"
+HEAD = "0006_alert_retention"
 # ALERT_RULES is services.alerts.RULES (RULES = tuple(SEVERITY)), the ten alert rules of the P1 brief's section 8 in
 # the order of its SEVERITY keys: the single source the schema must mirror.
 V1_RULES = ALERT_RULES[:4]
@@ -200,11 +202,12 @@ def migration_source_list(name, constraint):
     return tuple(re.findall(r"'(\w+)'", values))
 
 
-def test_the_alembic_head_is_0005_on_a_linear_chain(pg_service_databases):
+def test_the_alembic_head_is_0006_on_a_linear_chain(pg_service_databases):
     owner, _ = pg_service_databases
     script = ScriptDirectory.from_config(Config(str(PROJECT / "alembic.ini")))
     assert script.get_heads() == [HEAD]
-    assert script.get_revision(HEAD).down_revision == "0004_edr_agent_product"
+    assert script.get_revision(HEAD).down_revision == STAGE3
+    assert script.get_revision(STAGE3).down_revision == "0004_edr_agent_product"
     with owner.engine.connect() as connection:
         assert connection.scalar(text("SELECT version_num FROM alembic_version")) == HEAD
 
@@ -221,7 +224,7 @@ def test_head_checks_match_the_contract_the_models_and_the_frozen_migrations(pg_
     assert tuple(re.findall(r"'(\w+)'", model_check(Alert, "ck_alert_rule"))) == ALERT_RULES
     # The migration hardcodes the same lists (a migration never imports application constants); its downgrade
     # restores exactly the lists that 0002 and 0003 wrote.
-    module = migration_module(HEAD)
+    module = migration_module(STAGE3)
     assert tuple(re.findall(r"'(\w+)'", statement_with(module.DDL_STATEMENTS, "ADD CONSTRAINT ck_endpoint_event_kind"))
                  ) == EVENT_KINDS
     assert tuple(re.findall(r"'(\w+)'", statement_with(module.DDL_STATEMENTS, "ADD CONSTRAINT ck_alert_rule"))
@@ -311,8 +314,11 @@ def test_migration_0005_down_and_up_in_a_rolled_back_transaction(event_tenants):
     upgrade gives the head schema again."""
     ctx = event_tenants
     full, old_only, new_only = (UUID(enrolled(ctx.runtime, ctx.admin_a, ctx.a)["device_id"]) for _ in range(3))
-    module = migration_module(HEAD)
-    assert (module.revision, module.down_revision) == (HEAD, "0004_edr_agent_product")
+    module = migration_module(STAGE3)
+    assert (module.revision, module.down_revision) == (STAGE3, "0004_edr_agent_product")
+    # 0006 adds ix_alert_tenant_closed after 0005: it is downgraded first and upgraded last.
+    retention = migration_module(HEAD)
+    assert retention.down_revision == STAGE3
     endpoint_events, alerts_migration = migration_module("0002_endpoint_events"), migration_module("0003_alerts")
     v2_started = parse_event_batch(body(1, [started(1)])).events[0].model_dump(mode="json")
     with ctx.owner.engine.connect() as connection:
@@ -334,6 +340,8 @@ def test_migration_0005_down_and_up_in_a_rolled_back_transaction(event_tenants):
             for rule in V1_RULES:
                 insert_alert(connection, ctx.a, old_only, rule)
             with Operations.context(MigrationContext.configure(connection)):
+                retention.downgrade()
+                at_0005 = schema_state(connection)
                 module.downgrade()
                 assert device_kinds(connection, full) == device_kinds(connection, old_only) == list(EVENT_KINDS_V1)
                 assert device_kinds(connection, new_only) == []
@@ -360,6 +368,8 @@ def test_migration_0005_down_and_up_in_a_rolled_back_transaction(event_tenants):
                 alerts_migration.upgrade()
                 assert schema_state(connection) == at_0004
                 module.upgrade()
+                assert schema_state(connection) == at_0005
+                retention.upgrade()
                 assert schema_state(connection) == head
         finally:
             transaction.rollback()
@@ -384,7 +394,7 @@ def test_migration_0005_lifts_the_statement_timeout_around_its_own_statements_on
     # env.py bounds every statement of the one migration transaction at 5 s. 0005's CHECK validation, index build
     # and downgrade deletion read the event table whole, so each direction lifts statement_timeout before its first
     # statement and restores env.py's value after its last; lock_timeout is never touched.
-    module = migration_module(HEAD)
+    module = migration_module(STAGE3)
     assert (module.LIFT_STATEMENT_TIMEOUT, module.RESTORE_STATEMENT_TIMEOUT) == (
         "SET LOCAL statement_timeout = 0", "SET LOCAL statement_timeout TO DEFAULT")
     for run, statements in ((module.upgrade, module.DDL_STATEMENTS), (module.downgrade, module.DOWNGRADE_STATEMENTS)):
@@ -423,7 +433,7 @@ def test_migration_0005_statements_run_unbounded_with_env_lock_timeout_then_env_
     # On PostgreSQL itself: SET LOCAL reaches every 0005 statement, and TO DEFAULT gives back the value that the
     # connection's options set (env.py's and db.py's 5 s), so later migrations of the same run keep their bound.
     owner, _ = pg_service_databases
-    module = migration_module(HEAD)
+    module = migration_module(STAGE3)
     lift, restore = module.LIFT_STATEMENT_TIMEOUT, module.RESTORE_STATEMENT_TIMEOUT
     with owner.engine.connect() as connection:
         transaction = connection.begin()

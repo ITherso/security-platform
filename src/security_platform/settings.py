@@ -13,6 +13,9 @@ SILENCE_ALERT_SECONDS_RANGE = (300, 86400)
 # SP_MAX_OPEN_ALERTS_PER_DEVICE: the per-device cap on alerts that are not closed, for ingestion and the sweep.
 DEFAULT_MAX_OPEN_ALERTS_PER_DEVICE = 500
 MAX_OPEN_ALERTS_PER_DEVICE_RANGE = (10, 100000)
+# SP_MAX_AUDIT_EVENTS_PER_TENANT: the per-tenant audit bound, for the server and the CLI commands that write audit.
+DEFAULT_MAX_AUDIT_EVENTS_PER_TENANT = 10000
+MAX_AUDIT_EVENTS_PER_TENANT_RANGE = (10, 1000000)
 
 
 @dataclass(frozen=True)
@@ -29,7 +32,7 @@ class Settings:
     credential_ttl_seconds: int = 86400
     max_devices_per_tenant: int = 1000
     max_active_grants_per_tenant: int = 1000
-    max_audit_events_per_tenant: int = 10000
+    max_audit_events_per_tenant: int = DEFAULT_MAX_AUDIT_EVENTS_PER_TENANT
     max_events_per_device: int = 250000
     max_open_alerts_per_device: int = DEFAULT_MAX_OPEN_ALERTS_PER_DEVICE
     silence_alert_seconds: int = DEFAULT_SILENCE_ALERT_SECONDS
@@ -51,7 +54,7 @@ class Settings:
             (self.stale_after_seconds, 1, 86400), (self.enrollment_ttl_seconds, 1, 3600),
             (self.max_enrollment_ttl_seconds, 1, 3600), (self.credential_ttl_seconds, 60, 2592000),
             (self.max_devices_per_tenant, 1, 100000), (self.max_active_grants_per_tenant, 1, 100000),
-            (self.max_audit_events_per_tenant, 10, 1000000), (self.max_events_per_device, 1000, 10000000),
+            (self.max_audit_events_per_tenant, *MAX_AUDIT_EVENTS_PER_TENANT_RANGE), (self.max_events_per_device, 1000, 10000000),
             (self.max_open_alerts_per_device, *MAX_OPEN_ALERTS_PER_DEVICE_RANGE),
             (self.silence_alert_seconds, *SILENCE_ALERT_SECONDS_RANGE),
             (self.requests_per_minute, 1, 10000), (self.body_timeout_seconds, 1, 30),
@@ -121,3 +124,14 @@ def max_open_alerts_from_environment():
     """
     return _environment_integer("SP_MAX_OPEN_ALERTS_PER_DEVICE", DEFAULT_MAX_OPEN_ALERTS_PER_DEVICE,
                                 MAX_OPEN_ALERTS_PER_DEVICE_RANGE)
+
+
+def max_audit_events_from_environment():
+    """SP_MAX_AUDIT_EVENTS_PER_TENANT alone, with the Settings default and bounds.
+
+    `alerts prune` and the owner commands write audit records under the same
+    per-tenant bound that `serve` applies. With the default instead, a raised
+    bound would evict every record above 10000 on their next write.
+    """
+    return _environment_integer("SP_MAX_AUDIT_EVENTS_PER_TENANT", DEFAULT_MAX_AUDIT_EVENTS_PER_TENANT,
+                                MAX_AUDIT_EVENTS_PER_TENANT_RANGE)

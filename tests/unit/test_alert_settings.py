@@ -10,7 +10,7 @@ import pytest
 from security_platform.app import create_app
 from security_platform.services.common import DEFAULT_LIMITS, ServiceLimits
 from security_platform.settings import (DEFAULT_SILENCE_ALERT_SECONDS, SILENCE_ALERT_SECONDS_RANGE, Settings,
-    max_open_alerts_from_environment, silence_alert_seconds_from_environment)
+    max_audit_events_from_environment, max_open_alerts_from_environment, silence_alert_seconds_from_environment)
 
 
 @pytest.fixture
@@ -132,3 +132,22 @@ def test_the_sweep_helpers_read_what_the_server_settings_read(settings, monkeypa
         monkeypatch.setenv("SP_MAX_OPEN_ALERTS_PER_DEVICE", value)
         assert (Settings.from_environment().max_open_alerts_per_device == max_open_alerts_from_environment()
                 == int(value))
+
+
+def test_the_cli_audit_bound_is_the_servers_without_its_operator_settings(settings, monkeypatch):
+    """`alerts prune` and the owner commands read SP_MAX_AUDIT_EVENTS_PER_TENANT as Settings does."""
+    for name in OPERATOR_SETTINGS + ("SP_MAX_AUDIT_EVENTS_PER_TENANT",):
+        monkeypatch.delenv(name, raising=False)
+    assert max_audit_events_from_environment() == 10000 == settings.max_audit_events_per_tenant == DEFAULT_LIMITS.max_audits
+    for value in ("9", "1000001", "0", "-1"):
+        monkeypatch.setenv("SP_MAX_AUDIT_EVENTS_PER_TENANT", value)
+        with pytest.raises(ValueError, match="Invalid bounded platform setting"):
+            max_audit_events_from_environment()
+    for value in ("many", "10000.0", "1e4"):
+        monkeypatch.setenv("SP_MAX_AUDIT_EVENTS_PER_TENANT", value)
+        with pytest.raises(ValueError, match="Invalid integer setting: SP_MAX_AUDIT_EVENTS_PER_TENANT"):
+            max_audit_events_from_environment()
+    required_environment(settings, monkeypatch)
+    for value in ("10", "15001", "1000000"):
+        monkeypatch.setenv("SP_MAX_AUDIT_EVENTS_PER_TENANT", value)
+        assert Settings.from_environment().max_audit_events_per_tenant == max_audit_events_from_environment() == int(value)

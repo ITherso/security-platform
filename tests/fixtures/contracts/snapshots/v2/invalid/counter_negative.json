@@ -1,0 +1,27 @@
+{
+  "schema_version": 2,
+  "message_id": "50000002-0000-4000-8000-00000000000f",
+  "sequence": 1,
+  "source_observed_at": "2030-01-02T03:00:00Z",
+  "products": [
+    {
+      "product_id": "edr_agent",
+      "status": "running",
+      "version": "0.3.0",
+      "source_observed_at": "2030-01-02T03:00:00Z",
+      "agent_started_at": "2030-01-02T01:00:00Z",
+      "engine_id": "edr-agent/0.3.0",
+      "rule_file_present": true,
+      "sensor_state": "started",
+      "sensor_error_code": null,
+      "events_queue_dropped": 0,
+      "events_write_failed": 0,
+      "events_unmapped": 0,
+      "events_skipped": -1,
+      "events_evicted": 0,
+      "events_discarded": 0,
+      "events_degraded": 0,
+      "outbox_backlog": 0
+    }
+  ]
+}

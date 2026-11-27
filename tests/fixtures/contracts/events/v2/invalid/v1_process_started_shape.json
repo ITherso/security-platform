@@ -1,0 +1,16 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-000000000014",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "process_started",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:00.000001Z",
+      "pid": 4001,
+      "parent_pid": 4,
+      "session_id": 1,
+      "image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe"
+    }
+  ]
+}

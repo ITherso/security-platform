@@ -1,0 +1,750 @@
+{
+  "about": "The decision the Platform must return for each payload. tests/integration/test_contract_fixtures.py sends every payload, byte for byte, through the real device route and checks it; it never rewrites this file. after: payloads sent first to the same fresh device, each of them accepted. cursor: the event batch 409 body's last_batch_sequence and last_event_seq.",
+  "payloads": {
+    "events/v1/invalid/batch_id_upper_case.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "batch_id is a lower-case canonical UUID"
+    },
+    "events/v1/invalid/batch_sequence_zero.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "batch_sequence >= 1"
+    },
+    "events/v1/invalid/body_too_large.json": {
+      "decision": "rejected",
+      "status": 413,
+      "error": "request_too_large",
+      "note": "Above 16 KiB as sent: the request boundary refuses it"
+    },
+    "events/v1/invalid/canonical_too_large.json": {
+      "decision": "rejected",
+      "status": 413,
+      "error": "Event batch too large",
+      "note": "Fits in 16 KiB as sent, not in canonical form (microsecond times, explicit nulls)"
+    },
+    "events/v1/invalid/command_line_field.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "No command line in an event"
+    },
+    "events/v1/invalid/duplicate_key.json": {
+      "decision": "rejected",
+      "status": 400,
+      "error": "invalid_json",
+      "note": "A repeated key is invalid JSON at the request boundary"
+    },
+    "events/v1/invalid/error_code_with_started.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "error_code only with lost or failed"
+    },
+    "events/v1/invalid/event_seq_above_2_53.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "event_seq <= 2^53-1"
+    },
+    "events/v1/invalid/event_seq_not_after_cursor.json": {
+      "decision": "rejected",
+      "status": 409,
+      "error": "Event sequence does not follow the last accepted event",
+      "note": "The first event_seq must be above the last accepted one",
+      "cursor": {
+        "last_batch_sequence": 7,
+        "last_event_seq": 1005
+      },
+      "after": [
+        "events/v1/valid/mixed_batch.json"
+      ]
+    },
+    "events/v1/invalid/event_seq_not_increasing.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "event_seq strictly increases inside a batch"
+    },
+    "events/v1/invalid/event_too_large.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The stored jsonb text of one event is at most 4096 bytes"
+    },
+    "events/v1/invalid/events_empty.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "1-200 events"
+    },
+    "events/v1/invalid/observed_at_out_of_range.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "1970-01-01T00:00:00Z <= observed_at < 9999-01-01T00:00:00Z"
+    },
+    "events/v1/invalid/observed_at_with_offset.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "UTC text ends in Z"
+    },
+    "events/v1/invalid/pid_above_uint32.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "pid is a uint32"
+    },
+    "events/v1/invalid/pid_as_string.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Strict integers"
+    },
+    "events/v1/invalid/same_sequence_other_content.json": {
+      "decision": "rejected",
+      "status": 409,
+      "error": "Event batch identity or sequence conflicts with current state",
+      "note": "The last accepted batch_sequence with another batch_id",
+      "cursor": {
+        "last_batch_sequence": 7,
+        "last_event_seq": 1005
+      },
+      "after": [
+        "events/v1/valid/mixed_batch.json"
+      ]
+    },
+    "events/v1/invalid/schema_version_bool.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "A bool is not a schema_version"
+    },
+    "events/v1/invalid/schema_version_missing.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "schema_version is required"
+    },
+    "events/v1/invalid/schema_version_string.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "schema_version is a strict integer"
+    },
+    "events/v1/invalid/schema_version_unknown.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Only versions 1 and 2 exist"
+    },
+    "events/v1/invalid/short_image_with_separator.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "process_stopped.image is a short name, never a path"
+    },
+    "events/v1/invalid/stale_batch_sequence.json": {
+      "decision": "rejected",
+      "status": 409,
+      "error": "Event batch sequence is stale",
+      "note": "A batch_sequence below the last accepted one",
+      "cursor": {
+        "last_batch_sequence": 7,
+        "last_event_seq": 1005
+      },
+      "after": [
+        "events/v1/valid/mixed_batch.json"
+      ]
+    },
+    "events/v1/invalid/too_many_nodes.json": {
+      "decision": "rejected",
+      "status": 400,
+      "error": "invalid_json",
+      "note": "More than 2048 JSON nodes: the boundary's structure budget"
+    },
+    "events/v1/invalid/trust_claim.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "A batch cannot carry a trust claim"
+    },
+    "events/v1/invalid/unknown_envelope_field.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The body carries no identity field (extra=forbid)"
+    },
+    "events/v1/invalid/unknown_kind.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The v1 kinds are closed"
+    },
+    "events/v1/invalid/unmasked_user_folder.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The folder after Users must be masked as *"
+    },
+    "events/v1/invalid/v2_field_in_v1.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "create_time exists only in v2"
+    },
+    "events/v1/invalid/v2_kind_in_v1.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "A batch is homogeneous: no v2 kind in a v1 batch"
+    },
+    "events/v1/invalid/zero_width_in_image.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Unicode Cc/Cf characters (here U+200B) are refused in event text"
+    },
+    "events/v1/valid/largest_event_seq.json": {
+      "decision": "accepted",
+      "note": "event_seq up to 2^53-1, the console's safe-integer limit"
+    },
+    "events/v1/valid/mixed_batch.json": {
+      "decision": "accepted",
+      "note": "A first batch may start at any batch_sequence and event_seq; gaps in event_seq are allowed; a short fraction is normalized to microseconds"
+    },
+    "events/v1/valid/process_started.json": {
+      "decision": "accepted",
+      "note": "process_started: a masked user path, a system path, a non-ASCII masked path, an NTFS stream on the masked profile folder and a bare kernel image name"
+    },
+    "events/v1/valid/process_stopped.json": {
+      "decision": "accepted",
+      "note": "process_stopped: an exit code and short name, the largest exit code with the agent's U+FFFD separator replacement, omitted optional fields, and explicit nulls"
+    },
+    "events/v1/valid/sensor_state.json": {
+      "decision": "accepted",
+      "note": "sensor_state: every state; an error code only with lost or failed"
+    },
+    "events/v2/invalid/agent_state_code_without_service_started.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "A code only with (service, started)"
+    },
+    "events/v2/invalid/agent_state_not_allowed_for_subject.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The (subject, state) pair is checked (state_not_allowed_for_subject)"
+    },
+    "events/v2/invalid/agent_state_rule_set_id_elsewhere.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "rule_set_id only for rule_set"
+    },
+    "events/v2/invalid/agent_state_unknown_subject.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The subject set is closed"
+    },
+    "events/v2/invalid/behavior_command_line_text.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Never command-line text"
+    },
+    "events/v2/invalid/behavior_unknown_rule.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The behavior rule set is closed"
+    },
+    "events/v2/invalid/canonical_too_large.json": {
+      "decision": "rejected",
+      "status": 413,
+      "error": "Event batch too large",
+      "note": "Fits in 16 KiB as sent, not in canonical form"
+    },
+    "events/v2/invalid/coverage_gap_negative_lost.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "lost >= 0"
+    },
+    "events/v2/invalid/coverage_gap_unknown_reason.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The reason set is closed"
+    },
+    "events/v2/invalid/coverage_gap_view_name_on_wire.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "gap_source is the timeline's name; the wire field is source"
+    },
+    "events/v2/invalid/create_time_out_of_range.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "create_time is inside the observed_at window"
+    },
+    "events/v2/invalid/persistence_entry_id_not_hex.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "entry_id is a lower-case SHA-256 text, never a value name"
+    },
+    "events/v2/invalid/same_position_as_v1.json": {
+      "decision": "rejected",
+      "status": 409,
+      "error": "Event batch identity or sequence conflicts with current state",
+      "note": "The batch_id and batch_sequence of the accepted v2 coverage_gap.json resent as v1: the digest covers schema_version, so it is new content",
+      "cursor": {
+        "last_batch_sequence": 1,
+        "last_event_seq": 5
+      },
+      "after": [
+        "events/v2/valid/coverage_gap.json"
+      ]
+    },
+    "events/v2/invalid/scan_create_time_without_pid.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "create_time only beside a pid (create_time_requires_pid)"
+    },
+    "events/v2/invalid/scan_duplicate_hit_rule.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Each hit rule at most once (duplicate_hit_rule)"
+    },
+    "events/v2/invalid/scan_hit_description.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "A hit is exactly {rule, severity}"
+    },
+    "events/v2/invalid/scan_nine_hits.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "1-8 hits"
+    },
+    "events/v2/invalid/scan_no_hits.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "1-8 hits"
+    },
+    "events/v2/invalid/scan_sha256_upper_case.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "sha256 is lower-case hex"
+    },
+    "events/v2/invalid/scan_unknown_trigger.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The trigger set is closed"
+    },
+    "events/v2/invalid/schema_version_float.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "schema_version is a strict integer"
+    },
+    "events/v2/invalid/tamper_detail_elsewhere.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "detail only for event_log_cleared"
+    },
+    "events/v2/invalid/tamper_event_log_cleared_without_detail.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "event_log_cleared names its log in detail"
+    },
+    "events/v2/invalid/unmasked_scan_path.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Every v2 path field follows the v1 masking rule"
+    },
+    "events/v2/invalid/v1_process_started_shape.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "process_started v2 requires create_time"
+    },
+    "events/v2/valid/agent_state.json": {
+      "decision": "accepted",
+      "note": "agent_state: every subject; a code only with (service, started); rule_set_id only for rule_set"
+    },
+    "events/v2/valid/behavior_match.json": {
+      "decision": "accepted",
+      "note": "behavior_match: a closed rule ID, no command-line text"
+    },
+    "events/v2/valid/coverage_gap.json": {
+      "decision": "accepted",
+      "note": "coverage_gap: every source; lost given, zero, null, omitted, and 2^53-1; the wire field is source, the timeline shows it as gap_source"
+    },
+    "events/v2/valid/every_kind.json": {
+      "decision": "accepted",
+      "note": "One event of each of the nine v2 kinds, in EVENT_KINDS order"
+    },
+    "events/v2/valid/persistence_change.json": {
+      "decision": "accepted",
+      "note": "persistence_change: every location, scope and change; a salted entry_id"
+    },
+    "events/v2/valid/process_started.json": {
+      "decision": "accepted",
+      "note": "process_started v2: create_time required; parent_create_time given, null, or omitted"
+    },
+    "events/v2/valid/process_stopped.json": {
+      "decision": "accepted",
+      "note": "process_stopped v2: create_time optional; the agent's U+FFFD short name"
+    },
+    "events/v2/valid/scan_detected.json": {
+      "decision": "accepted",
+      "note": "scan_detected: every trigger; 1 and 8 hits; rules that differ only in case; pid without create_time; neither; an action_id; size 0 and 2^53-1"
+    },
+    "events/v2/valid/sensor_state.json": {
+      "decision": "accepted",
+      "note": "sensor_state is unchanged in v2"
+    },
+    "events/v2/valid/tamper_signal.json": {
+      "decision": "accepted",
+      "note": "tamper_signal: detail only for event_log_cleared"
+    },
+    "snapshots/v1/invalid/antivirus_version_claim.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Antivirus is not implemented: no version, catalog or execution claim"
+    },
+    "snapshots/v1/invalid/duplicate_product.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Products are unique"
+    },
+    "snapshots/v1/invalid/edr_agent_in_v1.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "edr_agent requires schema_version 2"
+    },
+    "snapshots/v1/invalid/hbf_duplicate_error_code.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "error_codes are unique"
+    },
+    "snapshots/v1/invalid/identity_field.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "No identity field in the body"
+    },
+    "snapshots/v1/invalid/message_id_upper_case.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "message_id is a lower-case canonical UUID"
+    },
+    "snapshots/v1/invalid/same_sequence_other_content.json": {
+      "decision": "rejected",
+      "status": 409,
+      "error": "Snapshot identity or sequence conflicts with current state",
+      "note": "The last accepted sequence with another message_id",
+      "after": [
+        "snapshots/v1/valid/all_v1_products.json"
+      ]
+    },
+    "snapshots/v1/invalid/sequence_above_2_53.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "sequence <= 2^53-1"
+    },
+    "snapshots/v1/invalid/sequence_bool.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "sequence is a strict integer"
+    },
+    "snapshots/v1/invalid/source_observed_at_out_of_range.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The envelope time is inside the 1970-9999 window"
+    },
+    "snapshots/v1/invalid/stale_sequence.json": {
+      "decision": "rejected",
+      "status": 409,
+      "error": "Snapshot sequence is stale",
+      "note": "A sequence below the last accepted one",
+      "after": [
+        "snapshots/v1/valid/all_v1_products.json"
+      ]
+    },
+    "snapshots/v1/invalid/termivar_counts_mismatch.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Both count groups sum to item_count"
+    },
+    "snapshots/v1/invalid/termivar_execution_claim.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Termivar Web never claims execution"
+    },
+    "snapshots/v1/invalid/termivar_presence_without_report.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "report_presence=present requires latest_report"
+    },
+    "snapshots/v1/invalid/unknown_product.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The product set is closed"
+    },
+    "snapshots/v1/valid/all_v1_products.json": {
+      "decision": "accepted",
+      "note": "The three V1 products: HostBasedFirewall, Termivar Web with a report summary, antivirus planned"
+    },
+    "snapshots/v1/valid/defaults_only.json": {
+      "decision": "accepted",
+      "note": "Product IDs only: every field takes its default (unknown/null)"
+    },
+    "snapshots/v1/valid/empty_products.json": {
+      "decision": "accepted",
+      "note": "An empty product list with no source_observed_at: every product is missing"
+    },
+    "snapshots/v1/valid/hbf_degraded.json": {
+      "decision": "accepted",
+      "note": "A degraded firewall with error codes; Termivar Web without a report; antivirus missing"
+    },
+    "snapshots/v2/invalid/catalog_claim.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The agent makes no catalog claim"
+    },
+    "snapshots/v2/invalid/counter_above_2_53.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Counters <= 2^53-1"
+    },
+    "snapshots/v2/invalid/counter_bool.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "A bool is not a counter"
+    },
+    "snapshots/v2/invalid/counter_negative.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Counters >= 0"
+    },
+    "snapshots/v2/invalid/edr_agent_twice.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Products are unique"
+    },
+    "snapshots/v2/invalid/engine_id_non_ascii.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "engine_id is ASCII"
+    },
+    "snapshots/v2/invalid/protection_claim.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "No protection claim field exists"
+    },
+    "snapshots/v2/invalid/sensor_code_while_started.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "sensor_error_code only with lost or failed"
+    },
+    "snapshots/v2/invalid/unknown_sensor_state.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The sensor state set is closed"
+    },
+    "snapshots/v2/invalid/v3_agent_in_v2.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The V3 agent fields need V3"
+    },
+    "snapshots/v2/valid/edr_agent_defaults.json": {
+      "decision": "accepted",
+      "note": "edr_agent with defaults only: status and sensor_state unknown, every other field null"
+    },
+    "snapshots/v2/valid/edr_agent_only.json": {
+      "decision": "accepted",
+      "note": "The agent's own V2 status; the three V1 products missing"
+    },
+    "snapshots/v2/valid/edr_agent_sensor_lost.json": {
+      "decision": "accepted",
+      "note": "A lost sensor with its code; counters non-zero, null and 2^53-1"
+    },
+    "snapshots/v2/valid/edr_agent_with_v1_products.json": {
+      "decision": "accepted",
+      "note": "All four products; a sensorless agent"
+    },
+    "snapshots/v3/invalid/actions_unsorted.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "response_actions_enabled is unique and sorted"
+    },
+    "snapshots/v3/invalid/behavior_rules_v0.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "behavior_rules_version is altay-behavior/v1..v999999"
+    },
+    "snapshots/v3/invalid/catalog_claim.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The agent makes no catalog claim"
+    },
+    "snapshots/v3/invalid/command_field.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "No command channel field"
+    },
+    "snapshots/v3/invalid/five_key_ids.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "At most four response key IDs"
+    },
+    "snapshots/v3/invalid/heartbeat_above_3600.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "heartbeat_interval_seconds is 30-3600"
+    },
+    "snapshots/v3/invalid/heartbeat_below_30.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "heartbeat_interval_seconds is 30-3600"
+    },
+    "snapshots/v3/invalid/isolation_until_out_of_range.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Isolation times are inside the 1970-9999 window"
+    },
+    "snapshots/v3/invalid/realtime_protection_claim.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "No real-time protection claim field exists"
+    },
+    "snapshots/v3/invalid/rules_loaded_claim.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "No loaded-rules claim field exists"
+    },
+    "snapshots/v3/invalid/same_sequence_as_v2.json": {
+      "decision": "rejected",
+      "status": 409,
+      "error": "Snapshot identity or sequence conflicts with current state",
+      "note": "The accepted V2 edr_agent_only.json's message_id and sequence resent as V3: new content",
+      "after": [
+        "snapshots/v2/valid/edr_agent_only.json"
+      ]
+    },
+    "snapshots/v3/invalid/scan_counter_above_2_53.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Counters <= 2^53-1"
+    },
+    "snapshots/v3/invalid/schema_version_4.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "Only versions 1, 2 and 3 exist"
+    },
+    "snapshots/v3/invalid/schema_version_float.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "schema_version is a strict integer"
+    },
+    "snapshots/v3/invalid/sequence_above_2_53.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "sequence <= 2^53-1"
+    },
+    "snapshots/v3/invalid/unknown_action.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The response action set is closed"
+    },
+    "snapshots/v3/invalid/unknown_capability_state.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The capability state set is closed"
+    },
+    "snapshots/v3/invalid/unknown_rule_set_state.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "The rule set state set is closed"
+    },
+    "snapshots/v3/invalid/v2_agent_shape.json": {
+      "decision": "rejected",
+      "status": 422,
+      "error": "invalid_request",
+      "note": "rule_file_present is not a V3 field"
+    },
+    "snapshots/v3/valid/agent_defaults.json": {
+      "decision": "accepted",
+      "note": "A V3 edr_agent with defaults only: every state unknown, lists empty, the rest null"
+    },
+    "snapshots/v3/valid/agent_degraded.json": {
+      "decision": "accepted",
+      "note": "Degraded capabilities, counters null/0/2^53-1, partial isolation, the bounds of heartbeat and behavior_rules_version"
+    },
+    "snapshots/v3/valid/full_agent.json": {
+      "decision": "accepted",
+      "note": "Every V3 capability and counter field filled; every response action, sorted; two key IDs"
+    },
+    "snapshots/v3/valid/v1_products_only.json": {
+      "decision": "accepted",
+      "note": "V3 carries the V1 products unchanged; termivar and edr_agent missing"
+    }
+  }
+}

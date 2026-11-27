@@ -76,7 +76,7 @@ Runtime doğrulama gerekli alanları/türleri ve ilişkileri kontrol eder. Bilin
 | Uyarı | Cihaz olaylarının basit bir sunucu kuralına uyması; tekrarlar bir uyarıda sayılır. | Teşhis, kötü amaçlı yazılım, saldırı veya ihlal. Kötü niyetli bir cihaz kendi uyarılarını tetikleyebilir veya bastırabilir. |
 | Açık / onaylandı / kapatıldı | API'de yapılan operatör geçişi; konsol bunu değiştirmez. | Olayın incelendiğini veya çözüldüğünü. |
 
-Uyarı yokluğu “temiz cihaz” değildir: kurallar dar ve basittir, olaylar eksik olabilir ve uyarıların saklama süresi henüz yoktur.
+Uyarı yokluğu “temiz cihaz” değildir: kurallar dar ve basittir, olaylar eksik olabilir ve kapalı uyarılar saklama süresi dolunca (`alerts prune`) silinir.
 
 ## Seçili cihaz raporu
 

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "batch_id": "e0000001-0000-4000-8000-000000000004",
+  "batch_sequence": 7,
+  "events": [
+    {
+      "kind": "process_started",
+      "event_seq": 1000,
+      "observed_at": "2030-01-02T03:00:00.5Z",
+      "pid": 5000,
+      "parent_pid": 4,
+      "session_id": 1,
+      "image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe"
+    },
+    {
+      "kind": "process_stopped",
+      "event_seq": 1002,
+      "observed_at": "2030-01-02T03:00:01Z",
+      "pid": 5002,
+      "exit_code": 0,
+      "image": "setup.exe"
+    },
+    {
+      "kind": "sensor_state",
+      "event_seq": 1005,
+      "observed_at": "2030-01-02T03:00:02Z",
+      "state": "lost",
+      "error_code": "session_in_use"
+    }
+  ]
+}

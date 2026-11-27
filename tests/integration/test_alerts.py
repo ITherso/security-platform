@@ -655,6 +655,9 @@ ALERT_INDEXES = {
     # 0005: agent_silent alerts of a device by silence-episode key, whatever their status.
     "ix_alert_silence_episode": "CREATE INDEX ix_alert_silence_episode ON public.alerts USING btree "
                                 "(tenant_id, device_id, dedup_key) WHERE (rule = 'agent_silent'::text)",
+    # 0006: a tenant's closed alerts by closing time, the range `alerts prune` reads and deletes.
+    "ix_alert_tenant_closed": "CREATE INDEX ix_alert_tenant_closed ON public.alerts USING btree "
+                              "(tenant_id, closed_at) WHERE (status = 'closed'::text)",
 }
 ALERT_FOREIGN_KEYS = {
     "fk_alert_tenant_device": (("tenant_id", "device_id"), "devices", ("tenant_id", "id")),
@@ -715,16 +718,17 @@ def test_migrated_alert_table_matches_the_model(pg_service_databases):
     column = DeviceEventCursor.__table__.c.suppressed_alerts
     assert column.nullable is False and column.server_default.arg.text == "0"
     # 0004 (Snapshot V2) follows 0003 and changes only product_states.ck_product_id; 0005 (Stage 3) widens
-    # ck_alert_rule, lets agent_silent's sequences be null and adds ix_alert_silence_episode.
-    assert head == "0005_stage3_detection"
+    # ck_alert_rule, lets agent_silent's sequences be null and adds ix_alert_silence_episode; 0006 (alert
+    # retention) adds ix_alert_tenant_closed.
+    assert head == "0006_alert_retention"
 
 
 def test_the_alembic_chain_is_linear_up_to_0004():
-    # The name dates from Stage 2; the chain now ends at 0005_stage3_detection.
+    # The name dates from Stage 2; the chain now ends at 0006_alert_retention.
     script = ScriptDirectory.from_config(Config(str(PROJECT / "alembic.ini")))
-    assert script.get_heads() == ["0005_stage3_detection"]
+    assert script.get_heads() == ["0006_alert_retention"]
     assert [(revision.revision, revision.down_revision) for revision in script.walk_revisions()] == [
-        ("0005_stage3_detection", "0004_edr_agent_product"),
+        ("0006_alert_retention", "0005_stage3_detection"), ("0005_stage3_detection", "0004_edr_agent_product"),
         ("0004_edr_agent_product", "0003_alerts"), ("0003_alerts", "0002_endpoint_events"),
         ("0002_endpoint_events", "0001_initial"), ("0001_initial", None)]
 
@@ -733,9 +737,9 @@ def test_migration_0003_upgrades_a_0002_database_in_a_rolled_back_transaction(ev
     ctx = event_tenants
     device_id = UUID(enrolled(ctx.runtime, ctx.admin_a, ctx.a)["device_id"])
     module = migration_module("0003_alerts")
-    # 0005 (Stage 3) changes the alerts table after 0003: it is downgraded first and upgraded last, so that 0003
-    # runs on the schema it was written for.
-    stage3 = migration_module("0005_stage3_detection")
+    # 0005 (Stage 3) and 0006 (alert retention) change the alerts table after 0003: they are downgraded first
+    # and upgraded last, so that 0003 runs on the schema it was written for.
+    stage3, retention = migration_module("0005_stage3_detection"), migration_module("0006_alert_retention")
     assert (module.revision, module.down_revision) == ("0003_alerts", "0002_endpoint_events")
     with ctx.owner.engine.connect() as connection:
         transaction = connection.begin()
@@ -743,6 +747,9 @@ def test_migration_0003_upgrades_a_0002_database_in_a_rolled_back_transaction(ev
             head, counter = alert_schema(connection)
             assert head is not None and counter
             with Operations.context(MigrationContext.configure(connection)):
+                retention.downgrade()
+                at_0005 = alert_schema(connection)
+                assert at_0005[0] != head and at_0005[1]
                 stage3.downgrade()
                 at_0004 = alert_schema(connection)
                 assert at_0004[0] != head and at_0004[1]
@@ -759,6 +766,8 @@ def test_migration_0003_upgrades_a_0002_database_in_a_rolled_back_transaction(ev
                 assert connection.scalar(text("SELECT suppressed_alerts FROM device_event_cursors "
                                               "WHERE device_id = :device"), {"device": device_id}) == 0
                 stage3.upgrade()
+                assert alert_schema(connection) == at_0005
+                retention.upgrade()
                 assert alert_schema(connection) == (head, True)
         finally:
             transaction.rollback()
@@ -820,9 +829,10 @@ def test_database_constraints_back_the_alert_contract(event_tenants, case):
                 session.add(Alert(**{**row, **change}))
 
 
-def test_runtime_role_can_raise_and_update_alerts_but_never_delete_them(pg_service_databases):
+def test_runtime_role_can_raise_update_and_prune_alerts_but_not_truncate_them(pg_service_databases):
     _, runtime = pg_service_databases
-    granted = {"SELECT", "INSERT", "UPDATE"}
+    # DELETE since 0006: `alerts prune` deletes expired closed alerts (scripts/managed_postgres.py TABLE_GRANTS).
+    granted = {"SELECT", "INSERT", "UPDATE", "DELETE"}
     expected = {privilege: privilege in granted
                 for privilege in ("SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER")}
     with runtime.session() as session:

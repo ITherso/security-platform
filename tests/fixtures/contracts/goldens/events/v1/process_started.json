@@ -1,0 +1,112 @@
+{
+  "payload": "events/v1/valid/process_started.json",
+  "ack": {
+    "accepted": true,
+    "batch_id": "e0000001-0000-4000-8000-000000000001",
+    "batch_sequence": 1,
+    "last_event_seq": 5,
+    "received_at": "2030-01-02T03:04:05Z"
+  },
+  "timeline": {
+    "items": [
+      {
+        "event_seq": 5,
+        "kind": "process_started",
+        "observed_at": "2030-01-02T03:00:00.000001Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "pid": 4005,
+        "parent_pid": 0,
+        "session_id": 1,
+        "image": "Registry",
+        "create_time": null,
+        "parent_create_time": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 4,
+        "kind": "process_started",
+        "observed_at": "2030-01-02T03:00:00.000001Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "pid": 4004,
+        "parent_pid": 4,
+        "session_id": 1,
+        "image": "\\Device\\HarddiskVolume3\\Users\\*:payload.exe",
+        "create_time": null,
+        "parent_create_time": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 3,
+        "kind": "process_started",
+        "observed_at": "2030-01-02T03:00:00.000001Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "pid": 4003,
+        "parent_pid": 4,
+        "session_id": 1,
+        "image": "\\Device\\HarddiskVolume3\\Users\\*\\Masaüstü\\ödev.exe",
+        "create_time": null,
+        "parent_create_time": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 2,
+        "kind": "process_started",
+        "observed_at": "2030-01-02T03:00:00.000001Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "pid": 4002,
+        "parent_pid": 640,
+        "session_id": 0,
+        "image": "\\Device\\HarddiskVolume3\\Windows\\System32\\svchost.exe",
+        "create_time": null,
+        "parent_create_time": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 1,
+        "kind": "process_started",
+        "observed_at": "2030-01-02T03:00:00.000001Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "pid": 4001,
+        "parent_pid": 4,
+        "session_id": 1,
+        "image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+        "create_time": null,
+        "parent_create_time": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      }
+    ],
+    "next_before_seq": null,
+    "cap_deleted_events": 0,
+    "suppressed_alerts": 0
+  },
+  "device": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "tenant_id": "11111111-1111-4111-8111-111111111111",
+    "label": "Contract fixture device",
+    "identity_status": "active",
+    "connection_status": "never_seen",
+    "created_at": "2030-01-02T03:04:05Z",
+    "revoked_at": null,
+    "last_sequence": null,
+    "last_received_at": null,
+    "source_observed_at": null,
+    "source_observation": {
+      "age_seconds": null,
+      "clock_state": "unknown"
+    },
+    "source": "self_reported",
+    "producer_verification": "not_verified",
+    "products": [],
+    "missing_products": [
+      "antivirus",
+      "edr_agent",
+      "hostbasedfirewall",
+      "termivar"
+    ]
+  }
+}

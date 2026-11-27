@@ -1,0 +1,1739 @@
+{
+  "schema": "termivar-contract-fixtures/v1",
+  "about": "Every file of tests/fixtures/contracts but this one, with its sha256. Payloads carry their contract version, route and expected decision; goldens name their payload. Written by tests/integration/test_contract_fixtures.py with SP_REGENERATE_CONTRACT_GOLDENS=1.",
+  "files": [
+    {
+      "path": "events/v1/invalid/batch_id_upper_case.json",
+      "sha256": "cd8319fca0ea332c01aa2a3a535456a94f3ff8c098169d96028035c90f5a3742",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/batch_sequence_zero.json",
+      "sha256": "f76129327a6b8f8d896d4881a0c701e6b17477acbea9c8b506f9c494879c5eb6",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/body_too_large.json",
+      "sha256": "81d409fa2a3171de016ed4867ab55c794754181d7698dcba38dc6daca0228f72",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 413,
+        "error": "request_too_large"
+      }
+    },
+    {
+      "path": "events/v1/invalid/canonical_too_large.json",
+      "sha256": "6fe707e45645aae38ea84c1fc59b4095ab2f69b2bd47aaef924b6e744c73f57a",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 413,
+        "error": "Event batch too large"
+      }
+    },
+    {
+      "path": "events/v1/invalid/command_line_field.json",
+      "sha256": "db48ebd40774ef51848d87266803d4ee9807697e08b9cac3e28553b082e22f6d",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/duplicate_key.json",
+      "sha256": "14321442148431fb83c87d5afe65767f58505b233bd522bdd4594cb8e7ca13d6",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 400,
+        "error": "invalid_json"
+      }
+    },
+    {
+      "path": "events/v1/invalid/error_code_with_started.json",
+      "sha256": "e7b5676064997df6380398adec27772e8e0c1f539dc66a6275ff99c9a05d9c88",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/event_seq_above_2_53.json",
+      "sha256": "fc3d18628705f50010f8b26967201063e5b5ca135703be5654d3d6bc00d0c99f",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/event_seq_not_after_cursor.json",
+      "sha256": "2d363f6c86e9dd4ab2fc306e89622d212cf82323e0c5cd89a73dd63e40722936",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 409,
+        "error": "Event sequence does not follow the last accepted event",
+        "cursor": {
+          "last_batch_sequence": 7,
+          "last_event_seq": 1005
+        },
+        "after": [
+          "events/v1/valid/mixed_batch.json"
+        ]
+      }
+    },
+    {
+      "path": "events/v1/invalid/event_seq_not_increasing.json",
+      "sha256": "e4af8634177e5afbe27e6f44a03d3b7aed67b4a2015b157287959edf85529ee1",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/event_too_large.json",
+      "sha256": "715c738194093f79281e4e945d54373724019812a9262b1225a4efd03242ecfd",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/events_empty.json",
+      "sha256": "994302186b11190f997970495f750828431761106d08272fdfc0c294b63f93cd",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/observed_at_out_of_range.json",
+      "sha256": "3235836295b0f9e5ebba8eccf8dd6a0c74a945687244eb46c3af70cf5820778a",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/observed_at_with_offset.json",
+      "sha256": "0ff26e8d51b3f8477228ef424a8c4c5803c5761a22fdc8550c32080217d631eb",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/pid_above_uint32.json",
+      "sha256": "6f626531f08d1483239feed2d43babaf8f4e11e496c3a2071b34f19dc81471d1",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/pid_as_string.json",
+      "sha256": "0d9167fd0ec5cf7f48e518d019805a50ef265fbb25b109d34534430a4cfae253",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/same_sequence_other_content.json",
+      "sha256": "01af80a5771fa40841c6fc4990ee46c49aca5ad41cb9d193752a7c9a58e5c3df",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 409,
+        "error": "Event batch identity or sequence conflicts with current state",
+        "cursor": {
+          "last_batch_sequence": 7,
+          "last_event_seq": 1005
+        },
+        "after": [
+          "events/v1/valid/mixed_batch.json"
+        ]
+      }
+    },
+    {
+      "path": "events/v1/invalid/schema_version_bool.json",
+      "sha256": "70160f43094ea1348397c7cea054882659618eb61f7fcd2982c680d0460efc40",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/schema_version_missing.json",
+      "sha256": "345a684bb56286768b27fef220a83b3bd1de5333e6f6ff22242047e37c8adc3c",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/schema_version_string.json",
+      "sha256": "8b2737d2f468a33b775fad4aea5f26ee196e010ac167f30a458c31aaf840e74c",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/schema_version_unknown.json",
+      "sha256": "a38a3b0a2191cabba1dfdd46573f1b00f8c94a68265963e3823096cb2845a343",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/short_image_with_separator.json",
+      "sha256": "4b7175018031f3a3545806658d1126c6fd7d1682dea2b532b490da26586e59df",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/stale_batch_sequence.json",
+      "sha256": "f5df843c343a6fb83d74675e7689372bbbe4548ccab13847d0418b7470585448",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 409,
+        "error": "Event batch sequence is stale",
+        "cursor": {
+          "last_batch_sequence": 7,
+          "last_event_seq": 1005
+        },
+        "after": [
+          "events/v1/valid/mixed_batch.json"
+        ]
+      }
+    },
+    {
+      "path": "events/v1/invalid/too_many_nodes.json",
+      "sha256": "5515492cb88a0dcb549340f7dce8ad361583e395cc872e38fc0863e6db07431b",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 400,
+        "error": "invalid_json"
+      }
+    },
+    {
+      "path": "events/v1/invalid/trust_claim.json",
+      "sha256": "232f61776415e5a4e7e225c06cfe2b7573bb46764292b1c67da8a8cbb25a30e4",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/unknown_envelope_field.json",
+      "sha256": "281b2082880a4f40f7d9051bcb1ac99bf783546794a59d3002b8df8d94e6742c",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/unknown_kind.json",
+      "sha256": "b968173cb59d7acd0a900cefe23ef80ac4ca606f147fcf664bb0cfc00cd4792a",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/unmasked_user_folder.json",
+      "sha256": "de71b29b53d6bd8513b9fe6b4613f2064ec5809228833de036040acb54c84e0a",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/v2_field_in_v1.json",
+      "sha256": "caf0961c97214bb632c07851dd55dcd346491ad08aa9c2c4ed69c15c7840438e",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/v2_kind_in_v1.json",
+      "sha256": "8e8bb43dfffffd6261a53808dc1b1e7cab73944df116c3288a522d9679c405dc",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/invalid/zero_width_in_image.json",
+      "sha256": "154457f94faa86e962aaa49923f42f49927df540e3ed6f788e6fd758aedecb8d",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v1/valid/largest_event_seq.json",
+      "sha256": "7754878ac7602448e7e68a2211f02acb77ccdb5f9f368bc49dd651e8c2361d9a",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v1/largest_event_seq.json"
+    },
+    {
+      "path": "events/v1/valid/mixed_batch.json",
+      "sha256": "d0dfd0a37253de5eed66a5c9bfde892e5e87e37841d4f18fe7505afdc6cebb67",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v1/mixed_batch.json"
+    },
+    {
+      "path": "events/v1/valid/process_started.json",
+      "sha256": "a2afe4214d919eebf5cc38bf6f67e7bb843bfd46a93c8b2f77aad34980c807dc",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v1/process_started.json"
+    },
+    {
+      "path": "events/v1/valid/process_stopped.json",
+      "sha256": "62bc1a11d78ade38989e429b323416d171d7d3aa55229f8aa215392c44e781bb",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v1/process_stopped.json"
+    },
+    {
+      "path": "events/v1/valid/sensor_state.json",
+      "sha256": "e37c6773a85ea24854261357af9a0a3e550b30621d2b7534f4ad2fc7ce14da6c",
+      "kind": "event_batch",
+      "version": 1,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v1/sensor_state.json"
+    },
+    {
+      "path": "events/v2/invalid/agent_state_code_without_service_started.json",
+      "sha256": "e24aba3f1122137ce047cd436b413dab370be3b1686a8338ffcb7186e55a5059",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/agent_state_not_allowed_for_subject.json",
+      "sha256": "4cf0b2cc6bb67f8fb9c300a6df9b8eb1c273d6ccc8020130251362fd7e2a4ebe",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/agent_state_rule_set_id_elsewhere.json",
+      "sha256": "294fcb9f15af2c50bc400e28c6709a0246b575adb7d248fbf7682a35195fd7c0",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/agent_state_unknown_subject.json",
+      "sha256": "56727fa6bd2c4a569e95cbc63798bf1b8ef977abca69347da18e75523534fa71",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/behavior_command_line_text.json",
+      "sha256": "6730ac96377487284af85c7395e9b239febc61da9e80439bd2b38d242f0d5502",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/behavior_unknown_rule.json",
+      "sha256": "27d1a56311425beb9c1a4087d8237b5e5ed71600de35ae62a7c24b0a1ecf8ee9",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/canonical_too_large.json",
+      "sha256": "155161a9e5c6bd084dffb243f1b1b147518ad1619103ed71d428b371e00fade1",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 413,
+        "error": "Event batch too large"
+      }
+    },
+    {
+      "path": "events/v2/invalid/coverage_gap_negative_lost.json",
+      "sha256": "b9b0375f74d37cf23a16e81ff7318eaf05fb4714a8b27d935c143dd82708b927",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/coverage_gap_unknown_reason.json",
+      "sha256": "6c817ebc20a268833fb76e46ea0637a40350f80f1d71b9f6fee8fbc7e83b2f7a",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/coverage_gap_view_name_on_wire.json",
+      "sha256": "2cca42f66a6ee001870c33e9be9e3c7096110bcacbaa9183b5b7616bef47bd83",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/create_time_out_of_range.json",
+      "sha256": "0c1beee530c7bf4db766a47bfea430590ca95b8eff1ca529dd47de9657be06fc",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/persistence_entry_id_not_hex.json",
+      "sha256": "6d5ab23615bf33754bd624672c3f94f4d9e14fe3e575041ba939d5b0b01cf4d5",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/same_position_as_v1.json",
+      "sha256": "c303093d5b3e357213c14cee9601b630dc2340de7c70a50c4f012303635a69ac",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 409,
+        "error": "Event batch identity or sequence conflicts with current state",
+        "cursor": {
+          "last_batch_sequence": 1,
+          "last_event_seq": 5
+        },
+        "after": [
+          "events/v2/valid/coverage_gap.json"
+        ]
+      }
+    },
+    {
+      "path": "events/v2/invalid/scan_create_time_without_pid.json",
+      "sha256": "a899adc61a255bea931f9af27e638688c50947e85919e93a679e263b652717b0",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/scan_duplicate_hit_rule.json",
+      "sha256": "28beb5f09f6dbc4c480ba64fc5602882a85582c60b0a03a1a917cc8715b0837c",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/scan_hit_description.json",
+      "sha256": "c8540593423c5c6e365f862286e95365bad8b96278c6c01795d6174a133b5acd",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/scan_nine_hits.json",
+      "sha256": "e378d9935008e7c6b27438efb82e3783903f06fc054a3a695cc71503264dc2e1",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/scan_no_hits.json",
+      "sha256": "81e2edcc26cf3f19098b73a2accddaf4ec46fa7c3331a9bdef834bd2fbd8f452",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/scan_sha256_upper_case.json",
+      "sha256": "b99b61e0979d86cbf3b31b5a54f963bfd0e0f43e5220ae78a2a5856f48ff6e81",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/scan_unknown_trigger.json",
+      "sha256": "b7f5996fc136a3b0e3d92c20680af77cda961c77fc379253ed72e106e1bd0bb9",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/schema_version_float.json",
+      "sha256": "f957c79cbbc8ead2056203a026def09b80a13d80195ef67672dbbde1ce216061",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/tamper_detail_elsewhere.json",
+      "sha256": "e1253fe08a5c076b763bc99fe1392f87dcee0b95ec2337705093df5cadb2ca64",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/tamper_event_log_cleared_without_detail.json",
+      "sha256": "ac422a776204043f93ff1059fdec599e2732d1c7095261cb549b5b437fc9c338",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/unmasked_scan_path.json",
+      "sha256": "290279497220f3d88dc36de2f17efe9d894b167986f9ba24f4d4fccd1d4f2b3a",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/invalid/v1_process_started_shape.json",
+      "sha256": "54564b26fc5a6555c7e3fc1d43384f4f6119919bd056d10a6d1db77ec98b80c5",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "events/v2/valid/agent_state.json",
+      "sha256": "6d9fbd3a4df62d7f72bce17cd480e0a3108c15e2a0c786f08bbcc041007297c7",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v2/agent_state.json"
+    },
+    {
+      "path": "events/v2/valid/behavior_match.json",
+      "sha256": "245d72fdd63320278bf5225822113b120a39de839e8053c9a32d5e8cd2a73fc7",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v2/behavior_match.json"
+    },
+    {
+      "path": "events/v2/valid/coverage_gap.json",
+      "sha256": "08a14d48e9bb15f90c864bb42651ae1d1aaa33232dbc04721600481bc2ab9d45",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v2/coverage_gap.json"
+    },
+    {
+      "path": "events/v2/valid/every_kind.json",
+      "sha256": "367863e9354cb47436638c6caa86655ac61352149e83fd834f06442ea5984263",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v2/every_kind.json"
+    },
+    {
+      "path": "events/v2/valid/persistence_change.json",
+      "sha256": "6f1d55c5da3b4ecc1742daeb8d8de1dee771644b6b323b2d7b35fef5b0875181",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v2/persistence_change.json"
+    },
+    {
+      "path": "events/v2/valid/process_started.json",
+      "sha256": "6c6157ca164a3bb1bb898af87389f7946e450725d0afb2ef7beb96ea9d5cf1ed",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v2/process_started.json"
+    },
+    {
+      "path": "events/v2/valid/process_stopped.json",
+      "sha256": "afae1e222e6bbffa8f95e3fc9c41b433c29c66f4549606cf01fc3cb0e3121faa",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v2/process_stopped.json"
+    },
+    {
+      "path": "events/v2/valid/scan_detected.json",
+      "sha256": "486749f5c45cd1ff770e159e3ee9e8de8388d25b85f464e5f5af1fa96cb8a34a",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v2/scan_detected.json"
+    },
+    {
+      "path": "events/v2/valid/sensor_state.json",
+      "sha256": "7775a0d6dd77c0097470a09429995a5cd412ed342358b3d88c5532f37c08978c",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v2/sensor_state.json"
+    },
+    {
+      "path": "events/v2/valid/tamper_signal.json",
+      "sha256": "439c62e5c18bf9a838458df3ddf3a79f5dbdf732e751b3d6c64fca8832318476",
+      "kind": "event_batch",
+      "version": 2,
+      "route": "POST /api/v1/device/events",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/events/v2/tamper_signal.json"
+    },
+    {
+      "path": "expectations.json",
+      "sha256": "66b003017e2faa9e5adecb8145937b9a8431051c8c0f1c6a4669cf0aaddd1236",
+      "kind": "expectations"
+    },
+    {
+      "path": "goldens/events/v1/largest_event_seq.json",
+      "sha256": "e1a87b6ace5b09e6b28f5dd99e1091093f1f5101db1bb7a03dfef50ea70e44e1",
+      "kind": "golden",
+      "version": 1,
+      "payload": "events/v1/valid/largest_event_seq.json"
+    },
+    {
+      "path": "goldens/events/v1/mixed_batch.json",
+      "sha256": "44dfb36ede90590f21af235d991b44e87802638545d025c2ccfc99ea37d3a65c",
+      "kind": "golden",
+      "version": 1,
+      "payload": "events/v1/valid/mixed_batch.json"
+    },
+    {
+      "path": "goldens/events/v1/process_started.json",
+      "sha256": "dec605456e0c16bafac9cf203622b3df29fbd37e9bb3845739ecf7d2b740e420",
+      "kind": "golden",
+      "version": 1,
+      "payload": "events/v1/valid/process_started.json"
+    },
+    {
+      "path": "goldens/events/v1/process_stopped.json",
+      "sha256": "bbaa017b86505be60921a8ac18b10981b1283f98e1330bd318ab4c76b5357ead",
+      "kind": "golden",
+      "version": 1,
+      "payload": "events/v1/valid/process_stopped.json"
+    },
+    {
+      "path": "goldens/events/v1/sensor_state.json",
+      "sha256": "27e48c96966e10163af3f139157e038d7d0e8206b299d8124388c062421d336c",
+      "kind": "golden",
+      "version": 1,
+      "payload": "events/v1/valid/sensor_state.json"
+    },
+    {
+      "path": "goldens/events/v2/agent_state.json",
+      "sha256": "8ee158f8e5df3fedef833f2d58eef817fe2fa9239c8be0624f538e80825452e7",
+      "kind": "golden",
+      "version": 2,
+      "payload": "events/v2/valid/agent_state.json"
+    },
+    {
+      "path": "goldens/events/v2/behavior_match.json",
+      "sha256": "26da0650d9334c746e68ddfc4ee9b16c9942ed0bce9965c16f6cf7f84f91915b",
+      "kind": "golden",
+      "version": 2,
+      "payload": "events/v2/valid/behavior_match.json"
+    },
+    {
+      "path": "goldens/events/v2/coverage_gap.json",
+      "sha256": "560bb94fc9c444a29041fb127db4d8d8e4e74ecdc8a191021aef4cc763ec3e0f",
+      "kind": "golden",
+      "version": 2,
+      "payload": "events/v2/valid/coverage_gap.json"
+    },
+    {
+      "path": "goldens/events/v2/every_kind.json",
+      "sha256": "d28c66f479f00f880a2b262bfd22f9929e88a1368bb4067c91a751652a4cab75",
+      "kind": "golden",
+      "version": 2,
+      "payload": "events/v2/valid/every_kind.json"
+    },
+    {
+      "path": "goldens/events/v2/persistence_change.json",
+      "sha256": "8c7062d51859898dce71778b09f1335a262047a704a9c241e1a0290b453ea6e3",
+      "kind": "golden",
+      "version": 2,
+      "payload": "events/v2/valid/persistence_change.json"
+    },
+    {
+      "path": "goldens/events/v2/process_started.json",
+      "sha256": "46ab26b1f73b41dc885db71c821f8ba1dadc3d408ddaf60245718b9c56f59aea",
+      "kind": "golden",
+      "version": 2,
+      "payload": "events/v2/valid/process_started.json"
+    },
+    {
+      "path": "goldens/events/v2/process_stopped.json",
+      "sha256": "e164ef573b048b5caffc620dc3b6af1848e65bd3d1562fea84a6c287272f4982",
+      "kind": "golden",
+      "version": 2,
+      "payload": "events/v2/valid/process_stopped.json"
+    },
+    {
+      "path": "goldens/events/v2/scan_detected.json",
+      "sha256": "8b5be89016300961525a928360901afe0c747f9b9b57197bdd52aeb34dc5d327",
+      "kind": "golden",
+      "version": 2,
+      "payload": "events/v2/valid/scan_detected.json"
+    },
+    {
+      "path": "goldens/events/v2/sensor_state.json",
+      "sha256": "496ad581b87b098ea70aa04400884f27bf2534259ee9cd73230486fc0d065a82",
+      "kind": "golden",
+      "version": 2,
+      "payload": "events/v2/valid/sensor_state.json"
+    },
+    {
+      "path": "goldens/events/v2/tamper_signal.json",
+      "sha256": "f843edabcf53529584d766e5fe6bd999f2c0879c34273f60b083a258e25f993e",
+      "kind": "golden",
+      "version": 2,
+      "payload": "events/v2/valid/tamper_signal.json"
+    },
+    {
+      "path": "goldens/snapshots/v1/all_v1_products.json",
+      "sha256": "261fea71350ac1ba0a6a7740a47216446541ea9c2d8c48c7078dfc0367996311",
+      "kind": "golden",
+      "version": 1,
+      "payload": "snapshots/v1/valid/all_v1_products.json"
+    },
+    {
+      "path": "goldens/snapshots/v1/defaults_only.json",
+      "sha256": "f72ff33077f98bcdbe09355c01d4c38a76163d039b68f54f5c3ce19376218c83",
+      "kind": "golden",
+      "version": 1,
+      "payload": "snapshots/v1/valid/defaults_only.json"
+    },
+    {
+      "path": "goldens/snapshots/v1/empty_products.json",
+      "sha256": "9d2763b6ec0a1fce48eef21457294950fb8fe28f01bc4a07e65f4d0864fceda0",
+      "kind": "golden",
+      "version": 1,
+      "payload": "snapshots/v1/valid/empty_products.json"
+    },
+    {
+      "path": "goldens/snapshots/v1/hbf_degraded.json",
+      "sha256": "0fc8822046e85c56dbb481c1123ef38e69e0c94096a51813538988a4b54d3510",
+      "kind": "golden",
+      "version": 1,
+      "payload": "snapshots/v1/valid/hbf_degraded.json"
+    },
+    {
+      "path": "goldens/snapshots/v2/edr_agent_defaults.json",
+      "sha256": "f46ddb6eb32385ba0f14bea25907d5374dfacff2b3c0a8deb4d440f9221c2d7a",
+      "kind": "golden",
+      "version": 2,
+      "payload": "snapshots/v2/valid/edr_agent_defaults.json"
+    },
+    {
+      "path": "goldens/snapshots/v2/edr_agent_only.json",
+      "sha256": "d16498bf493eb2fb85e86fac6d07bb9276cb63449b0ebce304279b3adcd0c371",
+      "kind": "golden",
+      "version": 2,
+      "payload": "snapshots/v2/valid/edr_agent_only.json"
+    },
+    {
+      "path": "goldens/snapshots/v2/edr_agent_sensor_lost.json",
+      "sha256": "f7e04ac2b0f5e079b5ce426f022e22452d19a7e0fd2fa04171c91bf93413b115",
+      "kind": "golden",
+      "version": 2,
+      "payload": "snapshots/v2/valid/edr_agent_sensor_lost.json"
+    },
+    {
+      "path": "goldens/snapshots/v2/edr_agent_with_v1_products.json",
+      "sha256": "34eb360fbd66d5e2367735e8f5b79413c70bb257fedfb7987cb15f3f60be4819",
+      "kind": "golden",
+      "version": 2,
+      "payload": "snapshots/v2/valid/edr_agent_with_v1_products.json"
+    },
+    {
+      "path": "goldens/snapshots/v3/agent_defaults.json",
+      "sha256": "2218ef4d6afb3f2d8a4cbd08df97cbfe004c9c53715e254d821a88b3cd196908",
+      "kind": "golden",
+      "version": 3,
+      "payload": "snapshots/v3/valid/agent_defaults.json"
+    },
+    {
+      "path": "goldens/snapshots/v3/agent_degraded.json",
+      "sha256": "99af683bd64f4370a1e56558f587e43b4a15f1207c1f18f25363d4ac4ed40a6a",
+      "kind": "golden",
+      "version": 3,
+      "payload": "snapshots/v3/valid/agent_degraded.json"
+    },
+    {
+      "path": "goldens/snapshots/v3/full_agent.json",
+      "sha256": "aaba3b502df3a0bcaf3833ce67952d54078142b994a99f16530c6ee327c85cd6",
+      "kind": "golden",
+      "version": 3,
+      "payload": "snapshots/v3/valid/full_agent.json"
+    },
+    {
+      "path": "goldens/snapshots/v3/v1_products_only.json",
+      "sha256": "d64a027a13e1c4fc21f688420f92fbbf14076fe508790e2c37f65d493196988a",
+      "kind": "golden",
+      "version": 3,
+      "payload": "snapshots/v3/valid/v1_products_only.json"
+    },
+    {
+      "path": "README.md",
+      "sha256": "7ff8031e20cfa02e5f7d97812e7d23058c0200a260a07a51f96431232d38e6b9",
+      "kind": "readme"
+    },
+    {
+      "path": "snapshots/v1/invalid/antivirus_version_claim.json",
+      "sha256": "a1193e109517452ad003e47f85e1ea05854e9999c8d84c28b00fc8c452cdfe47",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/duplicate_product.json",
+      "sha256": "c132337e1120a2f770b25306a79bd5c9c0255b2ce894b287f61f3fcf3780c710",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/edr_agent_in_v1.json",
+      "sha256": "3e5aadddaa1012b24af13697d038b20e7061eb7083c2bf042b0015c775f4326b",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/hbf_duplicate_error_code.json",
+      "sha256": "2ece6f474a6d6c1fff652c6ea4109339fc9cf327a71de76f579d86c53b56444f",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/identity_field.json",
+      "sha256": "daf1b54b92b5549e3c5cb71e3bc2df12727b5bd82c9ec381e974c031b007aad0",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/message_id_upper_case.json",
+      "sha256": "bf5b5da44216a2a0b13d838d64a02ef49e09d2678e8c25af167425bc7630ddcb",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/same_sequence_other_content.json",
+      "sha256": "27cd95755df2d21cfabb0b705cffee7fa4edc6a66711415aba35b610f1e28754",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 409,
+        "error": "Snapshot identity or sequence conflicts with current state",
+        "after": [
+          "snapshots/v1/valid/all_v1_products.json"
+        ]
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/sequence_above_2_53.json",
+      "sha256": "32853def0e03edd402c6631797b8cf336c9836a54d79597dc68b6d9262d22d50",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/sequence_bool.json",
+      "sha256": "2812b8b6bdd126ddb0009d9a0a44b46b646ebd5314625dd58760c2d3b6c3d6b4",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/source_observed_at_out_of_range.json",
+      "sha256": "5326e5bd778a0a2ab5c0083c21903f0714531a6c9874052b142bde9b63bbbb1b",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/stale_sequence.json",
+      "sha256": "305ef0850e1b7ea881b65752fbbdc61f6cabc3a026fb4ae3becede8a12074632",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 409,
+        "error": "Snapshot sequence is stale",
+        "after": [
+          "snapshots/v1/valid/all_v1_products.json"
+        ]
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/termivar_counts_mismatch.json",
+      "sha256": "7b8fc90ebe1d66871d77a6073c05dc87c8a4600b555453c59e8f139c78671625",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/termivar_execution_claim.json",
+      "sha256": "11fc2f0d02db2d2e93a5a39d81d5a57d731d4efbd9a66ab995d083070d29d10c",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/termivar_presence_without_report.json",
+      "sha256": "ce0b1cb532a68d34547f8e1efa748e3c330be8c5fb7e1407ecf8549c6f796bce",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/invalid/unknown_product.json",
+      "sha256": "2be28ca5ba1e08946ae48326a0fa1a94cb10022632c4a426d63a98812be876b6",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v1/valid/all_v1_products.json",
+      "sha256": "33390b9963a4fd359737b1d7336223c7f2ea95ac31d1847fe5b708b351c04b61",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v1/all_v1_products.json"
+    },
+    {
+      "path": "snapshots/v1/valid/defaults_only.json",
+      "sha256": "03a87dfa1c26a7c2ef2ac88f3a9f18c470120ad936ebd615ee91553268c0bf82",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v1/defaults_only.json"
+    },
+    {
+      "path": "snapshots/v1/valid/empty_products.json",
+      "sha256": "4ff6f7efc6654ed8bf633f8c3ee36baad8153e5b01ab43ea237386847fb2c856",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v1/empty_products.json"
+    },
+    {
+      "path": "snapshots/v1/valid/hbf_degraded.json",
+      "sha256": "3b37d54fc22107c30d62b00472bbfe6a3aea64e47184f17a61430a0b2a66f52d",
+      "kind": "snapshot",
+      "version": 1,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v1/hbf_degraded.json"
+    },
+    {
+      "path": "snapshots/v2/invalid/catalog_claim.json",
+      "sha256": "942fb275eb2bc41f60893907f58a6526151651ce04889f8b90620e5d2ba17dc9",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v2/invalid/counter_above_2_53.json",
+      "sha256": "ce818fbb21cfbc819da139fdaf96512772a9fdbe03a3fbc0d48595e5e2d53655",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v2/invalid/counter_bool.json",
+      "sha256": "e54bd9f44829efa8b11de161c78699b510c26101afad3d179ac201030c343281",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v2/invalid/counter_negative.json",
+      "sha256": "32032ede90fb19c1fa20dcb567215ddacdbe65257b13b0aa68f809863f4f46d1",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v2/invalid/edr_agent_twice.json",
+      "sha256": "bbb49d339b69efbdd5881c1a5edb6eddd2910f511c60063d7aa9a86a6216ef6f",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v2/invalid/engine_id_non_ascii.json",
+      "sha256": "d7a7d8c6145fc2c727dbaac9e211bdafd962d612dd5beebd5901e701186fe6df",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v2/invalid/protection_claim.json",
+      "sha256": "a3d58d06428c0df2efe9edca9e22dba0a8ebfba68c74bd8f09765aa23061c9e6",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v2/invalid/sensor_code_while_started.json",
+      "sha256": "0f987a5dc5e9c986d7202c234b337b84bf6ddcf9f5defbc657d7e0e2d01dac44",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v2/invalid/unknown_sensor_state.json",
+      "sha256": "508437d08176d9a881e5618c8e9ae3a0b7c181b5752c7843110c3c0513cde615",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v2/invalid/v3_agent_in_v2.json",
+      "sha256": "7dbf587a46195238b0df44c657499fd5602fe50b0d0cce52ae89f18a8766341b",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v2/valid/edr_agent_defaults.json",
+      "sha256": "20294501d6cbe7543c4602eebc276bd3d178cbc79db05de704bb8394d5732141",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v2/edr_agent_defaults.json"
+    },
+    {
+      "path": "snapshots/v2/valid/edr_agent_only.json",
+      "sha256": "c13f4fab5997ee4aa0d2ff83fd7326010264550b813ef79ce7ae45be21eaaba6",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v2/edr_agent_only.json"
+    },
+    {
+      "path": "snapshots/v2/valid/edr_agent_sensor_lost.json",
+      "sha256": "f70f14f6703eb6bd816071d5cb9851ca9371a02fd7343aa731e00d49382a60e0",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v2/edr_agent_sensor_lost.json"
+    },
+    {
+      "path": "snapshots/v2/valid/edr_agent_with_v1_products.json",
+      "sha256": "67ce136259c06ddbecc893d6e4a39e7089c6d4e5fc698e6adb1d258c5f5bb3b9",
+      "kind": "snapshot",
+      "version": 2,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v2/edr_agent_with_v1_products.json"
+    },
+    {
+      "path": "snapshots/v3/invalid/actions_unsorted.json",
+      "sha256": "3e83d76f6b539821e54516ae3f65f1fc13222b6439134565388d734abff319d7",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/behavior_rules_v0.json",
+      "sha256": "f981227d80cac790348eb2e7a5b81929d30a1d3487541542f440125a54770005",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/catalog_claim.json",
+      "sha256": "8fc7d2542b83f1b07cf3272412636f554f1589dc627cd27f8850f9d3193c7c17",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/command_field.json",
+      "sha256": "e21f042f5b99b9a3db6c3c55ede7e407840f608df3b5fe3b28abecde1b989fba",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/five_key_ids.json",
+      "sha256": "3a385c5004712e9fb8433df35799e0475af5722600e07d0d5521918cdfa93205",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/heartbeat_above_3600.json",
+      "sha256": "434b50c9edb07b4320b24d3621ebbd5220762cc425262b69ebd9cc0a9140cb2d",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/heartbeat_below_30.json",
+      "sha256": "9a97108d9eead5d16bb04b5529ab890a0de10bea5e1a0ccf7f59ca8b6b15ae6c",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/isolation_until_out_of_range.json",
+      "sha256": "85ffd809512b4cdc21464473270384ad4d299bd1b9db833af565f025125e222c",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/realtime_protection_claim.json",
+      "sha256": "5273be1929c8c010977b013ae38f236adfb9ab6f11273eba2d475f813c60d57b",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/rules_loaded_claim.json",
+      "sha256": "9514acf778fd53b5dbf9e4c42543124df3437885bbc3a15f10feee47233036dc",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/same_sequence_as_v2.json",
+      "sha256": "41b35ca5530cb1e073c25cb37067b0d65c3678b5714e42a9e5da8cb7cdb4106d",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 409,
+        "error": "Snapshot identity or sequence conflicts with current state",
+        "after": [
+          "snapshots/v2/valid/edr_agent_only.json"
+        ]
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/scan_counter_above_2_53.json",
+      "sha256": "0d7274374a1d7c2c2bcaca585cfbbe04cf4c0ad1e26767314451458048932b80",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/schema_version_4.json",
+      "sha256": "2253dcf5642598c5959698027793825129599ebd00d0449ab838b19f6df82a37",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/schema_version_float.json",
+      "sha256": "2384616ea236bef6dfd4c5017ee7e601c8cf383fd2c03d2074a373b984b827fa",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/sequence_above_2_53.json",
+      "sha256": "121c7bb8c5f19cd9ba750d5fdbe0b173f5dcab7bdb2adfac5683f69ea320e818",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/unknown_action.json",
+      "sha256": "7852bfd73cbcf45179e8e889fe79fec4d33747041f7b235de65b2fdb311f0099",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/unknown_capability_state.json",
+      "sha256": "34369b6fe75d830c87680dc955abc6723d36eb77861f27df79bb7cd4bc74db75",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/unknown_rule_set_state.json",
+      "sha256": "33b17537893579e8b6695ebb6a795c6ad0982535402d659e6a1ed35076d5f43a",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/invalid/v2_agent_shape.json",
+      "sha256": "c0dfda1a6be011223456dd4d8786af02b7b8792e2602019e29f3955db535709b",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "rejected",
+        "status": 422,
+        "error": "invalid_request"
+      }
+    },
+    {
+      "path": "snapshots/v3/valid/agent_defaults.json",
+      "sha256": "19df0525735f9563c2b0d382868a2196cd6590146cdf8f3067f891f417bdcb6e",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v3/agent_defaults.json"
+    },
+    {
+      "path": "snapshots/v3/valid/agent_degraded.json",
+      "sha256": "0b48c34c947f41220af15ce08da11d2335d0a5bb160efab50fd9af0f0e6b537b",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v3/agent_degraded.json"
+    },
+    {
+      "path": "snapshots/v3/valid/full_agent.json",
+      "sha256": "cd223bd3d1db41b2f2040900cb01af06f4cb2f22be912be880a6aa9427de34a9",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v3/full_agent.json"
+    },
+    {
+      "path": "snapshots/v3/valid/v1_products_only.json",
+      "sha256": "38580d991fe0803b132f42821638b2f461545f607e0ccd4e93a1b1f3c2f27097",
+      "kind": "snapshot",
+      "version": 3,
+      "route": "PUT /api/v1/device/snapshot",
+      "expected": {
+        "decision": "accepted"
+      },
+      "golden": "goldens/snapshots/v3/v1_products_only.json"
+    }
+  ]
+}

@@ -96,10 +96,11 @@ def test_runtime_event_rights_are_append_and_retention_only():
     assert len(managed.TABLE_GRANTS) == 11
 
 
-def test_runtime_alert_rights_have_no_delete():
+def test_runtime_alert_rights_add_delete_for_retention_only():
     # Ingestion raises and updates alerts, tenant admins acknowledge and close
-    # them (UPDATE also covers SELECT FOR UPDATE). Alerts have no retention yet.
-    assert set(managed.TABLE_GRANTS["alerts"]) == {"SELECT", "INSERT", "UPDATE"}
+    # them (UPDATE also covers SELECT FOR UPDATE). DELETE serves `alerts prune`
+    # (migration 0006, alert retention); there is still no TRUNCATE.
+    assert set(managed.TABLE_GRANTS["alerts"]) == {"SELECT", "INSERT", "UPDATE", "DELETE"}
 
 
 def test_reparse_fixture_path_is_rejected_without_following(tmp_path, monkeypatch):

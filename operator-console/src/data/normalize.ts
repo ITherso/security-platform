@@ -46,6 +46,7 @@ const AUDIT_OBJECTS: Readonly<Record<AuditAction, AuditObject>> = {
   enrollment_grant_created: "enrollment_grant", enrollment_grant_revoked: "enrollment_grant",
   device_enrolled: "device", device_revoked: "device", device_credential_rotated: "device_credential",
   tenant_event_retention_set: "tenant", alert_acknowledged: "alert", alert_closed: "alert",
+  tenant_alert_retention_set: "tenant", alerts_pruned: "tenant",
 };
 
 export function requireValue(ok: unknown, code: ClientErrorCode = "malformed"): asserts ok {

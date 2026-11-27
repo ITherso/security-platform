@@ -1,0 +1,97 @@
+{
+  "payload": "events/v2/valid/coverage_gap.json",
+  "ack": {
+    "accepted": true,
+    "batch_id": "e0000002-0000-4000-8000-000000000009",
+    "batch_sequence": 1,
+    "last_event_seq": 5,
+    "received_at": "2030-01-02T03:04:05Z"
+  },
+  "timeline": {
+    "items": [
+      {
+        "event_seq": 5,
+        "kind": "coverage_gap",
+        "observed_at": "2030-01-02T03:00:08Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "gap_source": "file_change_sensor",
+        "reason": "volume_unmonitored",
+        "lost": 9007199254740991,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 4,
+        "kind": "coverage_gap",
+        "observed_at": "2030-01-02T03:00:08Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "gap_source": "agent_records",
+        "reason": "usn_entries_deleted",
+        "lost": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 3,
+        "kind": "coverage_gap",
+        "observed_at": "2030-01-02T03:00:08Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "gap_source": "command_line_sensor",
+        "reason": "queue_overflow",
+        "lost": 0,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 2,
+        "kind": "coverage_gap",
+        "observed_at": "2030-01-02T03:00:08Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "gap_source": "file_change_sensor",
+        "reason": "usn_journal_reset",
+        "lost": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 1,
+        "kind": "coverage_gap",
+        "observed_at": "2030-01-02T03:00:08Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "gap_source": "process_sensor",
+        "reason": "etw_events_lost",
+        "lost": 17,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      }
+    ],
+    "next_before_seq": null,
+    "cap_deleted_events": 0,
+    "suppressed_alerts": 0
+  },
+  "device": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "tenant_id": "11111111-1111-4111-8111-111111111111",
+    "label": "Contract fixture device",
+    "identity_status": "active",
+    "connection_status": "never_seen",
+    "created_at": "2030-01-02T03:04:05Z",
+    "revoked_at": null,
+    "last_sequence": null,
+    "last_received_at": null,
+    "source_observed_at": null,
+    "source_observation": {
+      "age_seconds": null,
+      "clock_state": "unknown"
+    },
+    "source": "self_reported",
+    "producer_verification": "not_verified",
+    "products": [],
+    "missing_products": [
+      "antivirus",
+      "edr_agent",
+      "hostbasedfirewall",
+      "termivar"
+    ]
+  }
+}

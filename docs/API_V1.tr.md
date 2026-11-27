@@ -264,7 +264,7 @@ Her öğe `event_seq`, `kind`, `observed_at`, `received_at`, türün alanları v
 
 **Cihaz başına sınır.** `SP_MAX_OPEN_ALERTS_PER_DEVICE` (varsayılan 500, aralık 10–100000): cihazın kapanmamış uyarı sayısı bu değere ulaşmışsa yeni bir uyarı açacak eşleşme hiçbir şey açmaz ve cihaz imlecindeki `suppressed_alerts` sayacı bir artar (batch ve anahtar başına bir). Mevcut uyarıların güncellenmesi hiçbir zaman bastırılmaz; onaylanmış uyarı da sınıra sayılır; kapatma yer açar. Sayaç olay zaman çizelgesi cevabında döner.
 
-**Saklama yok.** Uyarılar bu adımda silinmez: runtime hesabının `alerts` üzerinde DELETE hakkı yoktur ve `events prune` uyarılara dokunmaz. Olayları silinmiş bir uyarı kalır; kanıtı uyarının kendi satırındadır.
+**Saklama.** Açık ve onaylanmış uyarılar silinmez. Kapalı bir uyarı, kapatıldıktan (`closed_at`) tenant'ın `alert_retention_days` süresi (varsayılan 60, 30–3650) kadar sonra operatörün zamanladığı `alerts prune` komutuyla silinir. Cihazın süren sessizlik dönemine ait kapalı `agent_silent` uyarısı kalır ([işletim](OPERATIONS.tr.md), "Uyarı saklama ve günlük temizlik"). Silinen uyarı 404 olur. `events prune` uyarılara dokunmaz; olayları silinmiş bir uyarı kalır ve kanıtı uyarının kendi satırındadır.
 
 ### Uyarı listesi
 
@@ -292,7 +292,7 @@ Sıra en son etkinlik öncedir: (`last_seen_at` azalan, `id` azalan). Aynı batc
 | `acknowledge` | `acknowledged` olur; audit `alert_acknowledged` | 200, değişmez, audit yok | `409 {"detail":"Alert is closed"}` |
 | `close` | `closed` olur; audit `alert_closed` | `closed` olur; audit `alert_closed` | 200, değişmez, audit yok |
 
-Bilinmeyen ya da başka tenant'ın uyarısı 404'tür. Audit satırı nesneyi `alert` türü ve uyarının kimliğiyle (`object_id`) adlandırır; kanıtı hiçbir zaman taşımaz. Audit tablosunda ayrıntı sütunu olmadığı için uyarının cihazı ve kuralı audit satırında değil, silinmeyen uyarı satırındadır. Konsol Aşama 2'de salt okunurdur; onaylama ve kapatma yalnız bu API ile yapılır.
+Bilinmeyen ya da başka tenant'ın uyarısı 404'tür. Audit satırı nesneyi `alert` türü ve uyarının kimliğiyle (`object_id`) adlandırır; kanıtı hiçbir zaman taşımaz. Uyarının cihazı ve kuralı audit satırında değil, uyarı satırındadır; uyarı saklama süresi dolup silinince bu bilgi de kaybolur. Audit tablosunun `details` sütununu (0006) yalnız `alerts_pruned` kaydı kullanır; audit API'si bu sütunu döndürmez. Konsol Aşama 2'de salt okunurdur; onaylama ve kapatma yalnız bu API ile yapılır.
 
 ## Hatalar ve sınırlar
 

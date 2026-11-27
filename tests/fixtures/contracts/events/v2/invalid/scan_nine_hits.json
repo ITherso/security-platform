@@ -1,0 +1,59 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-000000000018",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "scan_detected",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:03Z",
+      "trigger": "startup_scan",
+      "path": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "size": 68,
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "rule_set_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hits": [
+        {
+          "rule": "Rule_0",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_1",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_2",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_3",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_4",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_5",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_6",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_7",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_8",
+          "severity": "low"
+        }
+      ],
+      "omitted_hits": 0,
+      "pid": 4321,
+      "create_time": "2030-01-02T02:59:00.000001Z",
+      "action_id": null
+    }
+  ]
+}

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "message_id": "50000001-0000-4000-8000-000000000002",
+  "sequence": 5,
+  "source_observed_at": "2030-01-02T03:00:00Z",
+  "products": [
+    {
+      "product_id": "hostbasedfirewall",
+      "status": "running",
+      "installed": true,
+      "reported_running": true,
+      "reported_stale": false,
+      "firewall_mode": "enforce",
+      "error_codes": [],
+      "version": "2.4.1",
+      "source_observed_at": "2030-01-02T02:58:00Z"
+    },
+    {
+      "product_id": "termivar",
+      "status": "experimental",
+      "scanner_installed": true,
+      "execution_available": false,
+      "report_presence": "present",
+      "latest_report": {
+        "digest": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+        "report_schema": "venom-rendered-assessment/v1",
+        "imported_at": "2030-01-01T12:00:00Z",
+        "subject_count": 2,
+        "item_count": 5,
+        "counts": {
+          "informational": 2,
+          "needs_review": 2,
+          "confirmed": 1
+        },
+        "severity_counts": {
+          "unassigned": 0,
+          "info": 2,
+          "low": 1,
+          "medium": 1,
+          "high": 1,
+          "critical": 0
+        }
+      }
+    },
+    {
+      "product_id": "antivirus",
+      "status": "planned",
+      "availability": "unavailable"
+    }
+  ]
+}

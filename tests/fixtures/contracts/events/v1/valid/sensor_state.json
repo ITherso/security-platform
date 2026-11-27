@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "batch_id": "e0000001-0000-4000-8000-000000000003",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "sensor_state",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:02Z",
+      "state": "started",
+      "error_code": null
+    },
+    {
+      "kind": "sensor_state",
+      "event_seq": 2,
+      "observed_at": "2030-01-02T03:00:02Z",
+      "state": "lost",
+      "error_code": "session_in_use"
+    },
+    {
+      "kind": "sensor_state",
+      "event_seq": 3,
+      "observed_at": "2030-01-02T03:00:02Z",
+      "state": "failed",
+      "error_code": "access_denied"
+    },
+    {
+      "kind": "sensor_state",
+      "event_seq": 4,
+      "observed_at": "2030-01-02T03:00:02Z",
+      "state": "lost",
+      "error_code": null
+    },
+    {
+      "kind": "sensor_state",
+      "event_seq": 5,
+      "observed_at": "2030-01-02T03:00:02Z",
+      "state": "stopped",
+      "error_code": null
+    }
+  ]
+}

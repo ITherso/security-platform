@@ -31,6 +31,15 @@ that key exists for the device, in any status (closed included), the sweep
 changes nothing: no new alert, no occurrence and no last_seen_at change. A new
 contact moves last_received_at, so the next silence is a new episode.
 
+`alerts prune` (services/alerts.prune_closed_alerts) deletes closed alerts at
+runtime, but never the alert of a device's current episode: it keeps a closed
+agent_silent alert while the device is not revoked and its current key equals
+the alert's. An alert it deletes belongs to a revoked device, which is never a
+candidate again, or to an episode the device has left; last_received_at only
+moves forward, so that key never becomes current again. An alert of the
+current episode therefore stays while the device stays silent, and a silent
+device that never reports again keeps its one closed agent_silent alert.
+
 Work goes per tenant, in chunks of at most SWEEP_CHUNK_DEVICES candidates by
 device id, each in its own short transaction. A silent candidate whose
 episode already has an alert is counted in already_alerted from one unlocked
@@ -202,8 +211,10 @@ def _sweep_chunk(session, tenant_id, after, now, silence_alert_seconds, chunk_si
     counts = Counter(devices_checked=len(rows))
     episodes = {device_id: canonical_utc(last_received_at) for device_id, last_received_at, payload in rows
                 if is_silent(now, last_received_at, silence_threshold(silence_alert_seconds, payload))}
-    # Read without a lock: the sweep changes nothing for an episode that has an alert, and no runtime path
-    # deletes alerts, so the answer stays true for the rest of the chunk.
+    # Read without a lock: the sweep changes nothing for an episode that has an alert. `alerts prune` never
+    # deletes the alert of a device's current episode, only those of revoked devices and of episodes the device
+    # has left, whose keys never return: for an episode that is still current the answer stays true for the
+    # rest of the chunk, and an episode that is no longer current needs no alert.
     alerted = _alerted_episodes(session, tenant_id, episodes) if episodes else set()
     counts["already_alerted"] += len(alerted)
     unalerted = sorted(episodes.keys() - alerted)

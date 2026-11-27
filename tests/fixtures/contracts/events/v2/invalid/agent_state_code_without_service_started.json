@@ -1,0 +1,16 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-00000000001e",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "agent_state",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "service",
+      "state": "stopping",
+      "code": "clean_stop",
+      "rule_set_id": null
+    }
+  ]
+}

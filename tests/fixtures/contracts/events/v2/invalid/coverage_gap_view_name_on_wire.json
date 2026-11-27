@@ -1,0 +1,15 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-000000000022",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "coverage_gap",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:08Z",
+      "reason": "usn_journal_reset",
+      "lost": null,
+      "gap_source": "file_change_sensor"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "message_id": "50000001-0000-4000-8000-000000000012",
+  "sequence": 1,
+  "source_observed_at": "2030-01-02T03:00:00Z",
+  "products": [
+    {
+      "product_id": "hostbasedfirewall",
+      "status": "running",
+      "installed": true,
+      "reported_running": true,
+      "reported_stale": false,
+      "firewall_mode": "enforce",
+      "error_codes": [
+        "policy_error",
+        "policy_error"
+      ],
+      "version": "2.4.1",
+      "source_observed_at": "2030-01-02T02:58:00Z"
+    }
+  ]
+}

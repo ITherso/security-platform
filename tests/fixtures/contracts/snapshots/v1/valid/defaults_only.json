@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "message_id": "50000001-0000-4000-8000-000000000003",
+  "sequence": 1,
+  "source_observed_at": null,
+  "products": [
+    {
+      "product_id": "hostbasedfirewall"
+    },
+    {
+      "product_id": "termivar"
+    },
+    {
+      "product_id": "antivirus"
+    }
+  ]
+}

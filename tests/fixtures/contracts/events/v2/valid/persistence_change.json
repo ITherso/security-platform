@@ -1,0 +1,62 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-000000000006",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "persistence_change",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:05Z",
+      "location": "run_key",
+      "scope": "user",
+      "change": "added",
+      "entry_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "target_image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "found_at_start": true
+    },
+    {
+      "kind": "persistence_change",
+      "event_seq": 2,
+      "observed_at": "2030-01-02T03:00:05Z",
+      "location": "service",
+      "scope": "machine",
+      "change": "modified",
+      "entry_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "target_image": null,
+      "found_at_start": false
+    },
+    {
+      "kind": "persistence_change",
+      "event_seq": 3,
+      "observed_at": "2030-01-02T03:00:05Z",
+      "location": "scheduled_task",
+      "scope": "user",
+      "change": "removed",
+      "entry_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "target_image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "found_at_start": true
+    },
+    {
+      "kind": "persistence_change",
+      "event_seq": 4,
+      "observed_at": "2030-01-02T03:00:05Z",
+      "location": "startup_folder",
+      "scope": "user",
+      "change": "added",
+      "entry_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "target_image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "found_at_start": true
+    },
+    {
+      "kind": "persistence_change",
+      "event_seq": 5,
+      "observed_at": "2030-01-02T03:00:05Z",
+      "location": "run_once_key",
+      "scope": "machine",
+      "change": "added",
+      "entry_id": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "target_image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "found_at_start": true
+    }
+  ]
+}

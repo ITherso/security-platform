@@ -1,0 +1,106 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-000000000007",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "agent_state",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "service",
+      "state": "started",
+      "code": "first_start",
+      "rule_set_id": null
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 2,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "rule_set",
+      "state": "compiled",
+      "code": null,
+      "rule_set_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 3,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "rule_set",
+      "state": "missing",
+      "code": null,
+      "rule_set_id": null
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 4,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "realtime_scan",
+      "state": "degraded",
+      "code": null,
+      "rule_set_id": null
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 5,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "file_change_sensor",
+      "state": "not_available",
+      "code": null,
+      "rule_set_id": null
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 6,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "command_line_sensor",
+      "state": "running",
+      "code": null,
+      "rule_set_id": null
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 7,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "persistence_watch",
+      "state": "baseline_created",
+      "code": null,
+      "rule_set_id": null
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 8,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "response_channel",
+      "state": "awaiting_tenant_binding",
+      "code": null,
+      "rule_set_id": null
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 9,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "isolation",
+      "state": "reverted_no_contact",
+      "code": null,
+      "rule_set_id": null
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 10,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "quarantine",
+      "state": "restored_locally",
+      "code": null,
+      "rule_set_id": null
+    },
+    {
+      "kind": "agent_state",
+      "event_seq": 11,
+      "observed_at": "2030-01-02T03:00:06Z",
+      "subject": "service",
+      "state": "stopping",
+      "code": null,
+      "rule_set_id": null
+    }
+  ]
+}

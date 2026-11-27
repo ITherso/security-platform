@@ -86,6 +86,8 @@ const AUDIT_ACTIONS: Readonly<Record<string, ProductTextKey>> = {
   device_revoked: "product.audit.action.device_revoked", device_credential_rotated: "product.audit.action.device_credential_rotated",
   tenant_event_retention_set: "product.audit.action.tenant_event_retention_set",
   alert_acknowledged: "product.audit.action.alert_acknowledged", alert_closed: "product.audit.action.alert_closed",
+  tenant_alert_retention_set: "product.audit.action.tenant_alert_retention_set",
+  alerts_pruned: "product.audit.action.alerts_pruned",
 };
 const ACTOR_LABELS: Readonly<Record<string, ProductTextKey>> = {
   operator: "product.audit.actor.operator", device: "product.audit.actor.device", local_admin: "product.audit.actor.local_admin",

@@ -1,0 +1,96 @@
+{
+  "payload": "snapshots/v3/valid/agent_defaults.json",
+  "ack": {
+    "accepted": true,
+    "message_id": "50000003-0000-4000-8000-000000000003",
+    "sequence": 1,
+    "received_at": "2030-01-02T03:04:05Z"
+  },
+  "timeline": {
+    "items": [],
+    "next_before_seq": null,
+    "cap_deleted_events": 0,
+    "suppressed_alerts": 0
+  },
+  "device": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "tenant_id": "11111111-1111-4111-8111-111111111111",
+    "label": "Contract fixture device",
+    "identity_status": "active",
+    "connection_status": "recent",
+    "created_at": "2030-01-02T03:04:05Z",
+    "revoked_at": null,
+    "last_sequence": 1,
+    "last_received_at": "2030-01-02T03:04:05Z",
+    "source_observed_at": null,
+    "source_observation": {
+      "age_seconds": null,
+      "clock_state": "unknown"
+    },
+    "source": "self_reported",
+    "producer_verification": "not_verified",
+    "products": [
+      {
+        "product_id": "edr_agent",
+        "snapshot_sequence": 1,
+        "received_at": "2030-01-02T03:04:05Z",
+        "observation": {
+          "age_seconds": null,
+          "clock_state": "unknown"
+        },
+        "state": {
+          "source": "self_reported",
+          "status": "unknown",
+          "version": null,
+          "engine_id": null,
+          "product_id": "edr_agent",
+          "rule_set_id": null,
+          "sensor_state": "unknown",
+          "events_evicted": null,
+          "events_skipped": null,
+          "outbox_backlog": null,
+          "rule_set_state": "unknown",
+          "scans_detected": null,
+          "etw_events_lost": null,
+          "events_degraded": null,
+          "events_unmapped": null,
+          "isolation_state": "unknown",
+          "isolation_until": null,
+          "last_action_seq": null,
+          "scan_cache_hits": null,
+          "scans_completed": null,
+          "agent_started_at": null,
+          "events_discarded": null,
+          "file_change_gaps": null,
+          "previous_run_end": "unknown",
+          "quarantine_items": null,
+          "response_key_ids": [],
+          "scans_no_verdict": null,
+          "catalog_available": null,
+          "scan_jobs_dropped": null,
+          "sensor_error_code": null,
+          "source_observed_at": null,
+          "cmdline_unavailable": null,
+          "events_write_failed": null,
+          "realtime_scan_state": "unknown",
+          "events_queue_dropped": null,
+          "isolation_checked_at": null,
+          "service_config_state": "unknown",
+          "producer_verification": "not_verified",
+          "behavior_rules_version": null,
+          "response_channel_state": "unknown",
+          "persistence_watch_state": "unknown",
+          "file_change_sensor_state": "unknown",
+          "response_actions_enabled": [],
+          "command_line_sensor_state": "unknown",
+          "heartbeat_interval_seconds": null
+        }
+      }
+    ],
+    "missing_products": [
+      "antivirus",
+      "hostbasedfirewall",
+      "termivar"
+    ]
+  }
+}

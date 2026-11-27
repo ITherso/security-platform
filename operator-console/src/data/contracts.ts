@@ -199,7 +199,8 @@ export interface DeviceDetail extends Device {
 }
 export type AuditAction = "tenant_created" | "membership_set" | "membership_revoked" | "enrollment_grant_created"
   | "enrollment_grant_revoked" | "device_enrolled" | "device_revoked" | "device_credential_rotated"
-  | "tenant_event_retention_set" | "alert_acknowledged" | "alert_closed";
+  | "tenant_event_retention_set" | "alert_acknowledged" | "alert_closed" | "tenant_alert_retention_set"
+  | "alerts_pruned";
 export type AuditObject = "tenant" | "membership" | "enrollment_grant" | "device" | "device_credential" | "alert";
 export interface AuditEvent {
   readonly id: string;

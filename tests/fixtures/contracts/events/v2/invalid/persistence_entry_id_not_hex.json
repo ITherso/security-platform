@@ -1,0 +1,18 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-000000000028",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "persistence_change",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:05Z",
+      "location": "run_key",
+      "scope": "user",
+      "change": "added",
+      "entry_id": "HKCU\\Run\\x",
+      "target_image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "found_at_start": true
+    }
+  ]
+}

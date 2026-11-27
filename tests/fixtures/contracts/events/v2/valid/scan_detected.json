@@ -1,0 +1,139 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-000000000004",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "scan_detected",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:03Z",
+      "trigger": "startup_scan",
+      "path": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "size": 68,
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "rule_set_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hits": [
+        {
+          "rule": "Sample_Rule",
+          "severity": "medium"
+        }
+      ],
+      "omitted_hits": 0,
+      "pid": 4321,
+      "create_time": "2030-01-02T02:59:00.000001Z",
+      "action_id": null
+    },
+    {
+      "kind": "scan_detected",
+      "event_seq": 2,
+      "observed_at": "2030-01-02T03:00:03Z",
+      "trigger": "process_start",
+      "path": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "size": 0,
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "rule_set_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hits": [
+        {
+          "rule": "Rule_0",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_1",
+          "severity": "medium"
+        },
+        {
+          "rule": "Rule_2",
+          "severity": "high"
+        },
+        {
+          "rule": "Rule_3",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_4",
+          "severity": "medium"
+        },
+        {
+          "rule": "Rule_5",
+          "severity": "high"
+        },
+        {
+          "rule": "Rule_6",
+          "severity": "low"
+        },
+        {
+          "rule": "Rule_7",
+          "severity": "medium"
+        }
+      ],
+      "omitted_hits": 3,
+      "pid": 0,
+      "create_time": "2030-01-02T02:59:00.000001Z",
+      "action_id": null
+    },
+    {
+      "kind": "scan_detected",
+      "event_seq": 3,
+      "observed_at": "2030-01-02T03:00:03Z",
+      "trigger": "file_change",
+      "path": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "size": 9007199254740991,
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "rule_set_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hits": [
+        {
+          "rule": "Sample_Rule",
+          "severity": "medium"
+        }
+      ],
+      "omitted_hits": 0,
+      "pid": null,
+      "create_time": null,
+      "action_id": null
+    },
+    {
+      "kind": "scan_detected",
+      "event_seq": 4,
+      "observed_at": "2030-01-02T03:00:03Z",
+      "trigger": "remote_scan",
+      "path": "\\Device\\HarddiskVolume3\\Users\\*\\Masaüstü\\ödev.exe",
+      "size": 68,
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "rule_set_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hits": [
+        {
+          "rule": "Demo_Rule",
+          "severity": "high"
+        },
+        {
+          "rule": "demo_rule",
+          "severity": "low"
+        }
+      ],
+      "omitted_hits": 0,
+      "pid": 4321,
+      "create_time": "2030-01-02T02:59:00.000001Z",
+      "action_id": "a1000000-0000-4000-8000-000000000001"
+    },
+    {
+      "kind": "scan_detected",
+      "event_seq": 5,
+      "observed_at": "2030-01-02T03:00:03Z",
+      "trigger": "persistence_target",
+      "path": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe",
+      "size": 68,
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "rule_set_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "hits": [
+        {
+          "rule": "Sample_Rule",
+          "severity": "medium"
+        }
+      ],
+      "omitted_hits": 0,
+      "pid": 4321,
+      "create_time": null,
+      "action_id": null
+    }
+  ]
+}

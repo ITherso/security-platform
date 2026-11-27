@@ -22,9 +22,15 @@ open one, or in a closed alert that includes the match; never in two alerts
 that are not closed. The device row lock that ingestion (or the sweep) holds
 serialises every opening of one device's alerts; operators only acknowledge or
 close.
+
+Retention: `security-platform alerts prune` (prune_closed_alerts) deletes
+closed alerts once their closed_at is older than the tenant's
+alert_retention_days (30..3650, default 60). Open and acknowledged alerts are
+never deleted. A closed agent_silent alert of a device's current silence
+episode is kept, so that the next sweep does not open that episode again.
 """
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import re
@@ -32,9 +38,10 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import BigInteger, cast, func, literal, literal_column, or_, select, text, tuple_
 from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.exc import SQLAlchemyError
 
 from security_platform.event_contracts import BEHAVIOR_RULES
-from security_platform.models import Alert, Device, EndpointEvent
+from security_platform.models import Alert, Device, EndpointEvent, Tenant
 from security_platform.services.audit import write_event
 from security_platform.services.common import (DEFAULT_LIMITS, Conflict, NotFound, ServiceError, canonical_utc, iso,
     locked_tenant, require_membership, utc_now)
@@ -532,8 +539,9 @@ def acknowledge_alert(session, operator, tenant_id, alert_id, *, limits=DEFAULT_
             "acknowledged", now, principal.id, now)
         session.flush()
         # The audit row names the alert (object_type alert, object_id its id),
-        # never its evidence. audit_events has no details column: the alert's
-        # device and rule stay on the alert row, which is never deleted.
+        # never its evidence, and has no details: the alert's device and rule
+        # stay on the alert row, which `alerts prune` deletes only once it has
+        # been closed for the tenant's alert retention.
         write_event(session, tenant_id=tenant_id, actor_type="operator", actor_id=principal.id,
             action="alert_acknowledged", object_type="alert", object_id=alert.id, now=now, limits=limits)
     return alert_view(alert)
@@ -552,3 +560,115 @@ def close_alert(session, operator, tenant_id, alert_id, *, limits=DEFAULT_LIMITS
         write_event(session, tenant_id=tenant_id, actor_type="operator", actor_id=principal.id,
             action="alert_closed", object_type="alert", object_id=alert.id, now=now, limits=limits)
     return alert_view(alert)
+
+
+# --- retention: `security-platform alerts prune` -------------------------------------------------------------
+
+PRUNE_BATCH_ROWS = 5000
+# Before every closed alert: the keyset position that a tenant's first chunk starts after.
+_PRUNE_START = (datetime(1, 1, 1, tzinfo=timezone.utc), UUID(int=0))
+# The tenant's next expired closed alerts after a keyset position, oldest closing first, locked in that order.
+# status is a literal, never a bound parameter, so that the planner matches ix_alert_tenant_closed's predicate
+# in custom and generic plans alike; the closed_at bounds are the index range. Every chunk runs the same text.
+_EXPIRED_CHUNK = text(
+    "SELECT id, device_id, rule, dedup_key, closed_at FROM alerts "
+    "WHERE tenant_id = :tenant_id AND status = 'closed' AND closed_at < :cutoff AND closed_at >= :after_closed_at "
+    "AND (closed_at, id) > (:after_closed_at, :after_id) "
+    "ORDER BY closed_at, id LIMIT :batch_size FOR UPDATE")
+# Exactly the chunk read above, as the same index range, less the alerts the episode rule keeps. A closed alert
+# never changes again and closed_at is the server time of its closing, so no other row enters that range.
+_DELETE_CHUNK = text(
+    "DELETE FROM alerts "
+    "WHERE tenant_id = :tenant_id AND status = 'closed' AND closed_at < :cutoff "
+    "AND closed_at >= :first_closed_at AND closed_at <= :last_closed_at "
+    "AND (closed_at, id) >= (:first_closed_at, :first_id) AND (closed_at, id) <= (:last_closed_at, :last_id) "
+    "AND id <> ALL(CAST(:kept AS uuid[])) RETURNING id")
+
+
+def _prune_tenants(session):
+    return session.execute(select(Tenant.id, Tenant.alert_retention_days).order_by(Tenant.id)).all()
+
+
+def current_episodes(session, tenant_id, device_ids):
+    """device id -> the dedup_key of its current silence episode, for the given devices that are not revoked.
+
+    The key is the sweep's (services/sweep.py): the SHA-256 of
+    canonical_utc(last_received_at). Read without a lock: a device's key only
+    moves forward, so a key that is not current now never becomes current
+    again, and a revoked device never becomes a sweep candidate again.
+    """
+    rows = session.execute(select(Device.id, Device.last_received_at).where(
+        Device.tenant_id == tenant_id, Device.id.in_(sorted(device_ids)), Device.revoked_at.is_(None),
+        Device.last_received_at.is_not(None))).all()
+    return {device_id: dedup_key(canonical_utc(received_at)) for device_id, received_at in rows}
+
+
+def _prune_chunk(session, tenant_id, cutoff, after, batch_size):
+    """One chunk of one tenant; return (alerts read, the last keyset position read, deleted, kept)."""
+    rows = session.execute(_EXPIRED_CHUNK, {"tenant_id": tenant_id, "cutoff": cutoff, "after_closed_at": after[0],
+                                            "after_id": after[1], "batch_size": batch_size}).all()
+    if not rows:
+        return 0, after, 0, 0
+    silent = {row.device_id for row in rows if row.rule == "agent_silent"}
+    current = current_episodes(session, tenant_id, silent) if silent else {}
+    # The episode rule: a closed agent_silent alert of its device's current episode stays, whatever its age.
+    kept = [row.id for row in rows if row.rule == "agent_silent" and current.get(row.device_id) == row.dedup_key]
+    first, last = rows[0], rows[-1]
+    deleted = session.scalars(_DELETE_CHUNK, {
+        "tenant_id": tenant_id, "cutoff": cutoff, "first_closed_at": first.closed_at, "first_id": first.id,
+        "last_closed_at": last.closed_at, "last_id": last.id, "kept": kept}).all()
+    return len(rows), (last.closed_at, last.id), len(deleted), len(kept)
+
+
+def prune_closed_alerts(database, *, now=None, batch_size=PRUNE_BATCH_ROWS, limits=DEFAULT_LIMITS):
+    """Delete the closed alerts whose closed_at is older than each tenant's alert retention; return the counts.
+
+    Server time decides. Open and acknowledged alerts are never read. A
+    closed agent_silent alert whose device is not revoked and still has the
+    alert's episode key is kept and counted in episode_alerts_kept: deleting
+    it would let the next sweep open that episode again (services/sweep.py).
+    A revoked device's alerts go like any other.
+
+    Each chunk is its own short transaction of at most ``batch_size`` alerts,
+    read by keyset (closed_at, id) and locked FOR UPDATE in that order, so two
+    runs never wait for each other in a cycle; the kept alerts do not stop the
+    walk. A failing chunk rolls back only itself: committed chunks stay deleted
+    and counted, the tenant is skipped for this run and counted in
+    failed_tenants, as in `events prune`, and the next tenant continues.
+
+    After its chunks every tenant gets one audit record, alerts_pruned, in its
+    own transaction under the tenant row lock, with this run's committed
+    counts for it in details (deleted_alerts, episode_alerts_kept, complete).
+    complete is false when a chunk failed. A tenant whose record cannot be
+    written counts as failed too.
+    """
+    if type(batch_size) is not int or not 1 <= batch_size <= PRUNE_BATCH_ROWS:
+        raise ValueError("Invalid prune batch size")
+    now = utc_now(now)
+    with database.session() as session:
+        tenants = _prune_tenants(session)
+    deleted_total, kept_total, failed = 0, 0, 0
+    for tenant_id, days in tenants:
+        cutoff = now - timedelta(days=days)
+        deleted, kept, after, complete = 0, 0, _PRUNE_START, True
+        try:
+            while True:
+                with database.session() as session:
+                    read, after, removed, held = _prune_chunk(session, tenant_id, cutoff, after, batch_size)
+                # Added only once the chunk has committed.
+                deleted, kept = deleted + removed, kept + held
+                if read < batch_size:
+                    break
+        except SQLAlchemyError:
+            complete = False
+        try:
+            with database.session() as session:
+                locked_tenant(session, tenant_id)
+                write_event(session, tenant_id=tenant_id, actor_type="local_admin", actor_id=None,
+                    action="alerts_pruned", object_type="tenant", object_id=tenant_id, now=now, limits=limits,
+                    details={"deleted_alerts": deleted, "episode_alerts_kept": kept, "complete": complete})
+        except (SQLAlchemyError, NotFound):
+            complete = False
+        deleted_total, kept_total, failed = deleted_total + deleted, kept_total + kept, failed + (not complete)
+    return {"tenants": len(tenants), "deleted_alerts": deleted_total, "episode_alerts_kept": kept_total,
+            "failed_tenants": failed}

@@ -1,0 +1,62 @@
+{
+  "schema_version": 3,
+  "message_id": "50000003-0000-4000-8000-00000000000e",
+  "sequence": 1,
+  "source_observed_at": "2030-01-02T03:00:00Z",
+  "products": [
+    {
+      "product_id": "edr_agent",
+      "status": "running",
+      "version": "0.4.0",
+      "source_observed_at": "2030-01-02T03:00:00Z",
+      "agent_started_at": "2030-01-02T01:00:00Z",
+      "engine_id": "edr-agent/0.4.0",
+      "sensor_state": "started",
+      "sensor_error_code": null,
+      "events_queue_dropped": 0,
+      "events_write_failed": 1,
+      "events_unmapped": 2,
+      "events_skipped": 3,
+      "events_evicted": 4,
+      "events_discarded": 5,
+      "events_degraded": 6,
+      "outbox_backlog": 7,
+      "rule_set_state": "compiled",
+      "rule_set_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "realtime_scan_state": "on",
+      "file_change_sensor_state": "running",
+      "command_line_sensor_state": "degraded",
+      "persistence_watch_state": "running",
+      "scans_completed": 1200,
+      "scans_detected": 3,
+      "scans_no_verdict": 2,
+      "scan_jobs_dropped": 0,
+      "scan_cache_hits": 800,
+      "etw_events_lost": 17,
+      "file_change_gaps": 1,
+      "cmdline_unavailable": 4,
+      "response_channel_state": "ready",
+      "response_actions_enabled": [
+        "isolate_host",
+        "quarantine_file",
+        "release_host",
+        "restore_file",
+        "scan_path",
+        "terminate_process"
+      ],
+      "response_key_ids": [
+        "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      ],
+      "last_action_seq": 12,
+      "isolation_state": "active",
+      "isolation_until": "2030-01-02T04:00:00Z",
+      "isolation_checked_at": "2030-01-02T02:59:30Z",
+      "quarantine_items": 2,
+      "service_config_state": "as_installed",
+      "previous_run_end": "clean",
+      "heartbeat_interval_seconds": 60,
+      "behavior_rules_version": "altay-behavior/v1"
+    }
+  ]
+}

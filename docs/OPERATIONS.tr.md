@@ -89,13 +89,13 @@ Runtime hakları mevcut tablo sözleşmesine göre açıkça verilir:
 | `audit_events` | SELECT, INSERT, DELETE; UPDATE verilmez |
 | `endpoint_events` | SELECT, INSERT, DELETE; UPDATE verilmez |
 | `device_event_cursors` | SELECT, INSERT, UPDATE (imleç satır kilidi dahil); DELETE verilmez |
-| `alerts` | SELECT, INSERT, UPDATE (alışta açma ve güncelleme, onaylama/kapatma satır kilidi dahil); DELETE verilmez |
+| `alerts` | SELECT, INSERT, UPDATE (alışta açma ve güncelleme, onaylama/kapatma satır kilidi dahil), DELETE (yalnız `alerts prune`) |
 
-Olay satırlarındaki DELETE yalnız alış sırasındaki cihaz başına üst sınır ve `events prune` saklaması içindir; olay satırı güncellenemez. Runtime hesabı tenant'ın `event_retention_days` değerini değiştiremez (`tenants` üzerinde yalnız `UPDATE(id)` vardır). Uyarıların bu sürümde saklama süresi yoktur: runtime hesabı uyarı silemez, `events prune` uyarılara dokunmaz.
+Olay satırlarındaki DELETE yalnız alış sırasındaki cihaz başına üst sınır ve `events prune` saklaması içindir; olay satırı güncellenemez. Uyarı satırlarındaki DELETE (0006'dan beri) yalnız `alerts prune` saklaması içindir; `events prune` uyarılara dokunmaz. Runtime hesabı tenant'ın `event_retention_days` ve `alert_retention_days` değerlerini değiştiremez (`tenants` üzerinde yalnız `UPDATE(id)` vardır).
 
 Audit DELETE yalnız uygulamanın tenant'a göre sınırlandırdığı eski kayıt temizliği için kullanılır; genel audit değiştirme/silme endpointi yoktur. Runtime DB credential'ının ele geçirilmesi, saldırganın SQL üzerinden audit kayıtlarını silmesine izin verebilir. Bu tasarım DB credential'ına veya DB yöneticisine karşı değişmez/kriptografik audit sağlamaz. Tenant sorgu kapsamı ve birleşik foreign key'ler ayrıca gerçek PostgreSQL üzerinde test edilir; mevcut uygulama RLS kullandığını iddia etmez.
 
-Migration sonrasında `grant` yeniden çalıştırılır. Araç tabloların migration hesabına ait olduğunu ve beklenen tablo kümesinin mevcut olduğunu denetler; bütün tablolara geniş `ALL` yetkisi vermez. Yeni migration yeni runtime ihtiyacı eklerse grant sözleşmesi ayrıca incelenmelidir. `0002_endpoint_events` migration'ı `endpoint_events` ve `device_event_cursors` tablolarını ve `tenants.event_retention_days` sütununu ekler; bu migration'dan sonra `grant` çalıştırılmadan olay uç noktaları runtime hesabıyla çalışmaz (503). `0003_alerts` migration'ı `alerts` tablosunu ve `device_event_cursors.suppressed_alerts` sütununu (mevcut imleçlerde 0) ekler. Kurallar olay alımının içinde çalıştığı için bu migration'dan sonra `grant` çalıştırılmadan bir kurala uyan her olay batch'i ve uyarı yolları 503 alır.
+Migration sonrasında `grant` yeniden çalıştırılır. Araç tabloların migration hesabına ait olduğunu ve beklenen tablo kümesinin mevcut olduğunu denetler; bütün tablolara geniş `ALL` yetkisi vermez. Yeni migration yeni runtime ihtiyacı eklerse grant sözleşmesi ayrıca incelenmelidir. `0002_endpoint_events` migration'ı `endpoint_events` ve `device_event_cursors` tablolarını ve `tenants.event_retention_days` sütununu ekler; bu migration'dan sonra `grant` çalıştırılmadan olay uç noktaları runtime hesabıyla çalışmaz (503). `0003_alerts` migration'ı `alerts` tablosunu ve `device_event_cursors.suppressed_alerts` sütununu (mevcut imleçlerde 0) ekler. Kurallar olay alımının içinde çalıştığı için bu migration'dan sonra `grant` çalıştırılmadan bir kurala uyan her olay batch'i ve uyarı yolları 503 alır. `0006_alert_retention` migration'ı `tenants.alert_retention_days` sütununu (mevcut tenant'larda 60), `audit_events.details` sütununu ve `ix_alert_tenant_closed` indeksini ekler; runtime hesabına `alerts` üzerinde DELETE gerekir. Bu migration'dan sonra `grant` çalıştırılmazsa `alerts prune` silinecek uyarısı olan her tenant'ta başarısız olur ve 1 ile çıkar.
 
 ## Olay saklama ve günlük temizlik
 
@@ -157,13 +157,80 @@ schtasks /Query /TN "SecurityPlatform\EventsPrune" /V /FO LIST
 
 Komut çalıştırılmazsa yalnız cihaz başına üst sınır korur; zamana göre saklama uygulanmaz.
 
+## Uyarı saklama ve günlük temizlik
+
+Kapalı uyarılar tenant başına bir gün sayısıyla tutulur (`0006_alert_retention`). Kurallar:
+
+- Ölçüt uyarının kapatıldığı andır (`closed_at`, sunucu saati). Açılış ve son eşleşme zamanı kullanılmaz.
+- Gün sayısı varsayılan 60, en az 30, en çok 3650'dir. Migration mevcut tenant'lara 60 yazar.
+- `open` ve `acknowledged` uyarılar hiçbir zaman silinmez. Komut yalnız `closed` uyarıları okur.
+- Sessizlik dönemi kuralı: kapalı bir `agent_silent` uyarısı, cihaz iptal edilmemişse ve cihazın son alış zamanından türeyen sessizlik anahtarı uyarının anahtarıyla hâlâ aynıysa yaşı ne olursa olsun kalır. Silinseydi sonraki `sweep` aynı sessizlik için yeni bir uyarı açardı. Cihaz yeniden rapor gönderince anahtar değişir; eski uyarı sonraki çalıştırmada silinir. İptal edilmiş cihazın uyarıları diğerleri gibi silinir.
+- Bu kuralın sınırlı bir sonucu vardır: bir daha hiç rapor göndermeyen ve iptal edilmeyen her sessiz cihaz, son sessizlik döneminin tek kapalı `agent_silent` uyarısını süresiz tutar. Cihaz iptal edilirse bu uyarı sonraki çalıştırmada silinir.
+
+Tenant'ın gün sayısını korunan yerel yönetim CLI'ı migration/owner hesabıyla (`SP_MIGRATION_DATABASE_URL`) ayarlar. Değişiklik audit'e `tenant_alert_retention_set` olarak yazılır. Aralık dışı değer `Invalid alert retention` iletisiyle 1 döndürür ve hiçbir şey yazmaz:
+
+```powershell
+./.venv/Scripts/python.exe -m security_platform.cli set-alert-retention --tenant-id TENANT_UUID --days 60
+```
+
+Temizlik komutu `events prune` gibi yalnız runtime hesabıyla (`SP_DATABASE_URL`) çalışır. Owner hesabına geri düşmez; owner bağlantısı verilirse `alerts prune requires the separate unprivileged runtime database role` iletisiyle 1 döndürür:
+
+```powershell
+./.venv/Scripts/python.exe -m security_platform.cli alerts prune
+```
+
+Komut her tenant için `closed_at` değeri şimdiden tenant'ın gün sayısı kadar eski olan kapalı uyarıları `ix_alert_tenant_closed` indeksiyle siler. Silme en çok 5000 satırlık parçalar hâlinde, her parça kendi kısa transaction'ında yapılır. Parçanın satırları `(closed_at, id)` sırasıyla kilitlenir; iki çalıştırma birbirini döngüsel olarak beklemez. Kalan sessizlik uyarıları sonraki parçaları durdurmaz. Çıktı yalnız sayılardan oluşan tek satır JSON'dur: `{"tenants": …, "deleted_alerts": …, "episode_alerts_kept": …, "failed_tenants": …}`. `episode_alerts_kept` bu çalıştırmada sessizlik dönemi kuralıyla tutulan uyarı sayısıdır; aynı uyarı her çalıştırmada yeniden sayılır. Tenant, cihaz veya uyarı kimliği ve bağlantı bilgisi yazılmaz.
+
+Hatalar `events prune` gibi tenant başına ele alınır. Başarısız bir parça yalnız kendini geri alır; önceki parçalar silinmiş kalır ve sayılır. O tenant bu çalıştırmada atlanır ve `failed_tenants` bir artar. En az bir tenant başarısız olursa komut sayıları yine stdout'a yazar, stderr'e `alerts prune incomplete: N tenant(s) failed and were skipped; ...` iletisini yazar ve 1 ile çıkar. Bağlantı, runtime rol denetimi veya tenant listesi başlangıçta başarısız olursa hiçbir satır silinmemiştir; komut `Database operation failed; no success was recorded.` iletisiyle 1 döndürür.
+
+Her çalıştırma her tenant için tek bir `alerts_pruned` audit kaydı yazar, silinecek uyarı olmasa da. Kayıt tenant satırı kilidiyle kendi transaction'ında yazılır. Bu çalıştırmanın sayıları `audit_events.details` sütunundadır: `{"deleted_alerts": …, "episode_alerts_kept": …, "complete": true|false}`. Bir parça başarısız olduysa `complete` `false` olur. Audit API'si `details` alanını döndürmez; konsol yalnız eylemi gösterir. Sayılar veritabanından okunur. Kayıtlar tenant'ın audit sınırına sayılır. Komut sınırı `serve` gibi `SP_MAX_AUDIT_EVENTS_PER_TENANT` değerinden okur (varsayılan 10000, aralık 10–1000000). Yerel yönetim komutları da (`create-tenant`, `set-membership`, `revoke-membership`, `set-event-retention`, `set-alert-retention`) aynı değeri okur. Aralık dışı veya tam sayı olmayan değerle komut veritabanına bağlanmadan 1 döndürür. Servisin sınırı yükseltildiyse aynı değeri görev betiğinde de verin (`$env:SP_MAX_AUDIT_EVENTS_PER_TENANT`). Verilmezse sınır 10000 olur ve her çalıştırma, 10000'i aşan tenant'ların en eski audit kayıtlarını siler, silinecek uyarı olmasa da. Testte 20000 sınırla 10.050 audit kaydı tutan bir tenant'tan hiçbir kayıt silinmedi; değişken verilmeden tek çalıştırma en eski 51 kaydı sildi ve tenant 10000 kayıtta kaldı. Günde bir çalıştırma tenant başına yılda 365 kayıt ekler. Audit sınırına ulaşmış bir tenant'ta her yeni kayıt en eski audit kaydını siler. Bu, `tenant_created` veya `membership_set` gibi eski yönetim kayıtlarının da zamanla düşmesi demektir; bu kayıtları uzun süre tutmak gerekiyorsa sınırı yükseltin.
+
+Bilinen boşluk: silmeden sonra audit kaydı yazılamazsa (ör. tenant satırı kilitliyse) silinen uyarılar silinmiş kalır, fakat o çalıştırmanın kaydı olmaz. Tenant başarısız sayılır ve komut 1 döndürür. Sonraki çalıştırmanın kaydı yalnız kendi sayılarını taşır.
+
+Komutu günde bir kez, `events prune` için anlatılan kurallarla zamanlayın: etkileşimli oturum gerektirmeyen görev, yönetici olmayan ayrı hesap, korunan `runtime.json`. Örnek (yollar ve hesap adı örnektir):
+
+```powershell
+schtasks /Create /TN "SecurityPlatform\AlertsPrune" /SC DAILY /ST 03:45 /RU "SUNUCU\sp-prune" /RP /TR "powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\SecurityPlatform\alerts-prune.ps1"
+```
+
+`alerts-prune.ps1`, `events-prune.ps1` ile aynıdır; yalnız çağrılan komut değişir. Çıkış kodları da aynıdır:
+
+```powershell
+$ErrorActionPreference = 'Stop'
+$runtime = Get-Content -LiteralPath 'C:\SecurityPlatform\private\runtime.json' -Raw | ConvertFrom-Json
+if (-not $runtime.runtime_url) { exit 2 }
+$env:SP_DATABASE_URL = $runtime.runtime_url
+& 'C:\SecurityPlatform\.venv\Scripts\python.exe' -m security_platform.cli alerts prune
+if ($null -eq $LASTEXITCODE) { exit 1 }
+exit $LASTEXITCODE
+```
+
+Görevin son çalışma zamanını ve sonucunu `EventsPrune` gibi denetleyin; `LastRunTime` son 24 saat içinde, `LastTaskResult` `0` olmalıdır:
+
+```powershell
+Get-ScheduledTaskInfo -TaskPath '\SecurityPlatform\' -TaskName 'AlertsPrune' | Select-Object LastRunTime, LastTaskResult
+```
+
+`sweep` ile aynı anda çalışabilir. Testte sırayla ve eşzamanlı çalıştırmada aynı sessizlik dönemi için ikinci bir uyarı açılmadı.
+
+Ölçülen süreler (Round 1'in taşınabilir PostgreSQL 18.6 kümesi, varsayılan ayarlar; i7-13700H, 32 GB, NVMe, Windows 11). Veri: 3 tenant, 4000 cihaz, 30.000 audit kaydı. Uyarıların %60'ı 120 güne yayılmış kapalı, %10'u onaylanmış, %30'u açık; gün sayısı 60:
+
+| Uyarı | İlk çalıştırma | Silinen | İkinci çalıştırma (silinecek yok) |
+|---|---|---|---|
+| 200.000 | 1,89 sn | 60.001 | 1,34 sn |
+| 1.000.000 | 4,12 sn | 300.009 | 1,61 sn |
+
+Süreler komutun tamamıdır; yaklaşık 0,9 saniyesi Python sürecinin başlamasıdır. Audit kayıt sayısı 30.000'de kaldı: tenant başına sınır en eski kaydı çıkarır.
+
+Komut çalıştırılmazsa kapalı uyarılar silinmez ve birikir.
+
 ## Uyarı sınırı
 
 Uyarı kuralları olay alımının içinde çalışır ([API V1](API_V1.tr.md), "Uyarılar"). Kötü niyetli ama kayıtlı bir cihazın operatörleri uyarıya boğmaması için cihaz başına kapanmamış (`open` veya `acknowledged`) uyarı sayısı sınırlıdır:
 
 - `SP_MAX_OPEN_ALERTS_PER_DEVICE` (varsayılan 500, aralık 10–100000; aralık dışı veya tam sayı olmayan değerle servis başlamaz). Cihaz bu sayıda kapanmamış uyarı tutarken yeni bir uyarı açacak eşleşme hiçbir şey açmaz; cihaz imlecindeki `suppressed_alerts` sayacı batch ve anahtar başına bir artar ve olay zaman çizelgesi cevabında görünür. Açık bir uyarının güncellenmesi hiçbir zaman bastırılmaz. `tenant_admin`'in kapattığı her uyarı bir yer açar.
 - Sınır düşürülürse mevcut uyarılar kapanmaz veya silinmez; cihaz sınırın altına inene kadar yeni anahtarlar bastırılır.
-- Uyarıların saklama süresi yoktur. Runtime hesabı uyarı silemez; kapalı uyarılar da tabloda kalır. Bu açık bir iştir; disk alanı hesabında cihaz başına en çok bu sınır kadar kapanmamış uyarı ve operatör kapattıkça biriken kapalı uyarılar düşünülmelidir.
+- Kapalı uyarılar tenant'ın uyarı saklama süresi (varsayılan 60 gün) dolunca `alerts prune` ile silinir; açık ve onaylanmış uyarılar silinmez. Disk alanı hesabında cihaz başına en çok bu sınır kadar kapanmamış uyarı ve saklama süresi içinde kapatılan uyarılar düşünülmelidir. `alerts prune` zamanlanmazsa kapalı uyarılar birikir.
 
 `suppressed_alerts` toplam bir sayaçtır ve hiç azalmaz. Değeri artıyorsa cihaz sınırdadır: operatörün o cihazın uyarılarını incelemesi ve kapatması gerekir. Sayaç cihazın kendi beyanından türeyen bir sunucu sayımıdır; kötü niyetli bir cihaz sınırı bilerek doldurabilir ([tehdit modeli](THREAT_MODEL.tr.md)).
 
@@ -237,7 +304,7 @@ Kurulu wheel'de `security-platform migrate` aynı migration'ı çalıştırır. 
 & "$pgBin/psql.exe" -X -v ON_ERROR_STOP=1 -c "SELECT c.relname, i.indisvalid FROM pg_index AS i JOIN pg_class AS c ON c.oid = i.indexrelid WHERE c.relname IN ('ix_endpoint_events_process_identity', 'ix_alert_silence_episode') ORDER BY c.relname"
 ```
 
-Beklenen: `alembic current` çıktısı `0005_stage3_detection (head)` olur. Üç CHECK satırında `convalidated` ve `asama3` `t`, iki indeks satırında `indisvalid` `t` olur. 0004'te `asama3` üç satırda da `f` olur ve indeks sorgusu satır döndürmez.
+Beklenen: `alembic current` çıktısı `0005_stage3_detection (head)` olur (bu sürümle `0006_alert_retention (head)`; aşağıda "0006 notu"). Üç CHECK satırında `convalidated` ve `asama3` `t`, iki indeks satırında `indisvalid` `t` olur. 0004'te `asama3` üç satırda da `f` olur ve indeks sorgusu satır döndürmez.
 
 **6. Yeniden açma.** `serve` sürecini yeni kod sürümüyle, owner bilgileri bulunmayan ayrı bir PowerShell oturumunda başlatın (yukarıdaki `serve` komutu; o oturumda yalnız `SP_DATABASE_URL` ve operatör ayarları bulunur). Bu oturumdaki `PGPASSWORD` ve `SP_MIGRATION_DATABASE_URL` uzun ömürlü `serve` sürecinin ortamına geçmemelidir. `GET /readyz` cevabının `200 {status:ready}` olduğunu denetleyin. Uygulama açılışta yalnız `alembic_version` tablosunun okunabildiğini denetler, sürümü karşılaştırmaz. Yeni kod 0004 şemasında da açılır, fakat V2 olayları veritabanı CHECK'ine takılır ve bu istekler 503 alır; bu yüzden `serve` sürecini adım 5'teki doğrulamadan önce başlatmayın. Cihazlar bekleyen mesajlarını gönderir. `events prune` görevini yeniden etkinleştirin; pencere görevin saatine denk geldiyse komutu bir kez elle de çalıştırabilirsiniz. `sweep` görevini ise ancak bu oturumda adım 1'deki ikinci sorgu yeniden en çok not ettiğiniz `sessiz_15_dk` değerini gösterdiğinde, yani cihazlar yeniden snapshot gönderdiğinde etkinleştirin. Son olarak bu oturumdaki owner bilgilerini silin:
 
@@ -303,6 +370,35 @@ if ($LASTEXITCODE -ne 0) { throw 'pg_restore başarısız' }
 ```
 
 `--clean --if-exists` yedekteki nesneleri önce kaldırıp yeniden kurar. `--single-transaction` ile geri yükleme ya tamamen uygulanır ya hiç uygulanmaz; `--exit-on-error` ilk hatada durur. Yedekten sonra yazılan her şey kaybolur: olaylar, uyarılar, snapshot'lar, audit kayıtları ve credential rotasyonları. Yedekten sonra credential'ı yenilenen bir cihazın yeni sırrı geri yüklenen veritabanında yoktur. Ölçümde 5,4 milyon olaylı yedek, 0005'e yükseltilip V2 satırları eklenmiş veritabanının üzerine 76,32 saniyede geri yüklendi. Sonuçta sürüm `0004_edr_agent_product` oldu; olay ve uyarı sayıları ile runtime hakları yedektekiyle aynıydı. 10,8 milyon olaylı yedeğin 0005'e yükseltilmiş veritabanının üzerine geri yüklenmesi 154,84 saniye sürdü; sürüm yine `0004_edr_agent_product` oldu ve 0005 indeksleri kalmadı. Geri yükleme, alembic ile dönüşten çok daha uzun sürer, fakat yedeğin anını eksiksiz geri getirir.
+
+### 0006 notu (uyarı saklama)
+
+`0006_alert_retention` küçük bir migration'dır. `tenants` tablosuna `alert_retention_days` (varsayılan 60, CHECK 30–3650), `audit_events` tablosuna `details` (JSONB, nesne, en çok 1024 bayt, CHECK) ekler ve `alerts` üzerinde `ix_alert_tenant_closed` kısmi indeksini kurar. Var olan satırları değiştirmez. Runtime hesabına `alerts` üzerinde DELETE gerekir; bu yüzden migration'dan sonra `grant` çalıştırılır.
+
+İlk üç ifade kilitleri sabit sırayla alır: `tenants` (ACCESS EXCLUSIVE), `alerts` (SHARE), `audit_events` (ACCESS EXCLUSIVE). Sıra, onaylama ve kapatmanın sırasıyla aynıdır: tenant satırı, uyarı satırı, audit. Kilitler COMMIT'e kadar tutulur. SHARE kilidi uyarı okumalarını bekletmez; uyarı yazmaları ve tenant okumaları bekler. `statement_timeout` 0005'teki gibi yalnız bu migration'ın ifadeleri için kaldırılır; 3 saniyelik `lock_timeout` değişmez.
+
+Ölçümler (yukarıdaki makine ve veri, 3 tenant, 4000 cihaz, 30.000 audit kaydı):
+
+| Uyarı (veritabanı) | Koşu | Kilitten COMMIT'e | İndeks kurulumu | Komutun tamamı | Aynı anda çalışan sorgular |
+|---|---|---|---|---|---|
+| 200.000 (146 MB) | 2 | 0,15 ve 0,22 sn | 0,14 ve 0,21 sn | 1,1–1,2 sn | Tenant okuma ve uyarı yazma en çok 0,22 sn bekledi; uyarı listesi ve cihaz okuma en çok 0,006 sn; hepsi başarılı |
+| 1.000.000 (681 MB) | 2 | 0,49 ve 0,57 sn | 0,48 ve 0,56 sn | 1,45–1,46 sn | Tenant okuma ve uyarı yazma en çok 0,56 sn bekledi; uyarı listesi en çok 0,004 sn; hepsi başarılı |
+
+1.000.000 uyarıda açık bir uyarı okuması sürerken yapılan üçüncü yükseltme de başarılı oldu (kilit 0,59 sn). Geri dönüş iki boyutta da kilidi 0,01 saniye tuttu ve 0,9 saniye sürdü.
+
+Kilit tutulursa: `tenants` tablosunu okumuş ve 6 saniye açık kalan bir runtime transaction'ı varken migration 4,12 saniye sonra `LOCK TABLE tenants` ifadesinde kilit zaman aşımıyla 1 ile çıktı. Sürüm `0005_stage3_detection` kaldı; hiçbir şey değişmedi. Bu sürede tenant okumaları en çok 2,99 saniye bekledi, hiçbiri başarısız olmadı. Uyarı okuma ve yazmaları etkilenmedi. Açık transaction'ı bitirip komutu yeniden çalıştırmak güvenlidir.
+
+Uygulama:
+
+1. Yedek alın (yukarıdaki adım 3).
+2. `AlertsPrune` ve `sweep` görevlerini devre dışı bırakın.
+3. `serve` bu boyutlarda durdurulmak zorunda değildir. Eski kod 0006 şemasında çalışır: denemede tenant ve üyelik oluşturma, olay saklama ayarı ve audit okuma çalıştı; yeni sütunlar varsayılan değerleriyle doldu. Eski `serve` migration sırasında çalışmayı sürdürür.
+4. `migrate`, ardından `grant` çalıştırın.
+5. Bundan sonra `serve` sürecini yeni kodla yeniden başlatın ve görevleri etkinleştirin. Yeni kod yeni sütunları okur; migration'dan önce başlatılmaz. `grant` yapılmadan `alerts prune` silinecek uyarısı olan her tenant'ta başarısız olur ve 1 döndürür.
+
+Bu sürümle 0004'ten yapılan yükseltme 0005 ve 0006'yı aynı transaction'da uygular; bu durumda yukarıdaki 0005 adımları (`serve` durdurulmuş) geçerlidir ve adım 5'te `alembic current` `0006_alert_retention (head)` gösterir.
+
+Geri dönüş `alembic downgrade 0005_stage3_detection` ile yapılır. Üç tabloyu (bu kez `alerts` de ACCESS EXCLUSIVE) kilitler, `alerts_pruned` ve `tenant_alert_retention_set` audit kayıtlarını siler, indeksi ve iki sütunu kaldırır. 0004'e dönüş de önce bu adımı uygular. Silinen uyarılar geri dönüşle geri gelmez; yalnız yedekten gelir.
 
 ## Test, günlük ve durdurma
 

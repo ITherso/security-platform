@@ -6,14 +6,19 @@ from security_platform.services.common import DEFAULT_LIMITS, bounded_page, iso,
 
 ACTIONS = {"tenant_created", "membership_set", "membership_revoked", "enrollment_grant_created",
            "enrollment_grant_revoked", "device_enrolled", "device_revoked", "device_credential_rotated",
-           "tenant_event_retention_set", "alert_acknowledged", "alert_closed"}
+           "tenant_event_retention_set", "alert_acknowledged", "alert_closed", "tenant_alert_retention_set",
+           "alerts_pruned"}
 OBJECTS = {"tenant", "membership", "enrollment_grant", "device", "device_credential", "alert"}
 ACTOR_TYPES = {"operator", "device", "local_admin"}
 
 
 def write_event(session, *, tenant_id, actor_type, actor_id, action, object_type, object_id,
-                now=None, limits=DEFAULT_LIMITS):
+                now=None, limits=DEFAULT_LIMITS, details=None):
     """Caller holds tenant row lock. Retain bounded newest events in this transaction.
+
+    `details` is a small object of counts, or None (migration 0006,
+    ck_audit_details). Only `alerts prune` writes it, and list_audit never
+    returns it: the audit API stays as it is.
 
     At capacity a device-originated event evicts the oldest device events
     first, so repeated device actions cannot push administrative history out;
@@ -31,7 +36,8 @@ def write_event(session, *, tenant_id, actor_type, actor_id, action, object_type
             obsolete = select(AuditEvent.id).where(*scope).order_by(AuditEvent.created_at, AuditEvent.id).limit(excess)
             excess -= session.execute(delete(AuditEvent).where(tenant, AuditEvent.id.in_(obsolete))).rowcount
     event = AuditEvent(tenant_id=tenant_id, actor_type=actor_type, actor_id=actor_id,
-        action=action, object_type=object_type, object_id=object_id, outcome="success", created_at=utc_now(now))
+        action=action, object_type=object_type, object_id=object_id, outcome="success", created_at=utc_now(now),
+        details=details)
     session.add(event)
     session.flush()
     return event

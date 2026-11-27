@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "batch_id": "e0000001-0000-4000-8000-000000000001",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "process_started",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:00.000001Z",
+      "pid": 4001,
+      "parent_pid": 4,
+      "session_id": 1,
+      "image": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\setup.exe"
+    },
+    {
+      "kind": "process_started",
+      "event_seq": 2,
+      "observed_at": "2030-01-02T03:00:00.000001Z",
+      "pid": 4002,
+      "parent_pid": 640,
+      "session_id": 0,
+      "image": "\\Device\\HarddiskVolume3\\Windows\\System32\\svchost.exe"
+    },
+    {
+      "kind": "process_started",
+      "event_seq": 3,
+      "observed_at": "2030-01-02T03:00:00.000001Z",
+      "pid": 4003,
+      "parent_pid": 4,
+      "session_id": 1,
+      "image": "\\Device\\HarddiskVolume3\\Users\\*\\Masaüstü\\ödev.exe"
+    },
+    {
+      "kind": "process_started",
+      "event_seq": 4,
+      "observed_at": "2030-01-02T03:00:00.000001Z",
+      "pid": 4004,
+      "parent_pid": 4,
+      "session_id": 1,
+      "image": "\\Device\\HarddiskVolume3\\Users\\*:payload.exe"
+    },
+    {
+      "kind": "process_started",
+      "event_seq": 5,
+      "observed_at": "2030-01-02T03:00:00.000001Z",
+      "pid": 4005,
+      "parent_pid": 0,
+      "session_id": 1,
+      "image": "Registry"
+    }
+  ]
+}

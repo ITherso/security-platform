@@ -26,7 +26,7 @@ Adapter yalnız altı operatör GET'ini uygular: erişilebilir tenant'lar, tenan
 
 - **Olay zaman çizelgesi** cihaz ayrıntısındadır: en yeni olay önce, "Daha eski" düğmesiyle `next_before_seq` sayfalaması, yüklenen sayfalardaki `event_seq` boşlukları ("n olay kayıp"), `cap_deleted_events` ve `suppressed_alerts` sayaçları.
 - **Uyarılar** ayrı bir ekrandır: durum ve cihaz filtresi, `next_before` ile "Daha eski" sayfalaması, düğmeyle yenileme. Ekran kural tespitinin teşhis olmadığını söyler ve salt okunurdur; onaylama ve kapatma Aşama 2'de yalnız API ile, `tenant_admin` rolüyle yapılır.
-- Audit görünümü yerel `set-event-retention` komutunun yazdığı `tenant_event_retention_set` eylemini ve uyarı geçişlerinin `alert_acknowledged` ile `alert_closed` eylemlerini (nesne türü `alert`) tanır ve etiketler.
+- Audit görünümü yerel `set-event-retention` komutunun yazdığı `tenant_event_retention_set`, `set-alert-retention` komutunun yazdığı `tenant_alert_retention_set` ve `alerts prune` komutunun yazdığı `alerts_pruned` eylemlerini (üçünde de nesne türü `tenant`) ve uyarı geçişlerinin `alert_acknowledged` ile `alert_closed` eylemlerini (nesne türü `alert`) tanır ve etiketler.
 - Her olay ve uyarı `self_reported`/`not_verified` olarak etiketlenir.
 - **Altay EDR ajanı kartı** (Snapshot V2, Aşama 2 adım 3) cihaz ayrıntısındadır ve mevcut ayrıntı GET'inin `edr_agent` ürününü gösterir: ajan sürümü, başlangıç zamanı, motor kimliği, kural dosyasının varlığı ("var" / "yok" / "bilinmiyor"), sensör durumu ve hata kodu, sayaçlar ve giden kutusu birikimi, `self_reported`/`not_verified` etiketleri. Kart "Ajan kendi durumunu bildirir; koruma veya kural yükleme iddiası değildir" notunu taşır. Ajanı bildirmeyen cihazda kart "Bildirim yok" olarak kalır. Yeni GET eklenmedi.
 

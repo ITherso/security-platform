@@ -1,0 +1,20 @@
+{
+  "schema_version": 2,
+  "batch_id": "e0000002-0000-4000-8000-000000000026",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "behavior_match",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:04Z",
+      "rule": "custom_rule",
+      "rule_version": 1,
+      "pid": 4321,
+      "create_time": "2030-01-02T02:59:00.000001Z",
+      "image": "\\Device\\HarddiskVolume3\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+      "parent_image": null,
+      "found_at_start": false,
+      "command_line_source": "kernel_logger"
+    }
+  ]
+}

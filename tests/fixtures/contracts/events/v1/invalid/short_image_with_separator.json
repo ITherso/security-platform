@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "batch_id": "e0000001-0000-4000-8000-00000000001a",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "process_stopped",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:01Z",
+      "pid": 4001,
+      "exit_code": 0,
+      "image": "tools\\setup.exe"
+    }
+  ]
+}

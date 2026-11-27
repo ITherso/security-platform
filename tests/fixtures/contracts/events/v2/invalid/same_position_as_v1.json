@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "batch_id": "e0000002-0000-4000-8000-000000000009",
+  "batch_sequence": 1,
+  "events": [
+    {
+      "kind": "sensor_state",
+      "event_seq": 1,
+      "observed_at": "2030-01-02T03:00:02Z",
+      "state": "started",
+      "error_code": null
+    }
+  ]
+}

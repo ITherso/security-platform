@@ -822,8 +822,10 @@ def event_schema(connection):
     """Reflected names of everything migration 0002 creates."""
     inspector = inspect(connection)
     present = set(inspector.get_table_names())
+    # Only 0002's column and CHECK: 0006 adds alert_retention_days and ck_tenant_alert_retention to tenants.
     shape = {"tenants": ({column["name"] for column in inspector.get_columns("tenants")} & {"event_retention_days"},
-                         {item["name"] for item in inspector.get_check_constraints("tenants")})}
+                         {item["name"] for item in inspector.get_check_constraints("tenants")}
+                         & {"ck_tenant_event_retention"})}
     for table in EVENT_TABLES:
         if table in present:
             shape[table] = ({column["name"] for column in inspector.get_columns(table)},

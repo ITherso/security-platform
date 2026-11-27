@@ -1,0 +1,98 @@
+{
+  "payload": "snapshots/v3/valid/agent_degraded.json",
+  "ack": {
+    "accepted": true,
+    "message_id": "50000003-0000-4000-8000-000000000002",
+    "sequence": 2,
+    "received_at": "2030-01-02T03:04:05Z"
+  },
+  "timeline": {
+    "items": [],
+    "next_before_seq": null,
+    "cap_deleted_events": 0,
+    "suppressed_alerts": 0
+  },
+  "device": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "tenant_id": "11111111-1111-4111-8111-111111111111",
+    "label": "Contract fixture device",
+    "identity_status": "active",
+    "connection_status": "recent",
+    "created_at": "2030-01-02T03:04:05Z",
+    "revoked_at": null,
+    "last_sequence": 2,
+    "last_received_at": "2030-01-02T03:04:05Z",
+    "source_observed_at": "2030-01-02T03:00:00Z",
+    "source_observation": {
+      "age_seconds": 245,
+      "clock_state": "not_verified"
+    },
+    "source": "self_reported",
+    "producer_verification": "not_verified",
+    "products": [
+      {
+        "product_id": "edr_agent",
+        "snapshot_sequence": 2,
+        "received_at": "2030-01-02T03:04:05Z",
+        "observation": {
+          "age_seconds": 245,
+          "clock_state": "not_verified"
+        },
+        "state": {
+          "source": "self_reported",
+          "status": "running",
+          "version": "0.4.0",
+          "engine_id": "edr-agent/0.4.0",
+          "product_id": "edr_agent",
+          "rule_set_id": null,
+          "sensor_state": "failed",
+          "events_evicted": 4,
+          "events_skipped": 3,
+          "outbox_backlog": 7,
+          "rule_set_state": "invalid",
+          "scans_detected": 0,
+          "etw_events_lost": 9007199254740991,
+          "events_degraded": 6,
+          "events_unmapped": 2,
+          "isolation_state": "partial",
+          "isolation_until": null,
+          "last_action_seq": null,
+          "scan_cache_hits": 800,
+          "scans_completed": null,
+          "agent_started_at": "2030-01-02T01:00:00.000000Z",
+          "events_discarded": 5,
+          "file_change_gaps": 1,
+          "previous_run_end": "unclean",
+          "quarantine_items": 0,
+          "response_key_ids": [],
+          "scans_no_verdict": 2,
+          "catalog_available": null,
+          "scan_jobs_dropped": 0,
+          "sensor_error_code": "session_start_failed",
+          "source_observed_at": "2030-01-02T03:00:00.000000Z",
+          "cmdline_unavailable": 4,
+          "events_write_failed": 1,
+          "realtime_scan_state": "failed",
+          "events_queue_dropped": 0,
+          "isolation_checked_at": "2030-01-02T02:59:30.000000Z",
+          "service_config_state": "changed",
+          "producer_verification": "not_verified",
+          "behavior_rules_version": "altay-behavior/v999999",
+          "response_channel_state": "journal_invalid",
+          "persistence_watch_state": "degraded",
+          "file_change_sensor_state": "not_available",
+          "response_actions_enabled": [
+            "scan_path"
+          ],
+          "command_line_sensor_state": "stopped",
+          "heartbeat_interval_seconds": 3600
+        }
+      }
+    ],
+    "missing_products": [
+      "antivirus",
+      "hostbasedfirewall",
+      "termivar"
+    ]
+  }
+}

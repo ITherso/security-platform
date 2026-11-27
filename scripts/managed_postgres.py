@@ -53,9 +53,11 @@ TABLE_GRANTS = {
     # One cursor per device, never deleted; UPDATE also covers SELECT FOR UPDATE.
     "device_event_cursors": ("SELECT", "INSERT", "UPDATE"),
     # Raised and updated at ingestion, acknowledged and closed by tenant admins
-    # (UPDATE also covers SELECT FOR UPDATE). Never deleted: alerts have no
-    # retention yet.
-    "alerts": ("SELECT", "INSERT", "UPDATE"),
+    # (UPDATE also covers SELECT FOR UPDATE). DELETE serves only the
+    # operator-scheduled `alerts prune` retention of closed alerts. UPDATE
+    # already let a stolen runtime credential rewrite any alert; DELETE adds
+    # removal (an accepted risk, docs/THREAT_MODEL.tr.md).
+    "alerts": ("SELECT", "INSERT", "UPDATE", "DELETE"),
 }
 
 

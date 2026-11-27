@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "message_id": "50000001-0000-4000-8000-000000000004",
+  "sequence": 2,
+  "source_observed_at": "2030-01-02T03:00:00Z",
+  "products": [
+    {
+      "product_id": "hostbasedfirewall",
+      "status": "degraded",
+      "installed": true,
+      "reported_running": true,
+      "reported_stale": true,
+      "firewall_mode": "sniff",
+      "error_codes": [
+        "policy_error",
+        "telemetry_error"
+      ],
+      "version": "2.4.1",
+      "source_observed_at": "2030-01-02T02:58:00Z"
+    },
+    {
+      "product_id": "termivar",
+      "status": "experimental",
+      "scanner_installed": false,
+      "execution_available": false,
+      "report_presence": "none",
+      "latest_report": null
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "batch_id": "e0000001-0000-4000-8000-000000000029",
+  "batch_sequence": 6,
+  "events": [
+    {
+      "kind": "sensor_state",
+      "event_seq": 1006,
+      "observed_at": "2030-01-02T03:00:02Z",
+      "state": "lost",
+      "error_code": "session_in_use"
+    }
+  ]
+}

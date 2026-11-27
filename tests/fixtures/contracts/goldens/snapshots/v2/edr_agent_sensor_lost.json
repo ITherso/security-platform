@@ -1,0 +1,71 @@
+{
+  "payload": "snapshots/v2/valid/edr_agent_sensor_lost.json",
+  "ack": {
+    "accepted": true,
+    "message_id": "50000002-0000-4000-8000-000000000003",
+    "sequence": 3,
+    "received_at": "2030-01-02T03:04:05Z"
+  },
+  "timeline": {
+    "items": [],
+    "next_before_seq": null,
+    "cap_deleted_events": 0,
+    "suppressed_alerts": 0
+  },
+  "device": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "tenant_id": "11111111-1111-4111-8111-111111111111",
+    "label": "Contract fixture device",
+    "identity_status": "active",
+    "connection_status": "recent",
+    "created_at": "2030-01-02T03:04:05Z",
+    "revoked_at": null,
+    "last_sequence": 3,
+    "last_received_at": "2030-01-02T03:04:05Z",
+    "source_observed_at": "2030-01-02T03:00:00Z",
+    "source_observation": {
+      "age_seconds": 245,
+      "clock_state": "not_verified"
+    },
+    "source": "self_reported",
+    "producer_verification": "not_verified",
+    "products": [
+      {
+        "product_id": "edr_agent",
+        "snapshot_sequence": 3,
+        "received_at": "2030-01-02T03:04:05Z",
+        "observation": {
+          "age_seconds": 245,
+          "clock_state": "not_verified"
+        },
+        "state": {
+          "source": "self_reported",
+          "status": "running",
+          "version": "0.3.0",
+          "engine_id": null,
+          "product_id": "edr_agent",
+          "sensor_state": "lost",
+          "events_evicted": 0,
+          "events_skipped": 0,
+          "outbox_backlog": 40,
+          "events_degraded": 0,
+          "events_unmapped": 9007199254740991,
+          "agent_started_at": "2030-01-02T01:00:00.500000Z",
+          "events_discarded": 0,
+          "catalog_available": null,
+          "rule_file_present": null,
+          "sensor_error_code": "session_in_use",
+          "source_observed_at": "2030-01-02T03:00:00.000000Z",
+          "events_write_failed": null,
+          "events_queue_dropped": 12,
+          "producer_verification": "not_verified"
+        }
+      }
+    ],
+    "missing_products": [
+      "antivirus",
+      "hostbasedfirewall",
+      "termivar"
+    ]
+  }
+}

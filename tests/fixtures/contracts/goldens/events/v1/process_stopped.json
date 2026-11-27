@@ -1,0 +1,90 @@
+{
+  "payload": "events/v1/valid/process_stopped.json",
+  "ack": {
+    "accepted": true,
+    "batch_id": "e0000001-0000-4000-8000-000000000002",
+    "batch_sequence": 1,
+    "last_event_seq": 4,
+    "received_at": "2030-01-02T03:04:05Z"
+  },
+  "timeline": {
+    "items": [
+      {
+        "event_seq": 4,
+        "kind": "process_stopped",
+        "observed_at": "2030-01-02T03:00:01Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "pid": 4004,
+        "exit_code": null,
+        "image": null,
+        "create_time": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 3,
+        "kind": "process_stopped",
+        "observed_at": "2030-01-02T03:00:01Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "pid": 4003,
+        "exit_code": null,
+        "image": null,
+        "create_time": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 2,
+        "kind": "process_stopped",
+        "observed_at": "2030-01-02T03:00:01Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "pid": 4002,
+        "exit_code": 4294967295,
+        "image": "�=45:A.exe",
+        "create_time": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      },
+      {
+        "event_seq": 1,
+        "kind": "process_stopped",
+        "observed_at": "2030-01-02T03:00:01Z",
+        "received_at": "2030-01-02T03:04:05Z",
+        "pid": 4001,
+        "exit_code": 0,
+        "image": "setup.exe",
+        "create_time": null,
+        "source": "self_reported",
+        "producer_verification": "not_verified"
+      }
+    ],
+    "next_before_seq": null,
+    "cap_deleted_events": 0,
+    "suppressed_alerts": 0
+  },
+  "device": {
+    "id": "22222222-2222-4222-8222-222222222222",
+    "tenant_id": "11111111-1111-4111-8111-111111111111",
+    "label": "Contract fixture device",
+    "identity_status": "active",
+    "connection_status": "never_seen",
+    "created_at": "2030-01-02T03:04:05Z",
+    "revoked_at": null,
+    "last_sequence": null,
+    "last_received_at": null,
+    "source_observed_at": null,
+    "source_observation": {
+      "age_seconds": null,
+      "clock_state": "unknown"
+    },
+    "source": "self_reported",
+    "producer_verification": "not_verified",
+    "products": [],
+    "missing_products": [
+      "antivirus",
+      "edr_agent",
+      "hostbasedfirewall",
+      "termivar"
+    ]
+  }
+}
