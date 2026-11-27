@@ -131,7 +131,7 @@ Tam sayılar: konsol JavaScript'in tam temsil sınırını (2^53−1) aşan bir 
 |---|---|
 | Seçili tenant `id/name`, Device `id/label` | Dahili kapsam bağı; ad/kimlik gösterme seçeneği varsayılan kapalıdır. |
 | `identity_status`, `connection_status`, nullable zamanlar | Seçilme anındaki kayıt/bildirim bilgisi ve eksik veri açıklaması; yeni eşik yoktur. |
-| Ayrıntı `products[].state` / `missing_products` | Ürün bildirim durumu, sağlanan sürüm ve izin verilen sınırlı özetler; eski state taşınmaz. Rapor üç ürünü (HBF, Termivar Web, AV) kapsamaya devam eder; ajanın `edr_agent` durumu rapora kopyalanmaz. |
+| Ayrıntı `products[].state` / `missing_products` | Ürün bildirim durumu, sağlanan sürüm ve izin verilen sınırlı özetler; eski state taşınmaz. Rapor dört ürünü (HBF, Termivar Web, AV, Altay EDR ajanı) kapsar (GitHub #15). Ajanın `edr_agent` durumu kendi Platform alan adlarıyla kopyalanır: Snapshot V2'de 13, V3'te 36 alan; V3'ün iki listesi (`response_actions_enabled`, `response_key_ids`) kopyalanmaz. Her ajan değeri “ajanın beyanı · bağımsız doğrulanmadı” işaretini taşır; ajanı bildirmeyen cihazda ürün eksik görünür. |
 | Termivar Web `latest_report` içindeki mevcut sayısal toplamlar | Yalnız sınırlı ürün özeti; ham rapor/target/kanıt/HTML veya doğrulanmış tarama sonucu değildir. |
 | `source_observed_at`, `received_at`, source/verification | Ayrı kaynak/alım zamanı ve cihaz beyanı/doğrulanmadı açıklaması. Konsol okuma/rapor oluşturma zamanı frontend metadata'sıdır. |
 

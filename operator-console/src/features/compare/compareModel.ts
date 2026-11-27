@@ -1,15 +1,28 @@
 /** Closed frontend copies. No authority, configuration or protection equivalence. */
+import { CAPABILITY_STATES, EDR_SENSOR_STATES, ISOLATION_STATES, PREVIOUS_RUN_ENDS, RESPONSE_CHANNEL_STATES,
+  RULE_SET_STATES, SENSOR_ERROR_CODES, SERVICE_CONFIG_STATES } from "../../data/contracts";
+
 export type CompareMode = "example" | "api";
 export type CompareSide = "left" | "right";
-export type CompareSection = "device" | "hbf" | "termivar" | "antivirus";
-export type CompareFieldKind = "enum" | "boolean" | "version" | "timestamp" | "count";
+export type CompareSection = "device" | "hbf" | "termivar" | "edr_agent" | "antivirus";
+/** "text": a string by its Platform pattern; "number": a bounded integer compared by value, unlike a count. */
+export type CompareFieldKind = "enum" | "boolean" | "version" | "timestamp" | "count" | "text" | "number";
 export type CompareValue = string | number | boolean | null;
+/** The agent's Snapshot version: V2 (contracts.EdrAgentStatus) or V3 (contracts.EdrAgentStatusV3). */
+export type AgentFormat = "v2" | "v3";
 export const MAX_COMPARABLE_BYTES = 32 * 1024;
 export const MAX_COMPARE_BYTES = 64 * 1024;
 interface FieldSpec {
   readonly key: string; readonly section: CompareSection; readonly kind: CompareFieldKind;
   readonly values?: readonly string[]; readonly required?: boolean; readonly minimum?: number; readonly maximum?: number;
+  readonly pattern?: RegExp; readonly maxLength?: number;
+  /** An agent field that only this Snapshot version has. */
+  readonly format?: AgentFormat;
+  /** A device time: also within the normalizer's window, the years 1970 to 9998 (normalize.ts windowTime). */
+  readonly deviceTime?: true;
 }
+/** An agent counter, action sequence or quarantine item count goes up to the largest safe integer. */
+const SAFE = Number.MAX_SAFE_INTEGER;
 export const COMPARE_FIELDS = [
   { key: "device.registration", section: "device", kind: "enum", values: ["active", "revoked"], required: true },
   { key: "device.connection", section: "device", kind: "enum", values: ["recent", "stale", "never_seen"], required: true },
@@ -48,6 +61,52 @@ export const COMPARE_FIELDS = [
   { key: "termivar.observed_at", section: "termivar", kind: "timestamp" },
   { key: "termivar.source", section: "termivar", kind: "enum", values: ["self_reported"] },
   { key: "termivar.verification", section: "termivar", kind: "enum", values: ["not_verified"] },
+  // The Altay EDR agent's own state: "edr." and its Platform field name, in the device-detail card's order. A field of
+  // one Snapshot version only is marked with that version.
+  { key: "edr.status", section: "edr_agent", kind: "enum", values: ["running", "unknown"] },
+  { key: "edr.version", section: "edr_agent", kind: "version" },
+  { key: "edr.agent_started_at", section: "edr_agent", kind: "timestamp" },
+  { key: "edr.engine_id", section: "edr_agent", kind: "text", pattern: /^[A-Za-z0-9][A-Za-z0-9._+\/ -]*$/, maxLength: 128 },
+  { key: "edr.rule_file_present", section: "edr_agent", kind: "boolean", format: "v2" },
+  { key: "edr.rule_set_state", section: "edr_agent", kind: "enum", values: RULE_SET_STATES, format: "v3" },
+  { key: "edr.rule_set_id", section: "edr_agent", kind: "text", pattern: /^[a-f0-9]{64}$/, maxLength: 64, format: "v3" },
+  { key: "edr.behavior_rules_version", section: "edr_agent", kind: "text", pattern: /^altay-behavior\/v[1-9][0-9]{0,5}$/,
+    maxLength: 22, format: "v3" },
+  { key: "edr.sensor_state", section: "edr_agent", kind: "enum", values: EDR_SENSOR_STATES },
+  { key: "edr.sensor_error_code", section: "edr_agent", kind: "enum", values: SENSOR_ERROR_CODES },
+  { key: "edr.service_config_state", section: "edr_agent", kind: "enum", values: SERVICE_CONFIG_STATES, format: "v3" },
+  { key: "edr.previous_run_end", section: "edr_agent", kind: "enum", values: PREVIOUS_RUN_ENDS, format: "v3" },
+  { key: "edr.heartbeat_interval_seconds", section: "edr_agent", kind: "number", minimum: 30, maximum: 3600, format: "v3" },
+  { key: "edr.realtime_scan_state", section: "edr_agent", kind: "enum", values: CAPABILITY_STATES, format: "v3" },
+  { key: "edr.file_change_sensor_state", section: "edr_agent", kind: "enum", values: CAPABILITY_STATES, format: "v3" },
+  { key: "edr.command_line_sensor_state", section: "edr_agent", kind: "enum", values: CAPABILITY_STATES, format: "v3" },
+  { key: "edr.persistence_watch_state", section: "edr_agent", kind: "enum", values: CAPABILITY_STATES, format: "v3" },
+  { key: "edr.response_channel_state", section: "edr_agent", kind: "enum", values: RESPONSE_CHANNEL_STATES, format: "v3" },
+  { key: "edr.last_action_seq", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE, format: "v3" },
+  { key: "edr.isolation_state", section: "edr_agent", kind: "enum", values: ISOLATION_STATES, format: "v3" },
+  { key: "edr.isolation_until", section: "edr_agent", kind: "timestamp", deviceTime: true, format: "v3" },
+  { key: "edr.isolation_checked_at", section: "edr_agent", kind: "timestamp", deviceTime: true, format: "v3" },
+  { key: "edr.quarantine_items", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE, format: "v3" },
+  { key: "edr.events_queue_dropped", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE },
+  { key: "edr.events_write_failed", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE },
+  { key: "edr.events_unmapped", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE },
+  { key: "edr.events_skipped", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE },
+  { key: "edr.events_evicted", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE },
+  { key: "edr.events_discarded", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE },
+  { key: "edr.events_degraded", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE },
+  { key: "edr.outbox_backlog", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE },
+  { key: "edr.scans_completed", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE, format: "v3" },
+  { key: "edr.scans_detected", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE, format: "v3" },
+  { key: "edr.scans_no_verdict", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE, format: "v3" },
+  { key: "edr.scan_jobs_dropped", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE, format: "v3" },
+  { key: "edr.scan_cache_hits", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE, format: "v3" },
+  { key: "edr.etw_events_lost", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE, format: "v3" },
+  { key: "edr.file_change_gaps", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE, format: "v3" },
+  { key: "edr.cmdline_unavailable", section: "edr_agent", kind: "count", minimum: 0, maximum: SAFE, format: "v3" },
+  { key: "edr.received_at", section: "edr_agent", kind: "timestamp" },
+  { key: "edr.observed_at", section: "edr_agent", kind: "timestamp" },
+  { key: "edr.source", section: "edr_agent", kind: "enum", values: ["self_reported"] },
+  { key: "edr.verification", section: "edr_agent", kind: "enum", values: ["not_verified"] },
   { key: "av.status", section: "antivirus", kind: "enum", values: ["planned", "unknown"] },
   { key: "av.availability", section: "antivirus", kind: "enum", values: ["unavailable", "unknown"] },
   { key: "av.execution_available", section: "antivirus", kind: "boolean" },
@@ -128,9 +187,32 @@ export function allowedFieldValue(definition: CompareFieldDefinition, value: unk
     case "boolean": return typeof value === "boolean" && (!(spec.key === "termivar.execution_available" || spec.key === "av.execution_available") || value === false);
     case "version": return typeof value === "string" && value.length <= 64 && /^[A-Za-z0-9][A-Za-z0-9._+\-]*$/.test(value);
     case "count": return typeof value === "number" && Number.isSafeInteger(value) && value >= (spec.minimum ?? 0) && value <= (spec.maximum ?? 4096);
-    case "timestamp": try { compareTimestamp(value); return true; } catch { return false; }
+    case "number": return typeof value === "number" && Number.isSafeInteger(value) && value >= (spec.minimum ?? 0) && value <= (spec.maximum ?? 4096);
+    case "text": return typeof value === "string" && spec.pattern !== undefined && value.length <= (spec.maxLength ?? 0) && spec.pattern.test(value);
+    case "timestamp": try { const time = compareTimestamp(value); return spec.deviceTime !== true || inDeviceTimeWindow(time); } catch { return false; }
   }
 }
+/** The normalizer's window for a device time (normalize.ts windowTime): the years 1970 to 9998. */
+function inDeviceTimeWindow(value: string): boolean {
+  const year = Number(value.slice(0, 4));
+  return year >= 1970 && year <= 9998;
+}
+/** The agent's Snapshot version as the console tells it (normalize.ts isEdrAgentStateV3): only V3 has a rule set state. */
+export function agentFormat(fields: CompareFieldValues): AgentFormat | null {
+  return fields["edr.status"] === null ? null : fields["edr.rule_set_state"] === null ? "v2" : "v3";
+}
+/** The Snapshot version that alone has this agent field; null for every other field. */
+export function agentFieldFormat(key: CompareFieldKey): AgentFormat | null {
+  const field: FieldSpec | undefined = COMPARE_FIELDS.find((item) => item.key === key);
+  return field?.format ?? null;
+}
+/** The closed agent states each Snapshot version always reports (contracts.EdrAgentStatus, EdrAgentStatusV3). */
+const AGENT_STATES: Readonly<Record<AgentFormat, readonly CompareFieldKey[]>> = {
+  v2: ["edr.sensor_state"],
+  v3: ["edr.sensor_state", "edr.rule_set_state", "edr.service_config_state", "edr.previous_run_end",
+    "edr.realtime_scan_state", "edr.file_change_sensor_state", "edr.command_line_sensor_state",
+    "edr.persistence_watch_state", "edr.response_channel_state", "edr.isolation_state"],
+};
 export function copyComparableDevice(input: ComparableDevice): ComparableDevice {
   compareObject(input, ["tenantId", "deviceId", "deviceName", "fields"]);
   const tenantId = compareId(input.tenantId), deviceId = compareId(input.deviceId);
@@ -143,13 +225,21 @@ export function copyComparableDevice(input: ComparableDevice): ComparableDevice 
   const fields = Object.fromEntries(pairs) as Record<CompareFieldKey, CompareValue>;
   compareRequire((fields["device.registration"] === "revoked") === (fields["device.revoked_at"] !== null)
     && (fields["device.connection"] === "never_seen") === (fields["device.received_at"] === null));
-  for (const product of ["hbf", "termivar", "av"] as const) {
+  for (const product of ["hbf", "termivar", "edr", "av"] as const) {
     if (fields[`${product}.status`] === null) compareRequire(COMPARE_FIELDS.filter((field) => field.key.startsWith(product + "."))
       .every((field) => fields[field.key] === null));
     else compareRequire(fields[`${product}.source`] === "self_reported" && fields[`${product}.verification`] === "not_verified"
       && fields[`${product}.received_at`] !== null && fields[`${product}.received_at`] === fields["device.received_at"]);
   }
-  const countKeys = COMPARE_FIELDS.filter((field) => field.kind === "count");
+  const format = agentFormat(fields);
+  if (format !== null) {
+    // The other Snapshot version's fields are absent, and a sensor error code comes only with a lost or failed sensor.
+    compareRequire(COMPARE_FIELDS.every((field) => [null, format].includes(agentFieldFormat(field.key)) || fields[field.key] === null)
+      && AGENT_STATES[format].every((key) => fields[key] !== null)
+      && (fields["edr.sensor_error_code"] === null || fields["edr.sensor_state"] === "lost" || fields["edr.sensor_state"] === "failed"));
+  }
+  // Termivar's summary counts only; the agent's counters have their own rules above.
+  const countKeys = COMPARE_FIELDS.filter((field) => field.section === "termivar" && field.kind === "count");
   if (fields["termivar.report_presence"] === "present") {
     compareRequire(fields["termivar.imported_at"] !== null && countKeys.every((field) => fields[field.key] !== null));
     compareRequire(Number(fields["termivar.informational"]) + Number(fields["termivar.needs_review"]) + Number(fields["termivar.confirmed"]) === fields["termivar.item_count"]);

@@ -1,10 +1,15 @@
 import { useState, type ReactNode } from 'react';
-import type { ComparableDevice, CompareFieldKey, CompareFieldKind, CompareSection, CompareState } from './compareModel';
+import { agentFieldFormat, agentFormat } from './compareModel';
+import type { ComparableDevice, ComparedField, CompareFieldKey, CompareSection, CompareState, CompareValue } from './compareModel';
 import { compareFields } from './compareFields';
 import { CompareFieldRow } from './CompareFieldRow';
+import { AGENT_FIELD_LABELS, agentStateLabel, agentStatusLabel, isAgentStateField, ruleFileLabel,
+  sensorErrorAbsentLabel } from '../agentLabels';
+import type { ReportAgentMetricKey } from '../reports/reportModel';
 import { booleanLabel, formatCount, formatDate } from '../../i18n/formatters';
 import { useLocale } from '../../i18n/LocaleProvider';
 import type { CompareTextKey } from '../../i18n/catalogs/compare';
+import type { ProductTextKey } from '../../i18n/catalogs/products';
 import './compare.css';
 
 export interface ComparePageProps {
@@ -14,15 +19,24 @@ export interface ComparePageProps {
   onBrowseDevices?: () => void;
 }
 
+// The agent's section comes before the antivirus one, so that the device's data reliability rows stay last.
 const SECTIONS: readonly [CompareSection, CompareTextKey][] = [
   ['device', 'compare.section.device'], ['hbf', 'compare.section.hostbasedfirewall'],
-  ['termivar', 'compare.section.termivar'], ['antivirus', 'compare.section.antivirus'],
+  ['termivar', 'compare.section.termivar'], ['edr_agent', 'compare.section.edr_agent'], ['antivirus', 'compare.section.antivirus'],
 ];
 const SECTION_NOTES: Readonly<Record<CompareSection, CompareTextKey>> = {
   device: 'compare.sectionNote.device', hbf: 'compare.sectionNote.hbf',
-  termivar: 'compare.sectionNote.termivar', antivirus: 'compare.sectionNote.antivirus',
+  termivar: 'compare.sectionNote.termivar', edr_agent: 'compare.sectionNote.edr_agent', antivirus: 'compare.sectionNote.antivirus',
 };
-const FIELD_LABELS: Readonly<Record<CompareFieldKey, CompareTextKey>> = {
+/** An agent field named "edr." and its Platform field name: labelled as on the device-detail card. */
+type AgentCompareKey = Extract<CompareFieldKey, `edr.${ReportAgentMetricKey}`>;
+/** The Platform field name of an agent field; null for every other field, the agent's status and version included. */
+function agentField(key: CompareFieldKey): ReportAgentMetricKey | null {
+  const name = key.startsWith('edr.') ? key.slice(4) : '';
+  return Object.hasOwn(AGENT_FIELD_LABELS, name) ? name as ReportAgentMetricKey : null;
+}
+function isAgentCompareKey(key: CompareFieldKey): key is AgentCompareKey { return agentField(key) !== null; }
+const FIELD_LABELS: Readonly<Record<Exclude<CompareFieldKey, AgentCompareKey>, CompareTextKey>> = {
   'device.registration': 'compare.field.device.registration',
   'device.connection': 'compare.field.device.connection',
   'device.received_at': 'compare.field.device.received_at',
@@ -62,6 +76,12 @@ const FIELD_LABELS: Readonly<Record<CompareFieldKey, CompareTextKey>> = {
   'termivar.observed_at': 'compare.field.termivar.observed_at',
   'termivar.source': 'compare.field.termivar.source',
   'termivar.verification': 'compare.field.termivar.verification',
+  'edr.status': 'compare.field.edr.status',
+  'edr.version': 'compare.field.edr.version',
+  'edr.received_at': 'compare.field.edr.received_at',
+  'edr.observed_at': 'compare.field.edr.observed_at',
+  'edr.source': 'compare.field.edr.source',
+  'edr.verification': 'compare.field.edr.verification',
   'av.status': 'compare.field.av.status',
   'av.availability': 'compare.field.av.availability',
   'av.execution_available': 'compare.field.av.execution_available',
@@ -79,6 +99,14 @@ const ENUM_LABELS: Readonly<Record<string, CompareTextKey>> = {
   present: 'compare.value.present', none: 'compare.value.none', self_reported: 'compare.value.self_reported',
   not_verified: 'compare.value.not_verified', future: 'compare.value.future',
 };
+function fieldLabel(key: CompareFieldKey): CompareTextKey | ProductTextKey {
+  return isAgentCompareKey(key) ? AGENT_FIELD_LABELS[key.slice(4) as ReportAgentMetricKey] : FIELD_LABELS[key];
+}
+/** An agent row the agent itself reports, marked as its claim as in the status report: every agent row but the
+ * server's receipt time and the source and verification labels. */
+function isAgentClaim(field: ComparedField): boolean {
+  return field.section === 'edr_agent' && !['edr.received_at', 'edr.source', 'edr.verification'].includes(field.key);
+}
 
 function DeviceSlot({ device, side, example, onRemove, onBrowseDevices, hasOne }: {
   device: ComparableDevice | null; side: 'left' | 'right'; example: boolean;
@@ -112,12 +140,24 @@ export function ComparePage({ state, onRemove, onClear, onBrowseDevices }: Compa
   const visible = rows.filter((row) => !differencesOnly || row.result !== 'same');
   const differentCount = visible.filter((row) => row.result === 'different').length;
   const uncertainCount = visible.filter((row) => row.result === 'missing' || row.result === 'incomparable').length;
-  const value = (raw: string | number | boolean | null, kind: CompareFieldKind): ReactNode => {
+  const value = (field: ComparedField, raw: CompareValue, device: ComparableDevice): ReactNode => {
+    const kind = field.kind, name = agentField(field.key);
+    const format = agentFieldFormat(field.key), deviceFormat = agentFormat(device.fields);
+    // The agent's own wording for its fields, as on the device-detail card.
+    if (name === 'sensor_error_code' && raw === null && deviceFormat !== null)
+      return t(sensorErrorAbsentLabel(device.fields['edr.sensor_state']));
+    if (raw === null && format !== null && deviceFormat !== null && format !== deviceFormat)
+      return <span className="muted">{t('compare.value.notInFormat')}</span>;
     if (raw === null) return <span className="muted">{t('compare.value.missing')}</span>;
+    if (field.key === 'edr.status') return t(agentStatusLabel(raw));
+    if (name === 'rule_file_present') return t(ruleFileLabel(raw));
+    if (name !== null && isAgentStateField(name)) return t(agentStateLabel(name, raw));
+    if (name === 'sensor_error_code' || name === 'rule_set_id') return <code>{String(raw)}</code>;
+    if (name === 'heartbeat_interval_seconds' && typeof raw === 'number') return t('product.edrV3.seconds', formatCount(raw, locale), raw);
     if (kind === 'count') return formatCount(typeof raw === 'number' ? raw : null, locale);
     if (kind === 'boolean') return booleanLabel(typeof raw === 'boolean' ? raw : null, locale);
     if (kind === 'timestamp' && typeof raw === 'string') return <time dateTime={raw}>{formatDate(raw, locale)}<small className="compare-exact-time">{raw}</small></time>;
-    if (kind === 'version') return String(raw);
+    if (kind === 'version' || kind === 'text' || kind === 'number') return String(raw);
     return t(typeof raw === 'string' && Object.hasOwn(ENUM_LABELS, raw) ? ENUM_LABELS[raw]! : 'compare.value.unknown');
   };
   return <section className="compare-page">
@@ -140,10 +180,11 @@ export function ComparePage({ state, onRemove, onClear, onBrowseDevices }: Compa
         const fields = visible.filter((field) => field.section === section);
         return fields.length ? <section className="panel compare-section" key={section} aria-label={t(title)}><h3>{t(title)}</h3>
           <p className="compare-section-note">{t(SECTION_NOTES[section])}</p>
-          {fields.map((field) => <CompareFieldRow key={field.key} label={t(FIELD_LABELS[field.key])} status={field.result}
-            leftLabel={left.deviceName} rightLabel={right.deviceName} leftValue={value(field.left, field.kind)} rightValue={value(field.right, field.kind)}
+          {fields.map((field) => <CompareFieldRow key={field.key} label={t(fieldLabel(field.key))} status={field.result}
+            leftLabel={left.deviceName} rightLabel={right.deviceName} leftValue={value(field, field.left, left)} rightValue={value(field, field.right, right)}
             note={field.reason === 'scope_not_established' ? t('compare.note.scope') : field.result === 'missing' ? t('compare.note.missing')
-              : field.result === 'incomparable' ? t('compare.note.incomparable') : field.key.endsWith('.verification') ? t('compare.note.verification') : undefined} />)}
+              : field.result === 'incomparable' ? t('compare.note.incomparable') : field.key.endsWith('.verification') ? t('compare.note.verification')
+              : isAgentClaim(field) ? t('compare.note.agentClaim') : undefined} />)}
         </section> : null;
       })}
       {!visible.length && <p className="panel empty-state">{t('compare.noDifferences')}</p>}

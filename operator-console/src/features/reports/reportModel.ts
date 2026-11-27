@@ -1,10 +1,22 @@
 /** Frontend presentation copies only; not a snapshot/revision/receipt protocol. */
+import { EDR_CAPABILITY_KEYS, EDR_COUNTER_KEYS, EDR_V3_COUNTER_KEYS } from "../../data/contracts";
 import type { AgeObservation, Device, ProductId } from "../../data/contracts";
 import type { Locale } from "../../i18n/types";
 
-/** The status report keeps its three products; the Altay EDR agent's own status (Snapshot V2) is not copied into it. */
-export const REPORT_PRODUCT_IDS = ["hostbasedfirewall", "termivar", "antivirus"] as const satisfies readonly ProductId[];
+/** Every Platform product, in the device-detail card order: the Altay EDR agent's own status comes last. */
+export const REPORT_PRODUCT_IDS = ["hostbasedfirewall", "termivar", "antivirus", "edr_agent"] as const satisfies readonly ProductId[];
 export type ReportProductId = typeof REPORT_PRODUCT_IDS[number];
+/** The agent's metrics are its own state's Platform field names, in the device-detail card's order; status and version
+ * are the product's own fields. Snapshot V2 (contracts.EdrAgentStatus): */
+export const REPORT_AGENT_V2_KEYS = ["agent_started_at", "engine_id", "rule_file_present", "sensor_state",
+  "sensor_error_code", ...EDR_COUNTER_KEYS] as const;
+/** Snapshot V3 (contracts.EdrAgentStatusV3): every scalar field; the two lists, response_actions_enabled and
+ * response_key_ids, are not copied. The console tells V3 from V2 by its key set (normalize.ts isEdrAgentStateV3). */
+export const REPORT_AGENT_V3_KEYS = ["agent_started_at", "engine_id", "rule_set_state", "rule_set_id",
+  "behavior_rules_version", "sensor_state", "sensor_error_code", "service_config_state", "previous_run_end",
+  "heartbeat_interval_seconds", ...EDR_CAPABILITY_KEYS, "response_channel_state", "last_action_seq", "isolation_state",
+  "isolation_until", "isolation_checked_at", "quarantine_items", ...EDR_V3_COUNTER_KEYS] as const;
+export type ReportAgentMetricKey = typeof REPORT_AGENT_V2_KEYS[number] | typeof REPORT_AGENT_V3_KEYS[number];
 export const MAX_REPORT_RECORDS = 20;
 export const MAX_REPORT_BYTES = 256 * 1024;
 export type ReportMode = "example" | "api";
@@ -22,7 +34,7 @@ export interface ReportContext {
 }
 export type ReportMetricKey = "installed" | "reported_running" | "reported_stale" | "firewall_mode" | "scanner_installed"
   | "execution_available" | "report_presence" | "subject_count" | "item_count" | "informational" | "needs_review"
-  | "confirmed" | "unassigned" | "info" | "low" | "medium" | "high" | "critical" | "availability";
+  | "confirmed" | "unassigned" | "info" | "low" | "medium" | "high" | "critical" | "availability" | ReportAgentMetricKey;
 export interface ReportMetric {
   readonly key: ReportMetricKey;
   readonly value: string | number | boolean | null;

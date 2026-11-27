@@ -1,6 +1,6 @@
 /** Direct field semantics only. No score, rank, delta, risk or protection claim. */
 import { receivedSortKey } from "../../data/viewModels";
-import { allowedFieldValue, COMPARE_FIELDS, compareRequire, freezeComparison } from "./compareModel";
+import { agentFieldFormat, agentFormat, allowedFieldValue, COMPARE_FIELDS, compareRequire, freezeComparison } from "./compareModel";
 import type { ComparedField, CompareFieldKey, CompareState, CompareValue, ComparisonReason, ComparisonResult } from "./compareModel";
 import { copyCompareState } from "./compareState";
 
@@ -16,7 +16,8 @@ export function compareField(key: CompareFieldKey, left: CompareValue, right: Co
     result = "incomparable"; reason = "unknown_value";
   } else if (field.kind === "count") {
     // DTOs do not bind assessment targets/scopes or equivalent count windows.
-    // Even equal known Termivar counts cannot establish comparable coverage.
+    // Even equal known Termivar counts cannot establish comparable coverage. Each agent's counters count since its own
+    // start; its action sequence and quarantine item count have no defined scope (the A1 agent sends them as null).
     result = "incomparable"; reason = "scope_not_established";
   } else {
     const a = field.kind === "timestamp" ? receivedSortKey(left as string) : left;
@@ -28,7 +29,13 @@ export function compareField(key: CompareFieldKey, left: CompareValue, right: Co
 }
 export function compareFields(input: CompareState): readonly ComparedField[] {
   const state = copyCompareState(input);
-  const rows = COMPARE_FIELDS.map((field) => compareField(field.key,
+  const formats = state.slots.map((slot) => slot === null ? null : agentFormat(slot.fields));
+  // An agent field of one Snapshot version only is a row when a selected agent reports that version.
+  const shown = COMPARE_FIELDS.filter((field) => {
+    const format = agentFieldFormat(field.key);
+    return format === null || formats.includes(format);
+  });
+  const rows = shown.map((field) => compareField(field.key,
     state.slots[0]?.fields[field.key] ?? null, state.slots[1]?.fields[field.key] ?? null));
   return freezeComparison(rows);
 }

@@ -57,7 +57,7 @@ Snapshot V2 (Aşama 2 adım 3) ile cihaz ayrıntısı **Altay EDR ajanı / Altay
 | Sensör hata kodu | Yalnız Kayboldu/Başarısız ile gelen kod; kod yoksa “Kod bildirilmedi”, diğer durumlarda “Bu durumda kod yok”. | Hatanın nedenini. |
 | Sayaçlar ve giden kutusu birikimi | Ajan sürecinin başlangıcından beri düşen, yazılamayan, eşlenemeyen, atlanan, sınırda silinen, başka kayda ait diye atılan ve indirgenmiş kabul edilen olaylar; gönderilmeyi bekleyen kayıtlar. **Bilinmiyor** değerin bildirilmediğidir, sıfır değildir. | Kaybın tamamını veya sıfırın gerçek olduğunu; sayaçlar süreç yeniden başlayınca sıfırlanır. |
 
-Ajanı bildirmeyen cihazda kart **“Bildirim yok”** olarak kalır; ajanın kurulu olmadığı varsayılmaz. Kartta koruma, gerçek zamanlı koruma veya “kurallar yüklü” rozeti yoktur. Durum raporu ve cihaz karşılaştırması bu adımda ajan kartını kopyalamaz.
+Ajanı bildirmeyen cihazda kart **“Bildirim yok”** olarak kalır; ajanın kurulu olmadığı varsayılmaz. Kartta koruma, gerçek zamanlı koruma veya “kurallar yüklü” rozeti yoktur. Durum raporu ve cihaz karşılaştırması Snapshot V2 adımında ajan kartını kopyalamıyordu; GitHub #15'ten beri ikisi de ajanın kendi durumunu kartın etiketleriyle gösterir. Rapordaki her ajan değeri **“Ajanın beyanı · bağımsız doğrulanmadı”** işaretini taşır; karşılaştırmada ajanın bildirdiği değerlerin satırları da, sonuçlarının kendi notu yoksa, aynı notu, ajan bölümü de değerlerin ajanın kendi beyanı olduğunu söyleyen notu taşır. Raporun ajan notu ve karşılaştırmanın bölüm notu kartın “koruma veya kural yükleme iddiası değildir” ifadesini de içerir. Ajanı bildirmeyen cihazda ajan eksik ürün olarak görünür ([teslim kaydı](DELIVERY.tr.md)).
 
 ## Sözleşme uyuşmazlığı
 
