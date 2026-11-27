@@ -76,14 +76,15 @@ Yük eklemek veya değiştirmek için:
 
 Yeniden üretme kipi kararları da denetler. Platform bir yüke beklenenden başka karar verirse test iki kipte de düşer ve `expectations.json` değişmez. Bu README de manifest'te listelenir; README'yi değiştirdikten sonra 3. adımı yeniden çalıştırın.
 
-## Ajan deposu bunu nasıl kullanacak
+## Ajan deposu bunu nasıl kullanır
 
-Bu tur ajan tarafını kapsamaz. Plan (Round 2 kararı B.4):
+Ajan deposu (Altay EDR ajanı) bu ağacın bayt bayt aynı bir kopyasını taşır ve kendi test paketinde onu ajanın sözleşme modeline karşı denetler (Round 2 kararı B.4; GitHub issue #10'un ajan ayağı). Kopyanın hangi Platform commit'inden alındığı ve nasıl tazeleneceği ajan deposunun kendi belgelerinde yazılıdır.
 
-- Ajan deposu bu ağacın bir kopyasını taşır veya Platform deposundan okur. Önce `manifest.json` içindeki her sha256'yı doğrular.
-- Ajan testi, ajanın kendi ürettiği gövdeleri ve kendi test derlemlerini manifest'teki `valid` yüklerle karşılaştırır. Aynı sürüm ve tür için ajanın gönderdiği her alan sözleşmede olmalıdır.
-- Ajan kendi doğrulamasıyla her `invalid` yükü de reddetmelidir. Böylece ajan Platform'un reddedeceği bir gövdeyi kuyruğa koymaz.
-- `cursor` taşıyan 409 vakaları, ajanın 409 alınca batch'i bekletme davranışını sınamak için kullanılabilir.
-- İki depoyu birlikte çalıştıran CI işi, sahibinden bir token gerektirir; o iş açık kalır.
+- Kopya `manifest.json`'a karşı doğrulanır: listelenen her dosya sha256'sıyla bulunmalı, listede olmayan dosya olmamalıdır. `manifest.json`'ın kendi özeti de ajan testinde sabittir.
+- Ajanın ürettiği sözleşmelerde her `valid` yük ajanın kendi kurucuları ve okuyucusuyla yeniden üretilir ve kanonik biçimle bayt bayt karşılaştırılır. Bu yüklerin `goldens/` altındaki Platform cevapları da ajanın cevap ayrıştırıcılarından geçer. Ajanın henüz göndermediği alanlar gerekçesiyle maskelenir; ajanın hiç üretmediği yükler gerekçesiyle listelenir.
+- Her `invalid` yük sınıflandırılır: ya ajanın kendi okuyucusu da reddeder ya da kuralı yalnız Platform uygulayabilir. Yalnız Platform'a kalan iki sınıf vardır: kendi başına geçerli olup daha önce kabul edilmiş yüklere bağlı 409'lar ve istek sınırındaki düğüm bütçesi (`too_many_nodes`). Sınıflandırılmamış yeni bir yük veya testin tanımadığı bir tür ajan testini düşürür.
+- İsteğe bağlı bir sapma testi kopyayı canlı bir Platform çalışma kopyasıyla bayt bayt karşılaştırır.
+- `cursor` taşıyan 409 vakalarıyla ajanın 409 alınca batch'i bekletme davranışını sınayan test henüz yazılmadı.
+- İki depoyu birlikte çalıştıran CI işi sahibinden bir token gerektirir; o iş açık kalır.
 
-Ajan A1 commit'i yapıldıktan sonra bu test yazılacaktır. Fikstürler değişirse manifest'in özetleri de değişir; ajan testi eski kopyayı bu sayede fark eder.
+Bu ağaç değişirse ajan deposundaki kopya kendiliğinden değişmez. Eski kopyayı ajanın sapma testi ya da kopyanın tazelenmesi fark eder.
