@@ -8,6 +8,7 @@ so a test fails with the missing name while one does not exist yet.
 from datetime import datetime, timedelta, timezone
 import importlib
 import json
+from pathlib import Path
 import re
 from types import SimpleNamespace
 from typing import get_args
@@ -29,6 +30,8 @@ V3_COUNTERS = ("scans_completed", "scans_detected", "scans_no_verdict", "scan_jo
 LANGUAGES = [("events", "export const eventsTr = {", "\n};", "products", "export const productsTr = {", "\n};"),
              ("events", "export const eventsEn = {", "\n} satisfies", "products", "export const productsEn = {",
               "\n} satisfies")]
+# scan_detected cases with the Platform's verdicts, shared with the console's tests/normalize.test.ts.
+SCAN_CASES = Path(__file__).resolve().parents[2] / "operator-console/tests/scan-detected-cases.json"
 
 
 def pinned(module, name):
@@ -231,6 +234,14 @@ def test_v3_lists_the_platform_stores_are_the_lists_the_console_accepts():
     model = pinned("contracts", "EdrAgentStatusV3")
     actions = tuple(pinned("contracts", "RESPONSE_ACTIONS"))
     keys = ["1" * 64, "a" * 64, "f" * 64, "0" * 64]
+    # The key bound is the brief's 4 (pinned above) and must also follow its Python source, as the alert rule copies do
+    # in test_alert_rule_mirrors_equal_their_python_sources; the samples reach both sides of that bound.
+    key_limit = pinned("contracts", "MAX_RESPONSE_KEY_IDS")
+    v3 = flat(block(source("data/normalize.ts"), "function edrAgentStateV3(", "\n/** The agent's own status"))
+    [console_limit] = re.findall(r"response_key_ids: ascending\(array\(value\.response_key_ids, (\d+), hex64\)\),", v3)
+    assert int(console_limit) == key_limit
+    distinct = sorted(character * 64 for character in "0123456789abcdef")
+    assert key_limit < len(distinct)
 
     def console_ok(values, maximum):
         return len(values) <= maximum and all(left < right for left, right in zip(values, values[1:]))
@@ -238,7 +249,8 @@ def test_v3_lists_the_platform_stores_are_the_lists_the_console_accepts():
     for field, maximum, samples in [
             ("response_actions_enabled", len(actions), [[], list(actions), sorted(actions), ["scan_path", "isolate_host"],
                                                         ["isolate_host", "scan_path"], ["scan_path", "scan_path"]]),
-            ("response_key_ids", 4, [[], sorted(keys), keys, [keys[0], keys[0]], sorted(keys) + ["b" * 64]])]:
+            ("response_key_ids", int(console_limit), [[], sorted(keys), keys, [keys[0], keys[0]], sorted(keys) + ["b" * 64],
+                                                      distinct[:key_limit], distinct[:key_limit + 1]])]:
         for sample in samples:
             state = accepted(model, {"product_id": "edr_agent", field: sample})
             if state is not None:
@@ -266,6 +278,30 @@ def test_scan_hit_rule_verdicts_equal_the_platform():
     assert "const hits = array(value.hits, 8, scanHit); requireValue(hits.length >= 1);" in normalize
     assert 'const value = shape(input, ["rule", "severity"]);' in normalize
     assert "omitted_hits: integer(value.omitted_hits, 0, 4096)" in normalize
+
+
+def test_scan_detected_cases_carry_the_platform_verdicts():
+    """operator-console/tests/scan-detected-cases.json gives each scan_detected case the Platform's verdict, and the
+    console's tests/normalize.test.ts requires the console to refuse exactly the refused cases. Every verdict here is
+    the ingestion model's own: a repeated hit rule and a create_time without a pid are the two refusals."""
+    from pydantic import ValidationError
+
+    scan = pinned("event_contracts", "ScanDetected")
+    table = json.loads(SCAN_CASES.read_text(encoding="utf-8"))
+    outcomes = set()
+    for case in table["cases"]:
+        try:
+            scan.model_validate({**table["event"], **case["changes"]})
+            outcome = None
+        except ValidationError as error:
+            [outcome] = {item["msg"].removeprefix("Value error, ") for item in error.errors()}
+        assert outcome == case["platform_error"], case["name"]
+        outcomes.add(outcome)
+    assert outcomes == {None, "duplicate_hit_rule", "create_time_requires_pid"}
+    # The console's two checks; TypeScript runs only in the console's own tests.
+    fields = flat(block(source("data/normalize.ts"), "function scanFields(", "\n}"))
+    assert "unique(hits.map((hit) => hit.rule));" in fields
+    assert "requireValue(createTime === null || pid !== null);" in fields
 
 
 # --- Timeline: the Platform's event view, all nine kinds, sha256 only in scan_detected.
@@ -712,6 +748,11 @@ def test_sample_data_has_one_labelled_v3_device_with_v2_events_and_a_sweep_alert
     assert 'label: "DEMO · Bursa V3 ajan örneği"' in specs and specs.count("edrAgentV3(") == 1
     builder = block(demo, "const edrAgentV3 = (observed: number): EdrAgentStateV3 => {", "\n  };")
     assert 'rule_set_id: "0123456789abcdef".repeat(4)' in builder and "rule_file_present" not in builder
+    # The console's tests/demo-data.test.ts checks the built sample against these: the V3 agent started at the service
+    # start of its timeline (event 50), and its launch from Downloads (event 54) has its user_writable_launch alert.
+    assert "agent_started_at: at(V3_AGENT_START)," in flat(builder)
+    assert 'd10.agent(50, V3_AGENT_START, { subject: "service", state: "started",' in flat(demo)
+    assert 'base(18, 10, bursa, 54, 54, 1, "open"), rule: "user_writable_launch"' in flat(demo)
     for call in ["d10.scan(", "d10.behavior(", "d10.persistence(", "d10.agent(", "d10.tamper(", "d10.gap("]:
         assert call in demo, call
     assert 'sha256: "deadbeef".repeat(8)' in demo

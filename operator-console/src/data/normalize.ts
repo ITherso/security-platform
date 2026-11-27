@@ -381,14 +381,19 @@ function scanHit(input: unknown): ScanHit {
   requireValue(typeof value.rule === "string" && SCAN_RULE_PATTERN.test(value.rule));
   return { rule: value.rule, severity: choice(value.severity, SCAN_HIT_SEVERITIES) };
 }
-/** scan_detected: the only kind with a file SHA-256 and size; 1-8 hits of exactly {rule, severity}. */
+/** scan_detected: the only kind with a file SHA-256 and size; 1-8 hits of exactly {rule, severity}, no rule twice; a
+ * create_time only beside a pid. */
 function scanFields(value: Record<string, unknown>): ScanDetectedFields {
   const hits = array(value.hits, 8, scanHit);
   requireValue(hits.length >= 1);
+  // event_contracts.ScanDetected refuses both at ingestion (duplicate_hit_rule, create_time_requires_pid), so no
+  // timeline item or scan_detection evidence from the Platform holds either.
+  unique(hits.map((hit) => hit.rule));
+  const pid = value.pid === null ? null : processId(value.pid), createTime = windowTime(value.create_time, true);
+  requireValue(createTime === null || pid !== null);
   return { trigger: choice(value.trigger, SCAN_TRIGGERS), path: maskedImage(value.path), size: integer(value.size),
     sha256: hex64(value.sha256), rule_set_id: hex64(value.rule_set_id), hits, omitted_hits: integer(value.omitted_hits, 0, 4096),
-    pid: value.pid === null ? null : processId(value.pid), create_time: windowTime(value.create_time, true),
-    action_id: value.action_id === null ? null : identifier(value.action_id) };
+    pid, create_time: createTime, action_id: value.action_id === null ? null : identifier(value.action_id) };
 }
 /** behavior_match: a closed rule ID and where the command line was read; never any command-line text. */
 function behaviorFields(value: Record<string, unknown>): BehaviorMatchFields {

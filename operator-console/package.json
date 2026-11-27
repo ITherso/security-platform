@@ -1,7 +1,8 @@
 {
   "name": "security-operator-console", "version": "0.1.0", "private": true, "type": "module",
   "packageManager": "pnpm@11.25.0", "engines": { "node": ">=24.22.1 <25" },
-  "scripts": { "dev": "vite", "typecheck": "tsc --noEmit", "build": "vite build && python build.py", "preview": "vite preview" },
+  "scripts": { "dev": "vite", "typecheck": "tsc --noEmit", "build": "vite build && python build.py", "preview": "vite preview",
+    "test": "node --enable-source-maps tests/run.mjs" },
   "dependencies": { "react": "19.3.1", "react-dom": "19.3.1" },
   "devDependencies": { "@types/node": "24.10.1", "@types/react": "19.3.0", "@types/react-dom": "19.3.0", "typescript": "5.9.3", "vite": "8.3.6" }
 }

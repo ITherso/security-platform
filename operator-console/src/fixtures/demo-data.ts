@@ -28,6 +28,8 @@ interface DeviceSpec {
   states: ProductState[];
 }
 const claims: SourceClaims = { source: "self_reported", producer_verification: "not_verified" };
+/** When the sample V3 agent started, in seconds before now: the service start its timeline records (event 50). */
+const V3_AGENT_START = 9000;
 
 export function createDemoData(): DemoDataset {
   const now = Date.now();
@@ -68,8 +70,8 @@ export function createDemoData(): DemoDataset {
       engine_id: "edr-agent/0.3.0", rule_file_present: options.ruleFile === undefined ? true : options.ruleFile,
       sensor_state: sensor, sensor_error_code: options.code ?? null };
   };
-  /** A sample Snapshot V3 agent state: every V2 key but rule_file_present, and the Stage 3 states and counters. The
-   * rule set ID is a visibly fake pattern; no rule file exists. */
+  /** A sample Snapshot V3 agent state: every V2 key but rule_file_present, and the Stage 3 states and counters. It
+   * started at the service start of its timeline. The rule set ID is a visibly fake pattern; no rule file exists. */
   const edrAgentV3 = (observed: number): EdrAgentStateV3 => {
     // EDR_V3_COUNTER_KEYS order: the eight V2 counters, then scans completed, detected, without a result, jobs
     // dropped, cache hits, ETW events lost, file change gaps, processes without a command line.
@@ -77,7 +79,7 @@ export function createDemoData(): DemoDataset {
     const counters = Object.fromEntries(EDR_V3_COUNTER_KEYS.map((key, index) =>
       [key, counts[index] ?? 0])) as { readonly [K in EdrV3CounterKey]: number | null };
     return { ...base(observed, "0.4.0"), ...counters, catalog_available: null, product_id: "edr_agent", status: "running",
-      agent_started_at: at(observed + 86400), engine_id: "edr-agent/0.4.0", sensor_state: "started", sensor_error_code: null,
+      agent_started_at: at(V3_AGENT_START), engine_id: "edr-agent/0.4.0", sensor_state: "started", sensor_error_code: null,
       rule_set_state: "compiled", rule_set_id: "0123456789abcdef".repeat(4), realtime_scan_state: "running",
       file_change_sensor_state: "degraded", command_line_sensor_state: "running", persistence_watch_state: "running",
       response_channel_state: "awaiting_tenant_binding", response_actions_enabled: [], response_key_ids: [],
@@ -265,7 +267,7 @@ function createDemoEvents(at: (secondsAgo: number) => string, alertId: (n: numbe
   const tampered: TamperSignalFields = { signal: "data_dir_acl_changed", detail: null };
   const scanStopped: AgentStateFields = { subject: "realtime_scan", state: "stopped", code: null, rule_set_id: null };
   const bursa = [
-    d10.agent(50, 9000, { subject: "service", state: "started", code: "clean_stop", rule_set_id: null }),
+    d10.agent(50, V3_AGENT_START, { subject: "service", state: "started", code: "clean_stop", rule_set_id: null }),
     d10.agent(51, 8990, { subject: "rule_set", state: "compiled", code: null, rule_set_id: ruleSetId }),
     d10.agent(52, 8980, { subject: "persistence_watch", state: "baseline_created", code: null, rule_set_id: null }),
     d10.persistence(53, 7000, persisted), d10.start(54, 5000, 9120, 1180, sample, 5000, 86000),
@@ -320,6 +322,9 @@ function createDemoEvents(at: (secondsAgo: number) => string, alertId: (n: numbe
       evidence: { state: "lost", error_code: "session_in_use" } },
     { ...base(11, 4, research, 207, 207, 1, "open"), rule: "user_writable_launch", severity: "low",
       evidence: { image: roaming, pid: 3400 } },
+    // The sample V3 device's launch from Users\*\Downloads (event 54) raises this Stage 2 rule too.
+    { ...base(18, 10, bursa, 54, 54, 1, "open"), rule: "user_writable_launch", severity: "low",
+      evidence: { image: sample, pid: 9120 } },
     // Stage 3 sample rules: the evidence is the matching event's own fields.
     { ...base(12, 10, bursa, 53, 53, 1, "open"), rule: "persistence_added", severity: "low",
       evidence: { ...persisted, change: "added" } },

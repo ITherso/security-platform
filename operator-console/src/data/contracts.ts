@@ -336,10 +336,11 @@ export interface ScanDetectedFields {
   readonly size: number;
   readonly sha256: string;
   readonly rule_set_id: string;
-  /** 1-8 rule matches; omitted_hits counts the ones the agent left out. */
+  /** 1-8 rule matches, no rule twice; omitted_hits counts the ones the agent left out. */
   readonly hits: readonly ScanHit[];
   readonly omitted_hits: number;
   readonly pid: number | null;
+  /** Only beside a pid. */
   readonly create_time: string | null;
   readonly action_id: string | null;
 }

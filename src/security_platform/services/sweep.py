@@ -32,21 +32,38 @@ changes nothing: no new alert, no occurrence and no last_seen_at change. A new
 contact moves last_received_at, so the next silence is a new episode.
 
 Work goes per tenant, in chunks of at most SWEEP_CHUNK_DEVICES candidates by
-device id, each in its own short transaction. The device rows of a chunk's
-silent candidates are locked FOR UPDATE SKIP LOCKED, the lock that ingestion
-takes. A row another transaction holds belongs to a device that is reporting
-(or being revoked or read) right now: it is skipped and counted in
-devices_busy. Under the lock each device is checked again. Then the alert
-opens through the ingestion upsert (services/alerts.open_matches), the
-per-device open-alert cap included, with first_seen_at = last_seen_at = the
-sweep time and both event sequences null. A failing chunk rolls back only
-itself: the tenant is skipped for this run and counted in failed_tenants, as
-`events prune` does, and the next run retries it.
+device id, each in its own short transaction. A silent candidate whose
+episode already has an alert is counted in already_alerted from one unlocked
+read of the chunk's episodes, and its row is never locked: the sweep changes
+nothing for it, so a lock would only make the device's next report, its
+revocation or the console's read of it wait for the chunk. The device rows
+of the other silent candidates are locked FOR UPDATE SKIP LOCKED, the lock
+that ingestion takes. A row another transaction holds belongs to a device
+that is reporting (or being revoked or read) right now: it is skipped and
+counted in devices_busy. Under the lock each device is checked again, its
+episode included, because another sweep may have committed the episode's
+alert after the unlocked read. Then the alert opens through the ingestion
+upsert (services/alerts.open_matches), the per-device open-alert cap
+included, with first_seen_at = last_seen_at = the sweep time and both event
+sequences null. A locked row stays locked until its chunk commits: the next
+opener of the device's alerts, an ingestion or another sweep, must find the
+new alert in its episode check and in its open-alert count. A failing chunk
+rolls back only itself: the tenant is skipped for this run and counted in
+failed_tenants, as `events prune` does, and the next run retries it.
+
+Lock order: ingestion locks the device row, then its credential and event
+cursor rows, and opens alerts last; revocation and credential rotation lock
+the tenant row and then the device row. The sweep takes device rows only
+with SKIP LOCKED, so it never waits for one, and it holds no row that those
+transactions lock before the device row, so it closes no wait cycle with
+them. Its upsert could wait only for an alert row that an operator's
+acknowledge or close holds, and those lock the tenant row and that alert,
+never a device row.
 """
 from collections import Counter
 from datetime import timedelta
 
-from sqlalchemy import and_, literal_column, select
+from sqlalchemy import and_, literal_column, select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from security_platform.contracts import MAX_HEARTBEAT_INTERVAL_SECONDS, MIN_HEARTBEAT_INTERVAL_SECONDS
@@ -66,6 +83,27 @@ RESULT_KEYS = ("tenants", "failed_tenants", "devices_checked", "alerts_opened", 
                "devices_busy")
 # A literal, never a bound parameter, so that the planner matches ix_alert_silence_episode's predicate.
 _SILENT_RULE = literal_column("'agent_silent'")
+# The episodes of a chunk's silent candidates that have an agent_silent alert, in any status: one index probe of
+# ix_alert_silence_episode per (device, key) pair. The rule is a literal, as above, so the planner matches the
+# partial index's predicate in custom and generic plans alike; the keys are character(64), the column's own type,
+# so the index compares them unconverted. The pairs travel as two arrays, so every chunk runs the same statement
+# text, and LIMIT 1 per pair bounds the statement by the chunk's size (at most 200 rows).
+_ALERTED_EPISODES = text(
+    "SELECT wanted.device_id "
+    "FROM unnest(CAST(:device_ids AS uuid[]), CAST(:dedup_keys AS character(64)[])) AS wanted (device_id, dedup_key) "
+    "CROSS JOIN LATERAL (SELECT 1 FROM alerts WHERE tenant_id = :tenant_id AND device_id = wanted.device_id "
+    "AND rule = 'agent_silent' AND dedup_key = wanted.dedup_key LIMIT 1) AS episode")
+
+
+class EpisodeUpdated(RuntimeError):
+    """The upsert updated an alert of the episode that the check under the device row lock had not found.
+
+    One alert per episode forbids that change (an occurrence more and a new
+    last_seen_at), so the chunk rolls back and its tenant counts in
+    failed_tenants: a run never reports such a change as already_alerted.
+    While every opener of a device's alerts holds the device row lock, it
+    does not happen (see _open_episode).
+    """
 
 
 def heartbeat_interval(payload):
@@ -114,6 +152,18 @@ def _candidates(session, tenant_id, after, limit):
     return session.execute(query.order_by(Device.id).limit(limit)).all()
 
 
+def _alerted_episodes(session, tenant_id, episodes):
+    """The devices of `episodes` (device id -> episode key text) that have an agent_silent alert of their key.
+
+    Any status counts, closed included. One statement for the chunk
+    (_ALERTED_EPISODES), without a lock.
+    """
+    wanted = sorted(episodes.items())
+    return set(session.scalars(_ALERTED_EPISODES, {
+        "device_ids": [device_id for device_id, _ in wanted], "dedup_keys": [dedup_key(key) for _, key in wanted],
+        "tenant_id": tenant_id}))
+
+
 def _open_episode(session, device, now, silence_alert_seconds, limits):
     """Check a locked candidate again and open its silence episode's alert; return the count it adds to, if any."""
     if device.revoked_at is not None or device.last_received_at is None:
@@ -131,26 +181,38 @@ def _open_episode(session, device, now, silence_alert_seconds, limits):
                                                     Alert.rule == _SILENT_RULE, Alert.dedup_key == dedup_key(key))
                              .limit(1))
     if episode is not None:
+        # Another sweep committed it between this chunk's unlocked read and the lock.
         return "already_alerted"
     evidence = bounded_evidence({"last_received_at": key, "threshold_seconds": threshold})
     [outcome] = open_matches(session, device, [Match(RULE, key, None, None, 1, evidence, SEVERITY[RULE])],
                              received_at=now, limits=limits)
-    # Only this sweep opens agent_silent, under this lock and after the check above, so the upsert never finds an
-    # alert of the key to update; "updated" would mean one existed.
-    return {"opened": "alerts_opened", "suppressed": "suppressed"}.get(outcome, "already_alerted")
+    if outcome == "updated":
+        # The upsert found an alert of this episode that is not closed and added an occurrence to it. No opener
+        # can cause that: the check above ran under this row lock, after every earlier holder had ended, and
+        # another transaction's INSERT into alerts for this device waits until this chunk ends, because its
+        # foreign key check takes FOR KEY SHARE on the row this sweep holds FOR UPDATE. If it happens anyway,
+        # the change is not committed and not counted as already_alerted.
+        raise EpisodeUpdated("The agent_silent upsert updated an alert of the episode")
+    return "alerts_opened" if outcome == "opened" else "suppressed"
 
 
 def _sweep_chunk(session, tenant_id, after, now, silence_alert_seconds, chunk_size, limits):
     """One chunk of one tenant's candidates; return (candidates read, the last device id read, its counts)."""
     rows = _candidates(session, tenant_id, after, chunk_size)
     counts = Counter(devices_checked=len(rows))
-    silent = [device_id for device_id, last_received_at, payload in rows
-              if is_silent(now, last_received_at, silence_threshold(silence_alert_seconds, payload))]
-    if silent:
-        locked = session.scalars(select(Device).where(Device.tenant_id == tenant_id, Device.id.in_(silent))
+    episodes = {device_id: canonical_utc(last_received_at) for device_id, last_received_at, payload in rows
+                if is_silent(now, last_received_at, silence_threshold(silence_alert_seconds, payload))}
+    # Read without a lock: the sweep changes nothing for an episode that has an alert, and no runtime path
+    # deletes alerts, so the answer stays true for the rest of the chunk.
+    alerted = _alerted_episodes(session, tenant_id, episodes) if episodes else set()
+    counts["already_alerted"] += len(alerted)
+    unalerted = sorted(episodes.keys() - alerted)
+    if unalerted:
+        # Only these rows are locked, each until the chunk commits. SKIP LOCKED never waits for a row lock.
+        locked = session.scalars(select(Device).where(Device.tenant_id == tenant_id, Device.id.in_(unalerted))
                                  .order_by(Device.id).with_for_update(skip_locked=True)
                                  .execution_options(populate_existing=True)).all()
-        counts["devices_busy"] += len(silent) - len(locked)
+        counts["devices_busy"] += len(unalerted) - len(locked)
         for device in locked:
             outcome = _open_episode(session, device, now, silence_alert_seconds, limits)
             if outcome is not None:
@@ -166,9 +228,12 @@ def sweep_silent_agents(database, *, silence_alert_seconds, now=None, chunk_size
     `limits.max_open_alerts_per_device` the open-alert cap. Counts include
     only committed chunks. tenants and failed_tenants are as in `events
     prune`; devices_checked counts candidates, alerts_opened the new alerts,
-    already_alerted the silent devices whose episode already has an alert,
-    suppressed the openings the cap kept back (the next run tries again) and
-    devices_busy the silent devices whose row another transaction held.
+    already_alerted the silent devices whose episode already has an alert
+    (found by the unlocked read or under the lock), suppressed the openings
+    the cap kept back (the next run tries again) and devices_busy the silent
+    devices without such an alert whose row another transaction held. A
+    chunk whose upsert updated an alert of an episode (EpisodeUpdated) rolls
+    back and fails its tenant, as a database error does.
     """
     minimum, maximum = SILENCE_ALERT_SECONDS_RANGE
     if type(silence_alert_seconds) is not int or not minimum <= silence_alert_seconds <= maximum:
@@ -190,6 +255,6 @@ def sweep_silent_agents(database, *, silence_alert_seconds, now=None, chunk_size
                 totals.update(counts)
                 if read < chunk_size:
                     break
-        except SQLAlchemyError:
+        except (SQLAlchemyError, EpisodeUpdated):
             failed += 1
     return {"tenants": len(tenants), "failed_tenants": failed, **{key: totals[key] for key in RESULT_KEYS[2:]}}

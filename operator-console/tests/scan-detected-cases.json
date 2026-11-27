@@ -1,0 +1,41 @@
+{
+  "about": "scan_detected events around the two rules of event_contracts.ScanDetected beyond its field types: each hit rule at most once (duplicate_hit_rule) and a create_time only beside a pid (create_time_requires_pid). platform_error is the Platform's ingestion verdict: null for accepted, else the error it raises. tests/unit/test_console_stage3.py checks every verdict against the Platform; tests/normalize.test.ts checks that the console refuses exactly the refused ones, as a timeline item and as a scan_detection alert's evidence.",
+  "event": {
+    "kind": "scan_detected", "event_seq": 7, "observed_at": "2030-01-02T03:04:05.000006Z", "trigger": "process_start",
+    "path": "\\Device\\HarddiskVolume3\\Users\\*\\Downloads\\demo.exe", "size": 482304,
+    "sha256": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    "rule_set_id": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "hits": [{ "rule": "Demo_Rule", "severity": "low" }], "omitted_hits": 0, "pid": 4321,
+    "create_time": "2030-01-02T03:04:00.000001Z", "action_id": null
+  },
+  "cases": [
+    { "name": "one hit, a pid and its create time", "changes": {}, "platform_error": null },
+    { "name": "eight hits, each rule once", "changes": { "hits": [
+      { "rule": "Demo_Rule_0", "severity": "low" }, { "rule": "Demo_Rule_1", "severity": "medium" },
+      { "rule": "Demo_Rule_2", "severity": "high" }, { "rule": "Demo_Rule_3", "severity": "low" },
+      { "rule": "Demo_Rule_4", "severity": "medium" }, { "rule": "Demo_Rule_5", "severity": "high" },
+      { "rule": "Demo_Rule_6", "severity": "low" }, { "rule": "Demo_Rule_7", "severity": "medium" }] },
+      "platform_error": null },
+    { "name": "two rules that differ only in letter case", "changes": { "hits": [
+      { "rule": "Demo_Rule", "severity": "low" }, { "rule": "demo_rule", "severity": "low" }] }, "platform_error": null },
+    { "name": "one rule twice with the same severity", "changes": { "hits": [
+      { "rule": "Demo_Rule", "severity": "low" }, { "rule": "Demo_Rule", "severity": "low" }] },
+      "platform_error": "duplicate_hit_rule" },
+    { "name": "one rule twice with different severities", "changes": { "hits": [
+      { "rule": "Demo_Rule", "severity": "low" }, { "rule": "Demo_Rule", "severity": "high" }] },
+      "platform_error": "duplicate_hit_rule" },
+    { "name": "a repeated rule among eight hits, not next to each other", "changes": { "hits": [
+      { "rule": "Demo_Rule_0", "severity": "low" }, { "rule": "Demo_Rule_1", "severity": "medium" },
+      { "rule": "Demo_Rule_2", "severity": "high" }, { "rule": "Demo_Rule_3", "severity": "low" },
+      { "rule": "Demo_Rule_4", "severity": "medium" }, { "rule": "Demo_Rule_5", "severity": "high" },
+      { "rule": "Demo_Rule_6", "severity": "low" }, { "rule": "Demo_Rule_0", "severity": "medium" }] },
+      "platform_error": "duplicate_hit_rule" },
+    { "name": "a create time without a pid", "changes": { "pid": null }, "platform_error": "create_time_requires_pid" },
+    { "name": "a pid without a create time", "changes": { "create_time": null }, "platform_error": null },
+    { "name": "neither a pid nor a create time", "changes": { "pid": null, "create_time": null }, "platform_error": null },
+    { "name": "pid 0 and a create time", "changes": { "pid": 0 }, "platform_error": null },
+    { "name": "a repeated rule and a create time without a pid", "changes": { "pid": null, "hits": [
+      { "rule": "Demo_Rule", "severity": "low" }, { "rule": "Demo_Rule", "severity": "low" }] },
+      "platform_error": "duplicate_hit_rule" }
+  ]
+}

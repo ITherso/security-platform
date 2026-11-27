@@ -12,11 +12,12 @@ Platform kökünden frontend dizinine geçin:
 cd .\operator-console
 pnpm install --frozen-lockfile --ignore-scripts
 pnpm typecheck
+pnpm test
 pnpm build
 ..\.venv\Scripts\python.exe .\serve.py --port 8787
 ```
 
-Kurulum lockfile'ı esas alır; dependency lifecycle script'leri kapalıdır. `typecheck`, TypeScript tür denetimi; `build`, production statik varlık üretimidir. Bunlar test sonucu değildir. `serve.py`, Vite'ın `dist/` çıktısını `http://127.0.0.1:8787/` adresinde değişmez yerel önizleme olarak sunar. Çalışan sunucu yeniden build'i kendiliğinden almaz; `Ctrl+C` ile durdurup yeniden başlatın. Gözlemlenen URL ve build sonucu [teslim kaydında](DELIVERY.tr.md) bulunur.
+Kurulum lockfile'ı esas alır; dependency lifecycle script'leri kapalıdır. `typecheck`, TypeScript tür denetimi (`src` ve `tests`); `build`, production statik varlık üretimidir. Bunlar test sonucu değildir. `test`, `tests/*.test.ts` davranış testlerini yeni bağımlılık olmadan çalıştırır: kurulu Vite dosyaları SSR modül yükleyicisiyle (`ssrLoadModule`) yükler, Node'un yerleşik `node:test` ve `node:assert` modülleri sınar. Vite bu sırada yapılandırma dosyası okumaz, middleware kipindedir; port açmaz, HMR, dosya izleyicisi ve bağımlılık ön paketlemesi kullanmaz ve diske yazmaz ([`tests/run.mjs`](../tests/run.mjs)). `serve.py`, Vite'ın `dist/` çıktısını `http://127.0.0.1:8787/` adresinde değişmez yerel önizleme olarak sunar. Çalışan sunucu yeniden build'i kendiliğinden almaz; `Ctrl+C` ile durdurup yeniden başlatın. Gözlemlenen URL ve build sonucu [teslim kaydında](DELIVERY.tr.md) bulunur.
 
 Geliştirme için `pnpm dev`, Vite build önizlemesi için `pnpm preview` kullanılabilir. Dev/preview yapılandırması yalnız loopback, strict port, CORS kapalı ve proxy'sizdir. `0.0.0.0`, public tunnel veya genel allowedHosts/CORS kullanmayın. Vite'ın [server.host/allowedHosts/strictPort belgesi](https://vite.dev/config/server-options), bu ayarların kapsamını açıklar. Geliştirme sunucusu üretim dağıtımı değildir. Ürün API'si için arka plan polling eklenmez; geliştirme araçlarının HMR bağlantısı ürün verisi aboneliği değildir.
 
